@@ -1,5 +1,5 @@
 /* ==========================================================================
-   SHADESTATE — shared shell
+   SHADESTATE · shared shell
    Topbar (colour probe), clip menu, page transition, char-roll, magnetic,
    cursor, footer, clocks, reveal, orbit CTA, enquiry form.
    No dependencies. Every set piece is guarded by prefers-reduced-motion.
@@ -411,7 +411,7 @@
           if (msg) msg.textContent = 'Please enter a valid email address.';
           return;
         }
-        if (msg) msg.textContent = 'Thank you — you are on the list.';
+        if (msg) msg.textContent = 'Thank you. You are on the list.';
         form.reset();
       });
     });

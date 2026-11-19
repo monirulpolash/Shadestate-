@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   SHADESTATE — CASA DA LUZ
+   SHADESTATE · CASA DA LUZ
    A scroll-driven, fully procedural 3D walkthrough.
 
    Nothing here loads a model, a texture or an HDRI. Every surface is drawn into
@@ -1022,7 +1022,7 @@ if (renderer) {
       });
     }
 
-    // gravel drive — a ribbon following the same spline the camera flies
+    // gravel drive, a ribbon following the same spline the camera flies
     const drivePts = [
       [30, 150], [26, 128], [22.5, 108], [19.5, 92], [17, 78], [14.5, 64],
       [12, 52], [9.2, 41], [6.4, 31], [4.0, 23], [2.2, 16.5], [1.0, 11.5], [0, 8.4], [0, 6.4]
@@ -1052,7 +1052,7 @@ if (renderer) {
       world.add(path);
     }
 
-    // loose pebbles on the drive shoulders — instanced, no shadow cost
+    // loose pebbles on the drive shoulders, instanced, no shadow cost
     {
       const geo = new THREE.IcosahedronGeometry(1, 0);
       const count = MOBILE ? 180 : 380;
@@ -1435,7 +1435,7 @@ if (renderer) {
       holes: [{ a: -4.7, b: 1.4, y0: 0.05, y1: 2.92 }]
     });
 
-    // vertical oak slats — real geometry, one instanced draw
+    // vertical oak slats, real geometry, one instanced draw
     {
       const slatGeo = new THREE.BoxGeometry(0.045, 1, 0.12);
       const count = MOBILE ? 78 : 118;
@@ -1524,7 +1524,7 @@ if (renderer) {
     glaze({ axis: 'x', at: B.z0 + 0.02, from: 5.0, to: 12.1, y0: 0.05, y1: 2.92, mullions: 5 });
     glaze({ axis: 'z', at: B.x1 - 0.02, from: -4.7, to: 1.4, y0: 0.05, y1: 2.92, mullions: 4 });
 
-    // entry portal — the deep recess the camera travels through
+    // entry portal, the deep recess the camera travels through
     addBox(1.0, 3.45, 1.35, -1.65, 1.72, A.z1 + 0.66, M.stone, { uv: 0.4 });
     addBox(1.0, 3.45, 1.35, 1.65, 1.72, A.z1 + 0.66, M.stone, { uv: 0.4 });
     addBox(2.4, 0.62, 1.35, 0, 3.28, A.z1 + 0.66, M.stone, { uv: 0.4 });
@@ -1655,7 +1655,7 @@ if (renderer) {
     {
       const S = 256;
 
-      /** Three papery bracts round a small eye — drawn pale, tinted per instance. */
+      /** Three papery bracts round a small eye, drawn pale, tinted per instance. */
       function makeBractCard() {
         const c = cv(S), g = c.getContext('2d');
         g.clearRect(0, 0, S, S);
@@ -1999,7 +1999,7 @@ if (renderer) {
 
 
     /* ─────────────────────────────────────────────────────────────────────
-       7b · grass — 40k instanced blades, wind in the vertex shader
+       7b · grass: 40k instanced blades, wind in the vertex shader
        Blades are dense where the camera goes (along the drive, round the house
        and the pool) and thin out with distance; the paving is kept clear and
        the height shortens at its edge, so the lawn meets the gravel cleanly.
@@ -2063,7 +2063,7 @@ if (renderer) {
         let x, z, near = 1;
         const roll = rnd();
         if (roll < 0.58) {
-          // along the drive — this is where the camera actually is
+          // along the drive, this is where the camera actually is
           const t = 0.28 + 0.72 * Math.pow(rnd(), 0.7);
           const p = drive.getPoint(t);
           const tan = drive.getTangent(t);
@@ -2446,7 +2446,7 @@ if (renderer) {
      [18, 118, 1.1], [-30, -40, 1.0], [26, -48, 1.05]]
       .forEach(([x, z, s]) => addCypress(x, z, s));
 
-    // (low shrubs are grass tufts and vine skirts now — no separate pass)
+    // (low shrubs are grass tufts and vine skirts now, no separate pass)
 
     // foliage mass + every canopy card, two draws
     {
@@ -2477,7 +2477,7 @@ if (renderer) {
     if (basin) basin.layers.set(1);
 
     /* ─────────────────────────────────────────────────────────────────────
-       9 · dust motes — one additive Points pass inside the hall
+       9 · dust motes: one additive Points pass inside the hall
        ───────────────────────────────────────────────────────────────────── */
     const dust = (() => {
       const N = MOBILE ? 420 : 1100;

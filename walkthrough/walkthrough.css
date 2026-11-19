@@ -1,5 +1,5 @@
 /* ════════════════════════════════════════════════════════════════════
-   Shadestate — Casa da Luz walkthrough (embedded in real-estate-template)
+   Shadestate · Casa da Luz walkthrough (embedded in real-estate-template)
    Ordered, scoped port of shadestate-3d/style.css.
 
    Every rule is scoped under #walk, so nothing here can leak into the
@@ -10,7 +10,7 @@
    Palette: alabaster #F7F4EF · espresso #1C1A17 · bronze #9A7B56 · sand #E6DFD3
    ════════════════════════════════════════════════════════════════════ */
 
-/* local tokens — scoped, so the template's --espresso / --bronze stay untouched */
+/* local tokens, scoped, so the template's --espresso / --bronze stay untouched */
 #walk{
   --alabaster:#F7F4EF;
   --espresso:#1C1A17;
@@ -185,7 +185,7 @@
 }
 #walk .copy__item--center .copy__note{margin-left:auto;margin-right:auto}
 
-/* call to action — its own button, independent of the template's .btn */
+/* call to action, its own button, independent of the template's .btn */
 #walk .btn{
   display:inline-flex;align-items:center;gap:14px;
   margin-top:clamp(18px,2.4vw,30px);
@@ -214,7 +214,7 @@
 #walk .walk__scrollhint i{display:block;width:1px;height:26px;background:linear-gradient(to bottom,rgba(247,244,239,.5),transparent)}
 #walk .walk__scrollhint.is-hidden{opacity:0}
 
-/* fallback poster — no WebGL, or the module failed to load */
+/* fallback poster: no WebGL, or the module failed to load */
 #walk .fallback{
   position:absolute;inset:0;display:none;overflow:hidden;
   background:linear-gradient(180deg,#e8d3b2 0%,#dcc3a2 34%,#c8b191 52%,#9c8f74 62%,#7d735c 100%);

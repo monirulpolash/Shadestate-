@@ -1,5 +1,5 @@
 /* ==========================================================================
-   SHADESTATE — inner page behaviour
+   SHADESTATE · inner page behaviour
    Projects filter + preview · studio team · three-step enquiry · journal
    · legal index. Guarded: each block only runs when its markup is present.
    ========================================================================== */
@@ -256,7 +256,7 @@
       var rows = [
         ['Interest', interest],
         ['Development', projectName()],
-        ['Timeline', timeline || '—'],
+        ['Timeline', timeline || 'To be confirmed'],
         ['Viewing', (date ? new Date(date + 'T00:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' }) : 'To be arranged') + (time ? ' · ' + time : '')]
       ];
       box.innerHTML = rows.map(function (r) {
@@ -394,7 +394,7 @@
           return '';
         }).join('');
         reader.hidden = false;
-        document.title = post.title + ' — Shadestate Journal';
+        document.title = post.title + ' · Shadestate Journal';
         window.scrollTo(0, 0);
       }
     }

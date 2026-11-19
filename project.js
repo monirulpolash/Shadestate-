@@ -1,5 +1,5 @@
 /* ============================================================
-   SHADESTATE — Project details
+   SHADESTATE · Project details
    Data + rendering + interactions. No dependencies.
    Project is chosen with ?project=<slug>, default arbour-townhomes.
    ============================================================ */
@@ -277,9 +277,9 @@
   }
 
   function renderHero() {
-    document.title = p.name + ' — Shadestate';
+    document.title = p.name + ' · Shadestate';
     var md = document.querySelector('meta[name="description"]');
-    if (md) md.setAttribute('content', p.name + ' by Shadestate — ' + p.type + ' in ' + p.location + '. Specifications, residences, floor plans and everything close by.');
+    if (md) md.setAttribute('content', p.name + ' by Shadestate, ' + p.type + ' in ' + p.location + '. Specifications, residences, floor plans and everything close by.');
 
     $('#projectTitle').textContent = p.name;
     var eyebrow = $('#projectEyebrow');
@@ -307,7 +307,7 @@
     $('#landmarksSub').textContent = 'Drive times from ' + p.name + ', measured at off-peak hours.';
 
     var tel = p.country === 'Saudi Arabia' ? '+966110000000' : '+97140000000';
-    var wa = 'https://wa.me/' + tel.replace(/\D/g, '') + '?text=' + encodeURIComponent('Hello Shadestate — I would like to know more about ' + p.name + '.');
+    var wa = 'https://wa.me/' + tel.replace(/\D/g, '') + '?text=' + encodeURIComponent('Hello Shadestate. I would like to know more about ' + p.name + '.');
     var call = $('#callLink'); if (call) call.href = 'tel:' + tel;
     var wa1 = $('#waLink'); if (wa1) wa1.href = wa;
     var wa2 = $('#waLinkFloat'); if (wa2) wa2.href = wa;
@@ -400,7 +400,7 @@
       var a = el('article', 'gitem reveal' + (i === 0 ? ' gitem--lead' : ''));
       a.innerHTML =
         '<p class="gitem__num">' + pad2(i + 1) + '</p>' +
-        '<figure class="gitem__fig"><img src="' + IMG + g.img + '" alt="' + esc(p.name + ' — ' + g.cap) + '" loading="' + (i > 1 ? 'lazy' : 'eager') + '" decoding="async" width="900" height="1125"></figure>' +
+        '<figure class="gitem__fig"><img src="' + IMG + g.img + '" alt="' + esc(p.name + ': ' + g.cap) + '" loading="' + (i > 1 ? 'lazy' : 'eager') + '" decoding="async" width="900" height="1125"></figure>' +
         '<p class="gitem__cap"><span>' + esc(g.cap) + '</span><span>' + esc(g.sub) + '</span></p>';
       track.appendChild(a);
     });
@@ -476,7 +476,7 @@
     img.style.opacity = '0';
     setTimeout(function () {
       img.src = IMG + l.plan;
-      img.alt = l.name + ' floor plan — ' + p.name;
+      img.alt = l.name + ' floor plan, ' + p.name;
       img.onload = function () { img.style.opacity = '1'; };
       if (img.complete) img.style.opacity = '1';
     }, silent ? 0 : 120);
@@ -872,7 +872,7 @@
         ['Project', p.name], ['Location', p.location], ['Status', p.status], ['Property type', p.type],
         ['Starting from', moneyFor(p.currency)], ['Handover', p.handover], ['Unit size', p.size]
       ];
-      var html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>' + esc(p.name) + ' — Brochure</title>' +
+      var html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>' + esc(p.name) + ' · Brochure</title>' +
         '<style>body{font-family:Helvetica,Arial,sans-serif;max-width:720px;margin:64px auto;padding:0 32px;color:#111}h1{font-weight:300;letter-spacing:-.02em;font-size:44px;text-transform:uppercase;margin:0 0 8px}h2{font-size:15px;letter-spacing:.1em;text-transform:uppercase;font-weight:500;margin:32px 0 10px}p{line-height:1.6;font-size:15px}table{width:100%;border-collapse:collapse;margin-top:12px}td{padding:10px 0;border-bottom:1px solid #ddd;font-size:14px}td:first-child{color:#666;text-transform:uppercase;letter-spacing:.08em;font-size:11px;width:40%}li{font-size:14px;line-height:1.7}</style></head><body>' +
         '<h1>' + esc(p.name) + '</h1><p>' + esc(p.location) + ' · ' + esc(p.type) + '</p>' +
         '<table>' + rows.map(function (r) { return '<tr><td>' + esc(r[0]) + '</td><td>' + esc(r[1]) + '</td></tr>'; }).join('') + '</table>' +
@@ -898,7 +898,7 @@
       e.preventDefault();
       var v = $('#newsEmail').value.trim();
       if (v.indexOf('@') < 1) { msg.textContent = 'Please enter a valid email.'; return; }
-      msg.textContent = 'Thank you — you are on the list.';
+      msg.textContent = 'Thank you. You are on the list.';
       news.reset();
     });
   }

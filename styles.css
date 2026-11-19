@@ -1,5 +1,5 @@
 /* ==========================================================================
-   SHADESTATE — home
+   SHADESTATE · home
    The FIND hero take, the studio thesis, four featured developments,
    the four areas of expertise, the 3D presence map, the walkthrough.
    Shared tokens, type and shell live in site.css.
@@ -28,7 +28,7 @@
 }
 .no-js .curtain { display: none; }
 @keyframes curtainFallback { to { opacity: 0; visibility: hidden; } }
-/* the old arch halves and crown bar are retired — hooks stay, paint goes */
+/* the old arch halves and crown bar are retired, hooks stay, paint goes */
 .curtain__cover { display: none; }
 html.is-locked, body.is-locked { overflow: hidden; }
 .curtain__inner {
@@ -93,6 +93,9 @@ html.is-locked, body.is-locked { overflow: hidden; }
   text-align: center; padding-bottom: 11.9vw; pointer-events: none; will-change: transform, opacity;
 }
 .hero__content a { pointer-events: auto; }
+/* site.css sets .wrap { padding: 0 var(--pad) }, which zeroes the hero's bottom offset
+   and tucks the explore pill behind the roofline; restore it with higher specificity. */
+.hero__content.wrap { padding-bottom: 11.9vw; }
 .hero__title {
   width: 100%; font-family: var(--serif); font-weight: 300;
   font-size: var(--fs-display-xl); line-height: var(--lh-display); letter-spacing: var(--ls-display); color: #14120f;
@@ -125,7 +128,7 @@ html.is-locked, body.is-locked { overflow: hidden; }
   .hero__sub { font-size: .92rem; padding: 0 6vw; }
   .hero__actions { flex-direction: column; gap: 14px; }
   .hero__pill { padding: 14px 22px; font-size: .66rem; }
-  .hero__content { padding-bottom: 24vh; }
+  .hero__content.wrap { padding-bottom: 24vh; }
   .hero__house { top: 64svh; }
 }
 

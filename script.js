@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Shadestate — Architectural Residences
+   Shadestate · Architectural Residences
    Interaction & motion layer
    --------------------------------------------------------------------------
    • No build step. GSAP + ScrollTrigger + Lenis load from CDN; if they are
@@ -24,7 +24,7 @@
   var wait = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
 
   /* ------------------------------------------------------------------ */
-  /*  1. Development data — one source for modal + residences explorer  */
+  /*  1. Development data · one source for modal + residences explorer  */
   /* ------------------------------------------------------------------ */
   var DEVELOPMENTS = {
     'casa-da-luz': {
@@ -35,8 +35,8 @@
       statusKey: 'available',
       image: 'assets/project-1.jpg',
       alt: 'Courtyard of Casa da Luz with travertine walls, a still pool and an olive tree.',
-      caption: 'Casa da Luz — courtyard and reflecting pool',
-      description: 'Eight low houses arranged around a shared olive grove, each opening onto its own walled courtyard and pool. The travertine comes from a single quarry batch, so every façade carries the same grain — and will weather at the same pace.',
+      caption: 'Casa da Luz: courtyard and reflecting pool',
+      description: 'Eight low houses arranged around a shared olive grove, each opening onto its own walled courtyard and pool. The travertine comes from a single quarry batch, so every façade carries the same grain, and will weather at the same pace.',
       specs: [
         ['Completion', 'Q3 2026'],
         ['Residences', '8 houses'],
@@ -84,7 +84,7 @@
       statusKey: 'upcoming',
       image: 'assets/project-2.jpg',
       alt: 'Double-height penthouse living room with linen curtains and oak floors.',
-      caption: 'Alto Príncipe — penthouse living room',
+      caption: 'Alto Príncipe: penthouse living room',
       description: 'A 1920s palace rebuilt from the inside: six apartments and duplexes arranged around a planted lightwell, with the original stone stair restored and a new bronze lift core dropped into the centre. Sales open in spring 2027; the showroom is open now by appointment.',
       specs: [
         ['Completion', 'Q2 2027'],
@@ -132,7 +132,7 @@
       statusKey: 'upcoming',
       image: 'assets/project-3.jpg',
       alt: 'Stepped stone and bronze residence with planted terraces above the sea.',
-      caption: 'Maré Residences — the sea elevation at dusk',
+      caption: 'Maré Residences: the sea elevation at dusk',
       description: 'Fourteen apartments stepping down toward the Cascais shoreline, each with a planted terrace deep enough to eat on. The building sits back behind the coastal road, so the sound of the water arrives before the traffic does.',
       specs: [
         ['Completion', '2028'],
@@ -180,7 +180,7 @@
       statusKey: 'completed',
       image: 'assets/project-4.jpg',
       alt: 'Stone and timber house at blue hour behind lavender and olive planting.',
-      caption: 'Quinta do Vale — the north house at blue hour',
+      caption: 'Quinta do Vale: the north house at blue hour',
       description: 'Five estate houses on a working cork and olive farm, built from stone quarried on the property itself. Completed in 2023 and fully sold; the farm and its houses remain under our long-term care.',
       specs: [
         ['Completed', '2023'],
@@ -195,7 +195,7 @@
       types: [
         {
           id: 'farmhouse', name: 'Farmhouse', beds: 4, interior: 364, terrace: 0, plot: 1200,
-          orientation: 'South', deg: 180, price: 'Sold — 2023', from: 'Sold',
+          orientation: 'South', deg: 180, price: 'Sold 2023', from: 'Sold',
           sub: '4 bedrooms · estate garden · private well',
           note: 'Thick stone walls, a deep veranda, and the old threshing floor kept as the garden terrace.',
           plan: {
@@ -216,7 +216,7 @@
       statusKey: 'available',
       image: 'assets/project-6.jpg',
       alt: 'Travertine rooftop terrace with linen seating and an olive tree above the Lisbon skyline.',
-      caption: 'Miradouro Terrace — the roof terrace at golden hour',
+      caption: 'Miradouro Terrace: the roof terrace at golden hour',
       description: 'Three penthouses above Graça, each with a travertine roof terrace facing the castle and the river. The last remaining residence is offered with its furniture, made for the house by a workshop in Sintra.',
       specs: [
         ['Completed', '2025'],
@@ -252,7 +252,7 @@
       statusKey: 'completed',
       image: 'assets/hero-architecture.jpg',
       alt: 'Shadestate House: limestone and timber villa with olive trees and a reflecting pool.',
-      caption: 'Shadestate House — the reflecting pool',
+      caption: 'Shadestate House: the reflecting pool',
       description: 'The house we built for ourselves: a single residence hidden behind timber screens, with a reflecting pool that doubles as the roof of the archive below. Completed in 2019 and privately sold; it remains the reference for everything we have drawn since.',
       specs: [
         ['Completed', '2019'],
@@ -267,7 +267,7 @@
       types: [
         {
           id: 'principal-house', name: 'Principal House', beds: 6, interior: 612, terrace: 140, plot: 2400,
-          orientation: 'West', deg: 270, price: 'Sold — 2019', from: 'Sold',
+          orientation: 'West', deg: 270, price: 'Sold 2019', from: 'Sold',
           sub: '6 bedrooms · 2.4 ha plot · guest wing',
           note: 'Three wings around the pool, with the archive set into the ground beneath it.',
           plan: {
@@ -696,7 +696,7 @@
       .add(finishIntro, 1.05);
   }
 
-  /* The headline arrives word by word — measured masks would freeze a line
+  /* The headline arrives word by word, measured masks would freeze a line
      break, and this headline has to be free to rewrap at every width. */
   function heroTitleIn(delay) {
     state.gsap.fromTo('.hero__title .hw',
@@ -868,7 +868,7 @@
       );
     });
 
-    /* Featured project — scale-on-scroll (Hale Arden pattern) */
+    /* Featured project: scale-on-scroll (Hale Arden pattern) */
     initFeature();
 
     /* Counters */
@@ -1233,7 +1233,7 @@
   var explorerState = { dev: 'casa-da-luz', type: null };
 
   function formatArea(n) {
-    return n ? n.toLocaleString('en-GB') + ' m²' : '—';
+    return n ? n.toLocaleString('en-GB') + ' m²' : 'On request';
   }
 
   function planSvg(type) {
@@ -1341,8 +1341,8 @@
       ['Terrace', formatArea(type.terrace)],
       ['Bedrooms', type.beds + (type.beds === 1 ? ' bedroom' : ' bedrooms')],
       ['Orientation', type.orientation],
-      ['Architect', (dev.specs.filter(function (s) { return s[0] === 'Architect'; })[0] || ['', '—'])[1]],
-      ['Tenure', (dev.specs.filter(function (s) { return s[0] === 'Tenure'; })[0] || ['', '—'])[1]]
+      ['Architect', (dev.specs.filter(function (s) { return s[0] === 'Architect'; })[0] || ['', 'Not listed'])[1]],
+      ['Tenure', (dev.specs.filter(function (s) { return s[0] === 'Tenure'; })[0] || ['', 'Not listed'])[1]]
     ];
     $('#exSpecs').innerHTML = specs.map(function (s) {
       return '<div><dt>' + s[0] + '</dt><dd>' + s[1] + '</dd></div>';
@@ -1420,7 +1420,7 @@
     var options = ['<option value="">Any remaining residence</option>'];
     if (dev) {
       dev.types.forEach(function (t) {
-        options.push('<option value="' + t.id + '">' + t.name + ' — ' + t.sub + '</option>');
+        options.push('<option value="' + t.id + '">' + t.name + ' · ' + t.sub + '</option>');
       });
     }
     sel.innerHTML = options.join('');

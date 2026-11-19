@@ -1,5 +1,5 @@
 /* ==========================================================================
-   SHADESTATE — 3D presence map
+   SHADESTATE · 3D presence map
    A stylised architectural relief of the Arabian Peninsula: extruded land,
    a dark sea plane, and one glowing pin per residence. Drag to orbit,
    scroll to zoom, select a pin for its card.
