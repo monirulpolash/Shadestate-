@@ -1,5 +1,5 @@
 /**
- * Shadestate — Developments Section
+ * Shadestate · Developments Section
  * ---------------------------------------------------------------------------
  * A self-contained Framer Code Component (React + TypeScript).
  *
@@ -952,7 +952,7 @@ export default function ShadestateDevelopments(props: Props) {
 /* -------------------------------------------------------------------------- */
 
 ShadestateDevelopments.defaultProps = {
-    eyebrow: "02 — The Portfolio",
+    eyebrow: "02 · The Portfolio",
     heading: "Current &",
     headingAccent: "coming houses",
     note: "Six addresses, each with its own architect and its own weather. Prices are quoted as guide prices, excluding transfer taxes.",
@@ -971,7 +971,7 @@ addPropertyControls(ShadestateDevelopments, {
     eyebrow: {
         type: ControlType.String,
         title: "Eyebrow",
-        defaultValue: "02 — The Portfolio",
+        defaultValue: "02 · The Portfolio",
     },
     heading: {
         type: ControlType.String,

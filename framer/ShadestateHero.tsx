@@ -1,5 +1,5 @@
 /**
- * Shadestate — Hero
+ * Shadestate · Hero
  * ---------------------------------------------------------------------------
  * Framer Code Component · React + TypeScript + framer-motion
  *
@@ -14,7 +14,7 @@
  *   • Opening: image settles from 1.12 → 1, headline lines rise out of masks,
  *     eyebrow/sub/CTA fade up with a short stagger. On scroll the image
  *     continues to zoom and the copy lifts away.
- *   • Everything is transform/opacity only — no layout shift while scrolling.
+ *   • Everything is transform/opacity only, no layout shift while scrolling.
  *   • Reduced motion: all entrance and scroll transforms are skipped.
  *   • Fonts: add Cormorant Garamond + Plus Jakarta Sans under
  *     Site Settings → Fonts, then pass their names in the two font properties.
@@ -480,7 +480,7 @@ export default function ShadestateHero(props: Props) {
 }
 
 ShadestateHero.defaultProps = {
-    eyebrow: "Est. 1998 — Lisbon · Comporta · Cascais",
+    eyebrow: "Est. 1998 · Lisbon · Comporta · Cascais",
     headline: "Houses made to be",
     headlineAccent: "inherited.",
     subline:

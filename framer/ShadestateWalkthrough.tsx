@@ -3,7 +3,7 @@
  * ─────────────────────────────────────────────────────────────────────────────
  * A self-contained Framer Code Component: the Casa da Luz scroll walkthrough.
  *
- * Everything is procedural. No models, no textures, no HDRIs — every surface is
+ * Everything is procedural. No models, no textures, no HDRIs: every surface is
  * painted into a canvas at runtime, every form is a primitive, one procedural
  * equirect sky is both background and PMREM environment, and the frame is
  * finished with a bloom → filmic grade → vignette/grain chain.
@@ -27,7 +27,7 @@ import { addPropertyControls, ControlType } from "framer"
 const RAIL_VH = 6
 
 /* ────────────────────────────────────────────────────────────────────────────
-   Scene factory — everything below runs on the client only.
+   Scene factory · everything below runs on the client only.
    ──────────────────────────────────────────────────────────────────────────── */
 
 async function createScene(THREE: any, canvas: HTMLCanvasElement, cfg: any) {
@@ -1156,7 +1156,7 @@ async function createScene(THREE: any, canvas: HTMLCanvasElement, cfg: any) {
         const dt = Math.min(0.05, clock.getDelta())
         if (!visible) return
         elapsed += dt
-        // frame-rate independent ease — same feel at 30, 60 or 144 fps
+        // frame-rate independent ease, same feel at 30, 60 or 144 fps
         progress += (target - progress) * (1 - Math.exp(-dt * 11))
         const px = dragging ? 0 : 0
         lookYaw += (yawT + px - lookYaw) * Math.min(1, dt * 4.5)

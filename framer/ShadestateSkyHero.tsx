@@ -1,5 +1,5 @@
 /**
- * Shadestate — Sky Hero
+ * Shadestate · Sky Hero
  * ---------------------------------------------------------------------------
  * Framer Code Component · React + TypeScript + framer-motion
  *
@@ -11,7 +11,7 @@
  *   1. Assets → Code → New Code File → name it "ShadestateSkyHero" → paste this file.
  *   2. Drag "ShadestateSkyHero" onto the canvas and set its width to Fill.
  *   3. Properties panel: drop in the three layers (sky, building, mist) and
- *      edit the copy. The layers must keep their transparent edges — the
+ *      edit the copy. The layers must keep their transparent edges: the
  *      building and the mist are cut-outs, not photographs.
  *
  * Design notes
@@ -19,7 +19,7 @@
  *     headline, one pill CTA, building rising from the lower half, mist over
  *     the bottom edge.
  *   • Scroll moves the three layers at different speeds (sky down, building up,
- *     mist up) and lifts the copy away — transform/opacity only.
+ *     mist up) and lifts the copy away, transform/opacity only.
  *   • Reduced motion: entrance and scroll transforms are skipped.
  *   • Fonts: add Plus Jakarta Sans under Site Settings → Fonts and pass its
  *     name in the Display font property.
@@ -167,7 +167,7 @@ export default function ShadestateSkyHero(props: Props) {
                 fontFamily: text,
             }}
         >
-            {/* 1 — sky */}
+            {/* 1 · sky */}
             <motion.div
                 aria-hidden="true"
                 style={{
@@ -196,7 +196,7 @@ export default function ShadestateSkyHero(props: Props) {
                 )}
             </motion.div>
 
-            {/* 2 — the building, rising out of the lower half */}
+            {/* 2 · the building, rising out of the lower half */}
             <motion.div
                 style={{
                     position: "absolute",
@@ -223,7 +223,7 @@ export default function ShadestateSkyHero(props: Props) {
                 ) : null}
             </motion.div>
 
-            {/* 3 — mist across the lower edge */}
+            {/* 3 · mist across the lower edge */}
             <motion.div
                 aria-hidden="true"
                 style={{

@@ -1,5 +1,5 @@
 /**
- * Shadestate — Residences & Plans
+ * Shadestate · Residences & Plans
  * ---------------------------------------------------------------------------
  * Framer Code Component · React + TypeScript + framer-motion
  *
@@ -212,7 +212,7 @@ const DEFAULT_DEVELOPMENTS: Development[] = [
 ]
 
 function FormatArea(n: number): string {
-    return n ? `${n.toLocaleString("en-GB")} m²` : "—"
+    return n ? `${n.toLocaleString("en-GB")} m²` : "On request"
 }
 
 /** @framerSupportedLayoutWidth any @framerSupportedLayoutHeight auto */
@@ -712,10 +712,10 @@ export default function ShadestateResidences(props: Props) {
 }
 
 ShadestateResidences.defaultProps = {
-    eyebrow: "05 — Residences & Plans",
+    eyebrow: "05 · Residences & Plans",
     heading: "Read the",
     headingAccent: "plans.",
-    note: "Choose a house, then a residence. Every figure is drawn from the architect's specification sheet — areas are internal, terraces counted separately.",
+    note: "Choose a house, then a residence. Every figure is drawn from the architect's specification sheet: areas are internal, terraces counted separately.",
     developments: DEFAULT_DEVELOPMENTS,
     background: "#F7F4EF",
     panel: "#1C1A17",
@@ -727,7 +727,7 @@ ShadestateResidences.defaultProps = {
 }
 
 addPropertyControls(ShadestateResidences, {
-    eyebrow: { type: ControlType.String, title: "Eyebrow", defaultValue: "05 — Residences & Plans" },
+    eyebrow: { type: ControlType.String, title: "Eyebrow", defaultValue: "05 · Residences & Plans" },
     heading: { type: ControlType.String, title: "Heading", defaultValue: "Read the" },
     headingAccent: { type: ControlType.String, title: "Italic", defaultValue: "plans." },
     note: {

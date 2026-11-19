@@ -1,5 +1,5 @@
 /**
- * Shadestate — Developments
+ * Shadestate · Developments
  * ---------------------------------------------------------------------------
  * Framer Code Component · React + TypeScript + framer-motion
  *
@@ -148,7 +148,7 @@ const DEFAULT_DEVELOPMENTS: Development[] = [
         architect: "Estúdio Almeida",
         description:
             "Five estate houses on a working cork and olive farm, built from stone quarried on the property itself. Completed in 2023 and fully sold.",
-        types: [{ name: "Farmhouse", meta: "4 bedrooms · estate garden · private well", price: "Sold — 2023" }],
+        types: [{ name: "Farmhouse", meta: "4 bedrooms · estate garden · private well", price: "Sold 2023" }],
         amenities: ["Private well", "Cork and olive farm", "Pool", "Guest annexe", "Stables"],
     },
     {
@@ -178,7 +178,7 @@ const DEFAULT_DEVELOPMENTS: Development[] = [
         architect: "Tomás Shadestate",
         description:
             "The house we built for ourselves: a single residence hidden behind timber screens, with a reflecting pool that doubles as the roof of the archive below.",
-        types: [{ name: "Principal House", meta: "6 bedrooms · 2.4 ha plot · guest wing", price: "Sold — 2019" }],
+        types: [{ name: "Principal House", meta: "6 bedrooms · 2.4 ha plot · guest wing", price: "Sold 2019" }],
         amenities: ["Reflecting pool", "Archive", "Olive grove", "Guest wing", "Sea path"],
     },
 ]
@@ -850,7 +850,7 @@ export default function ShadestateDevelopments(props: Props) {
 }
 
 ShadestateDevelopments.defaultProps = {
-    eyebrow: "03 — The Portfolio",
+    eyebrow: "03 · The Portfolio",
     heading: "Current &",
     headingAccent: "coming houses",
     note: "Six addresses, each with its own architect and its own weather. Prices are quoted as guide prices, excluding transfer taxes.",
@@ -919,7 +919,7 @@ const developmentControl = {
 }
 
 addPropertyControls(ShadestateDevelopments, {
-    eyebrow: { type: ControlType.String, title: "Eyebrow", defaultValue: "03 — The Portfolio" },
+    eyebrow: { type: ControlType.String, title: "Eyebrow", defaultValue: "03 · The Portfolio" },
     heading: { type: ControlType.String, title: "Heading", defaultValue: "Current &" },
     headingAccent: { type: ControlType.String, title: "Italic", defaultValue: "coming houses" },
     note: {

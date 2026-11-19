@@ -1,5 +1,5 @@
 /**
- * Shadestate — Private Inquiry
+ * Shadestate · Private Inquiry
  * ---------------------------------------------------------------------------
  * Framer Code Component · React + TypeScript + framer-motion
  *
@@ -462,7 +462,7 @@ export default function ShadestateInquiry(props: Props) {
                                         rows={3}
                                         value={values.message}
                                         onChange={set("message")}
-                                        placeholder="We are looking for a house near Comporta, ideally with four bedrooms and a garden for our children —"
+                                        placeholder="We are looking for a house near Comporta, ideally with four bedrooms and a garden for our children…"
                                         style={{ ...fieldStyle, resize: "vertical", minHeight: 84, lineHeight: 1.65 }}
                                     />
                                 </div>
@@ -526,7 +526,7 @@ export default function ShadestateInquiry(props: Props) {
                                         color: paper,
                                     }}
                                 >
-                                    Thank you, {values.name.trim().split(/\s+/)[0] || "—"}.
+                                    Thank you, {values.name.trim().split(/\s+/)[0] || "and welcome"}.
                                 </h3>
 
                                 <p style={{ margin: 0, fontFamily: sans, fontSize: 14, lineHeight: 1.75, color: "rgba(247,244,239,0.68)", maxWidth: "44ch" }}>
@@ -589,11 +589,11 @@ export default function ShadestateInquiry(props: Props) {
 }
 
 ShadestateInquiry.defaultProps = {
-    eyebrow: "07 — Private viewings",
+    eyebrow: "07 · Private viewings",
     heading: "Come and stand",
     headingAccent: "in the light.",
     intro:
-        "Viewings are by appointment and always with one of the partners. Tell us which house interests you and we will send the full presentation — plans, specification and availability — before you travel.",
+        "Viewings are by appointment and always with one of the partners. Tell us which house interests you and we will send the full presentation, with plans, specification and availability, before you travel.",
     studioAddress: "Avenida da Liberdade 214\n1250-149 Lisboa, Portugal",
     studioEmail: "inquiries@shadestate.com",
     studioPhone: "+351 21 000 0000",
@@ -608,7 +608,7 @@ ShadestateInquiry.defaultProps = {
 }
 
 addPropertyControls(ShadestateInquiry, {
-    eyebrow: { type: ControlType.String, title: "Eyebrow", defaultValue: "07 — Private viewings" },
+    eyebrow: { type: ControlType.String, title: "Eyebrow", defaultValue: "07 · Private viewings" },
     heading: { type: ControlType.String, title: "Heading", defaultValue: "Come and stand" },
     headingAccent: { type: ControlType.String, title: "Italic", defaultValue: "in the light." },
     intro: {
