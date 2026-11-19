@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="en" class="no-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shadestate — Architectural Residences</title>
+<meta name="description" content="Shadestate is a Portuguese development studio building a small number of enduring residences in Lisbon, Comporta and Cascais. Limestone, oak, lime and bronze, drawn by the hands that sign the deed.">
+<meta name="theme-color" content="#F7F4EF">
+<meta name="color-scheme" content="light">
+<meta property="og:title" content="Shadestate — Houses made to be inherited">
+<meta property="og:description" content="A small portfolio of enduring residences on Portugal's Atlantic edge.">
+<meta property="og:image" content="assets/hero-architecture.jpg">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%231C1A17'/%3E%3Ctext x='32' y='45' font-family='Georgia,serif' font-size='36' fill='%23E6DFD3' text-anchor='middle'%3ES%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" as="image" href="assets/hero-architecture.jpg" fetchpriority="high">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="walkthrough/walkthrough.css">
+<script>document.documentElement.classList.replace('no-js','js');</script>
+<noscript><style>.curtain,.cursor,.rail,.progress{display:none!important}.js .reveal{opacity:1!important;transform:none!important}</style></noscript>
+</head>
+<body>
+
+<a class="skip-link" href="#main">Skip to content</a>
+
+<!-- scroll progress -->
+<div class="progress" aria-hidden="true"><i id="progressBar"></i></div>
+
+<!-- ══════════════════════════════ INTRO CURTAIN ══════════════════════════════ -->
+<div class="curtain" id="curtain" aria-hidden="true">
+  <div class="curtain__cover">
+    <span class="curtain__side curtain__side--l"></span>
+    <span class="curtain__side curtain__side--r"></span>
+    <span class="curtain__crown"></span>
+  </div>
+  <div class="curtain__inner">
+    <p class="curtain__word"><span>Shade</span><em>state</em></p>
+    <div class="curtain__row">
+      <span class="curtain__caption">Architectural residences — Est. 1998</span>
+      <span class="curtain__count"><span id="curtainCount">00</span><i>%</i></span>
+    </div>
+    <div class="curtain__track"><i id="curtainBar"></i></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════ CURSOR ══════════════════════════════ -->
+<div class="cursor" id="cursor" aria-hidden="true">
+  <span class="cursor__dot"></span>
+  <span class="cursor__label"></span>
+</div>
+
+<!-- ══════════════════════════════ SIDE RAIL ══════════════════════════════ -->
+<nav class="rail" aria-label="Section index">
+  <ol class="rail__list">
+    <li><a href="#philosophy" data-rail><span class="rail__num">01</span><span class="rail__label">Philosophy</span></a></li>
+    <li><a href="#featured" data-rail><span class="rail__num">02</span><span class="rail__label">Featured</span></a></li>
+    <li><a href="#developments" data-rail><span class="rail__num">03</span><span class="rail__label">Portfolio</span></a></li>
+    <li><a href="#walkthrough" data-rail><span class="rail__num">04</span><span class="rail__label">Walkthrough</span></a></li>
+    <li><a href="#residences" data-rail><span class="rail__num">05</span><span class="rail__label">Residences</span></a></li>
+    <li><a href="#craft" data-rail><span class="rail__num">06</span><span class="rail__label">Craft</span></a></li>
+    <li><a href="#inquire" data-rail><span class="rail__num">07</span><span class="rail__label">Enquire</span></a></li>
+  </ol>
+</nav>
+
+<!-- ══════════════════════════════ HEADER ══════════════════════════════ -->
+<header class="site-header" id="siteHeader">
+  <div class="shell header__inner">
+    <a class="brand magnetic" href="#top" aria-label="Shadestate — back to top">
+      <span class="brand__mark" aria-hidden="true">S</span>
+      <span class="brand__type">
+        <span class="brand__name">Shadestate</span>
+        <span class="brand__sub">Developments</span>
+      </span>
+    </a>
+
+    <nav class="nav" aria-label="Primary">
+      <a href="#philosophy"><span class="nav__i">01</span>Philosophy</a>
+      <a href="#developments"><span class="nav__i">03</span>Portfolio</a>
+      <a href="#residences"><span class="nav__i">05</span>Residences</a>
+      <a href="#inquire"><span class="nav__i">07</span>Inquire</a>
+    </nav>
+
+    <div class="header__actions">
+      <p class="header__clock" title="Lisbon local time">
+        <span class="dot" aria-hidden="true"></span>
+        <span id="lisbonTime">—:—</span>
+        <span class="header__tz">LIS</span>
+      </p>
+      <a class="btn btn--line header__cta magnetic" href="#inquire" data-cursor="Enquire">
+        <span>Private viewing</span>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h14M12.5 6.5 18 12l-5.5 5.5"/></svg>
+      </a>
+      <button class="nav-toggle" id="navToggle" type="button" aria-expanded="false" aria-controls="mobileMenu" aria-label="Open menu">
+        <span class="nav-toggle__bars" aria-hidden="true"><i></i><i></i></span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- Full-screen menu -->
+<div class="menu" id="mobileMenu" hidden>
+  <div class="menu__inner">
+    <nav class="menu__nav" aria-label="Menu">
+      <a href="#philosophy"><span class="menu__idx">01</span><span class="menu__word">Philosophy</span></a>
+      <a href="#featured"><span class="menu__idx">02</span><span class="menu__word">Featured project</span></a>
+      <a href="#developments"><span class="menu__idx">03</span><span class="menu__word">Portfolio</span></a>
+      <a href="#walkthrough"><span class="menu__idx">04</span><span class="menu__word">Walkthrough</span></a>
+      <a href="#residences"><span class="menu__idx">05</span><span class="menu__word">Residences</span></a>
+      <a href="#craft"><span class="menu__idx">06</span><span class="menu__word">Craft</span></a>
+      <a href="#inquire"><span class="menu__idx">07</span><span class="menu__word">Inquire</span></a>
+    </nav>
+    <div class="menu__foot">
+      <p>Avenida da Liberdade 214<br>1250-149 Lisboa, Portugal</p>
+      <p><a href="mailto:inquiries@shadestate.com">inquiries@shadestate.com</a><br><a href="tel:+351210000000">+351 21 000 0000</a></p>
+      <p class="menu__time"><span class="dot" aria-hidden="true"></span><span id="lisbonTimeMenu">—:—</span> Lisbon</p>
+    </div>
+  </div>
+</div>
+
+<main id="main">
+
+  <!-- ══════════════════════════════ HERO ══════════════════════════════ -->
+  <section class="hero" id="top" data-nav="light">
+    <div class="hero__stage">
+      <div class="hero__media" data-hero-media>
+        <img class="hero__img" src="assets/hero-architecture.jpg" alt="A low, modern villa of warm limestone and vertical timber screens, olive trees and a still reflecting pool at golden hour." width="1402" height="1122" fetchpriority="high" decoding="async">
+      </div>
+      <div class="hero__veil" aria-hidden="true"></div>
+
+      <div class="hero__frame" aria-hidden="true">
+        <span class="hero__tick hero__tick--tl"></span>
+        <span class="hero__tick hero__tick--tr"></span>
+        <span class="hero__tick hero__tick--bl"></span>
+        <span class="hero__tick hero__tick--br"></span>
+      </div>
+
+      <div class="shell hero__inner">
+        <p class="eyebrow hero__eyebrow" data-hero-fade>Est. 1998 <span class="sep">—</span> Lisbon · Comporta · Cascais</p>
+
+        <h1 class="hero__title" data-hero-title>Houses made to be <em>inherited.</em></h1>
+
+        <p class="hero__sub" data-hero-fade>
+          A small Portuguese studio. A deliberate number of houses, cut from
+          local limestone and made to hold their light for a century.
+        </p>
+
+        <div class="hero__cta" data-hero-fade>
+          <a class="btn btn--solid magnetic" href="#developments" data-cursor="Explore">
+            <span>View the developments</span>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h14M12.5 6.5 18 12l-5.5 5.5"/></svg>
+          </a>
+          <a class="link-underline" href="#inquire">
+            <span>Request a private viewing</span>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h14M12.5 6.5 18 12l-5.5 5.5"/></svg>
+          </a>
+        </div>
+      </div>
+
+      <div class="hero__foot" data-hero-fade>
+        <div class="shell hero__foot-inner">
+          <a class="scroll-cue" href="#philosophy" aria-label="Scroll to the philosophy section">
+            <span class="scroll-cue__line" aria-hidden="true"></span>
+            <span>Scroll to enter</span>
+          </a>
+          <ul class="hero__stats">
+            <li><span class="hero__stat" data-count="14">14</span><span class="hero__label">Developments</span></li>
+            <li><span class="hero__stat"><i>€</i><span data-count="1.2" data-decimals="1">1.2</span><i>B</i></span><span class="hero__label">Portfolio</span></li>
+            <li><span class="hero__stat" data-count="28">28</span><span class="hero__label">Awards</span></li>
+          </ul>
+          <p class="hero__coord" aria-hidden="true">38°42′N&nbsp;&nbsp;9°08′W</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════ PRESS TICKER ══════════════════════════════ -->
+  <section class="press" aria-label="Press mentions">
+    <div class="press__inner">
+      <p class="press__label">As featured in</p>
+      <div class="press__viewport">
+        <ul class="press__track" aria-label="Architectural Digest, Dezeen, Wallpaper, Monocle, AD Spain, Domus, Kinfolk">
+          <li>Architectural Digest</li><li aria-hidden="true">Dezeen</li><li aria-hidden="true">Wallpaper*</li><li aria-hidden="true">Monocle</li><li aria-hidden="true">AD Spain</li><li aria-hidden="true">Domus</li><li aria-hidden="true">Kinfolk</li>
+          <li aria-hidden="true">Architectural Digest</li><li aria-hidden="true">Dezeen</li><li aria-hidden="true">Wallpaper*</li><li aria-hidden="true">Monocle</li><li aria-hidden="true">AD Spain</li><li aria-hidden="true">Domus</li><li aria-hidden="true">Kinfolk</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════ PHILOSOPHY ══════════════════════════════ -->
+  <section class="philosophy section" id="philosophy">
+    <div class="shell">
+      <div class="section-head">
+        <p class="eyebrow" data-reveal><span class="rule" aria-hidden="true"></span>01 — Philosophy</p>
+      </div>
+
+      <div class="philosophy__grid">
+        <div class="philosophy__copy">
+          <h2 class="display" data-split>We build slowly, so the buildings can last <em>without us.</em></h2>
+
+          <div class="philosophy__body">
+            <p class="lede" data-reveal>
+              Shadestate is a family practice of architects, developers and craftsmen
+              working along Portugal's Atlantic edge. Each project begins with the land —
+              its light, its wind, the stone already beneath it.
+            </p>
+            <p data-reveal style="--d:1">
+              We keep the portfolio deliberately small: three or four houses a year. That
+              restraint is the whole method. It lets the same hands draw the threshold, the
+              joint and the shadow, and it lets us refuse the things that would date a room
+              in a decade.
+            </p>
+            <div class="philosophy__sign" data-reveal style="--d:2">
+              <p class="signature">Tomás Shadestate</p>
+              <p class="sign-role">Founding partner, architect RIBA</p>
+            </div>
+          </div>
+        </div>
+
+        <figure class="ph philosophy__figure" data-curtain data-parallax-scope>
+          <div class="ph__frame">
+            <img class="ph__img" src="assets/project-2.jpg" alt="Double-height living room in an Alto Príncipe penthouse, with linen curtains, pale oak floors and a travertine table in afternoon sun." width="1122" height="1402" loading="lazy" decoding="async" data-parallax="6">
+          </div>
+          <figcaption class="ph__cap"><span>Alto Príncipe</span> — the lightwell, 2026</figcaption>
+          <p class="ph__index" aria-hidden="true">Fig. 01</p>
+        </figure>
+      </div>
+
+      <dl class="figures">
+        <div class="figure" data-reveal style="--d:0">
+          <dt>Developments</dt>
+          <dd><span data-count="14">14</span></dd>
+          <p>Completed or underway since 1998.</p>
+        </div>
+        <div class="figure" data-reveal style="--d:1">
+          <dt>Portfolio</dt>
+          <dd><span class="fig-currency">€</span><span data-count="1.2" data-decimals="1">1.2</span><span class="fig-unit">B</span></dd>
+          <p>In residences delivered and under construction.</p>
+        </div>
+        <div class="figure" data-reveal style="--d:2">
+          <dt>Awards</dt>
+          <dd><span data-count="28">28</span></dd>
+          <p>For architecture, interiors and landscape.</p>
+        </div>
+        <div class="figure" data-reveal style="--d:3">
+          <dt>Years</dt>
+          <dd><span data-count="25">25</span></dd>
+          <p>Of building on the same stretch of coast.</p>
+        </div>
+      </dl>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════ FEATURED PROJECT ══════════════════════════════ -->
+  <!-- Hale Arden pattern: the image starts inset and small, then grows to full-bleed
+       as it enters the viewport (transform + clip-path only, no layout change). -->
+  <section class="feature" id="featured">
+    <div class="shell">
+      <div class="feature__head">
+        <div>
+          <p class="eyebrow" data-reveal><span class="rule" aria-hidden="true"></span>02 — Featured project</p>
+          <h2 class="display feature__title" data-split>Quinta do <em>Vale</em></h2>
+        </div>
+        <p class="section-note" data-reveal>
+          Five estate houses on a working cork and olive farm in the Alentejo, built
+          from stone quarried on the property itself. Completed 2023.
+        </p>
+      </div>
+    </div>
+
+    <div class="feature__stage" data-feature-stage>
+      <figure class="feature__media" data-feature-media>
+        <img src="assets/project-4.jpg" alt="Quinta do Vale at blue hour: a stone and timber house glowing behind lavender and olive planting, with a lit path leading to the door." width="1402" height="1122" loading="lazy" decoding="async" data-feature-img>
+        <figcaption class="feature__caption">
+          <div class="feature__caption-text">
+            <span class="feature__tag">Alentejo · 2023 · Sold</span>
+            <span class="feature__line">Stone from the property. Oak from the valley. The old threshing floor kept as the terrace.</span>
+          </div>
+          <a class="feature__link" href="#developments" data-cursor="Open project">
+            <span>View the residence</span>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h14M12.5 6.5 18 12l-5.5 5.5"/></svg>
+          </a>
+        </figcaption>
+      </figure>
+    </div>
+
+    <div class="shell">
+      <div class="feature__grid">
+        <article class="feature__chapter" data-reveal>
+          <p class="feature__num">01</p>
+          <h3>The land writes first</h3>
+          <p>A year on site before a line is drawn — winter wind, summer shade, the path water already takes.</p>
+        </article>
+        <article class="feature__chapter" data-reveal style="--d:1">
+          <p class="feature__num">02</p>
+          <h3>Stone, cut once</h3>
+          <p>One quarry batch, one forest, and the joint drawn at full size in the workshop before site.</p>
+        </article>
+        <article class="feature__chapter" data-reveal style="--d:2">
+          <p class="feature__num">03</p>
+          <h3>Light, kept whole</h3>
+          <p>Deep reveals and lime walls that give light back at dusk, without closing the house to the sea.</p>
+        </article>
+      </div>
+
+      <p class="feature__more" data-reveal>
+        <a class="link-underline" href="#developments"><span>All current &amp; coming houses</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h14M12.5 6.5 18 12l-5.5 5.5"/></svg></a>
+      </p>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════ PORTFOLIO ══════════════════════════════ -->
+  <section class="portfolio section" id="developments">
+    <div class="shell">
+      <div class="section-head section-head--split">
+        <div>
+          <p class="eyebrow" data-reveal><span class="rule" aria-hidden="true"></span>03 — The Portfolio</p>
+          <h2 class="display section-title" data-split>Current &amp; <em>coming</em> houses</h2>
+        </div>
+        <p class="section-note" data-reveal>
+          Six addresses, each with its own architect and its own weather. Prices are
+          quoted as guide prices, excluding transfer taxes.
+        </p>
+      </div>
+
+      <div class="filter-bar" data-reveal>
+        <div class="filters" id="filters" role="group" aria-label="Filter developments by status">
+          <span class="filters__thumb" aria-hidden="true"></span>
+          <button class="filter is-active" type="button" data-filter="all" aria-pressed="true">All <span class="count">6</span></button>
+          <button class="filter" type="button" data-filter="available" aria-pressed="false">Available <span class="count">2</span></button>
+          <button class="filter" type="button" data-filter="upcoming" aria-pressed="false">Upcoming <span class="count">2</span></button>
+          <button class="filter" type="button" data-filter="completed" aria-pressed="false">Completed <span class="count">2</span></button>
+        </div>
+        <p class="filter-status" id="filterStatus" aria-live="polite">Showing 6 of 6</p>
+      </div>
+
+      <div class="dev-grid" id="devGrid">
+
+        <article class="dev-card" data-id="casa-da-luz" data-status="available" data-cursor="View residence">
+          <figure class="dev-card__figure" data-curtain>
+            <img src="assets/project-1.jpg" alt="Courtyard of Casa da Luz: travertine walls around a still pool and a single olive tree in warm late light." width="1402" height="1122" loading="lazy" decoding="async" data-parallax="5">
+            <span class="chip chip--available">Available</span>
+            <span class="dev-card__no" aria-hidden="true">01</span>
+          </figure>
+          <div class="dev-card__body">
+            <p class="dev-card__loc">Comporta, Portugal <span aria-hidden="true">·</span> 2026</p>
+            <h3 class="dev-card__name">Casa da Luz</h3>
+            <p class="dev-card__meta">8 residences · 4–5 bedrooms · 412–486 m²</p>
+            <div class="dev-card__foot">
+              <p class="dev-card__price">From €3.85M</p>
+              <span class="dev-card__cue" aria-hidden="true">Details <svg viewBox="0 0 24 24"><path d="M4 12h14M12.5 6.5 18 12l-5.5 5.5"/></svg></span>
+            </div>
+          </div>
+          <button class="dev-card__open" type="button" data-open="casa-da-luz" aria-label="View details for Casa da Luz"></button>
+        </article>
+
+        <article class="dev-card" data-id="alto-principe" data-status="upcoming" data-cursor="View residence">
+          <figure class="dev-card__figure" data-curtain>
+            <img src="assets/project-2.jpg" alt="Double-height penthouse living room with linen curtains, pale oak floors and a travertine table in afternoon sun." width="1122" height="1402" loading="lazy" decoding="async" data-parallax="7">
+            <span class="chip chip--upcoming">Upcoming</span>
+            <span class="dev-card__no" aria-hidden="true">02</span>
+          </figure>
+          <div class="dev-card__body">
+            <p class="dev-card__loc">Príncipe Real, Lisbon <span aria-hidden="true">·</span> 2027</p>
+            <h3 class="dev-card__name">Alto Príncipe</h3>
+            <p class="dev-card__meta">6 residences · 3–4 bedrooms · 212–342 m²</p>
+            <div class="dev-card__foot">
+              <p class="dev-card__price">From €2.95M</p>
+              <span class="dev-card__cue" aria-hidden="true">Details <svg viewBox="0 0 24 24"><path d="M4 12h14M12.5 6.5 18 12l-5.5 5.5"/></svg></span>
+            </div>
+          </div>
+          <button class="dev-card__open" type="button" data-open="alto-principe" aria-label="View details for Alto Príncipe"></button>
+        </article>
+
+        <article class="dev-card" data-id="mare-residences" data-status="upcoming" data-cursor="View residence">
+          <figure class="dev-card__figure" data-curtain>
+            <img src="assets/project-3.jpg" alt="A stepped mid-rise residence of pale stone and bronze with planted terraces above the sea at dusk." width="1122" height="1402" loading="lazy" decoding="async" data-parallax="6">
+            <span class="chip chip--upcoming">Upcoming</span>
+            <span class="dev-card__no" aria-hidden="true">03</span>
+          </figure>
+          <div class="dev-card__body">
+            <p class="dev-card__loc">Cascais, Portugal <span aria-hidden="true">·</span> 2028</p>
+            <h3 class="dev-card__name">Maré Residences</h3>
+            <p class="dev-card__meta">14 residences · 2–3 bedrooms · 128–186 m²</p>
+            <div class="dev-card__foot">
+              <p class="dev-card__price">From €1.45M</p>
+              <span class="dev-card__cue" aria-hidden="true">Details <svg viewBox="0 0 24 24"><path d="M4 12h14M12.5 6.5 18 12l-5.5 5.5"/></svg></span>
+            </div>
+          </div>
+          <button class="dev-card__open" type="button" data-open="mare-residences" aria-label="View details for Maré Residences"></button>
+        </article>
+
+        <article class="dev-card" data-id="quinta-do-vale" data-status="completed" data-cursor="View residence">
+          <figure class="dev-card__figure" data-curtain>
+            <img src="assets/project-4.jpg" alt="Quinta do Vale at blue hour: a stone and timber house glowing behind lavender and olive planting." width="1402" height="1122" loading="lazy" decoding="async" data-parallax="5">
+            <span class="chip chip--completed">Completed</span>
+            <span class="dev-card__no" aria-hidden="true">04</span>
+          </figure>
+          <div class="dev-card__body">
+            <p class="dev-card__loc">Alentejo, Portugal <span aria-hidden="true">·</span> 2023</p>
+            <h3 class="dev-card__name">Quinta do Vale</h3>
+            <p class="dev-card__meta">5 residences · 4 bedrooms · 364 m²</p>
+            <div class="dev-card__foot">
+              <p class="dev-card__price">Sold out</p>
+              <span class="dev-card__cue" aria-hidden="true">Details <svg viewBox="0 0 24 24"><path d="M4 12h14M12.5 6.5 18 12l-5.5 5.5"/></svg></span>
+            </div>
+          </div>
+          <button class="dev-card__open" type="button" data-open="quinta-do-vale" aria-label="View details for Quinta do Vale"></button>
+        </article>
+
+        <article class="dev-card" data-id="miradouro-terrace" data-status="available" data-cursor="View residence">
+          <figure class="dev-card__figure" data-curtain>
+            <img src="assets/project-6.jpg" alt="A travertine rooftop terrace with linen seating, a sculptural olive tree in a stone planter, above the Lisbon skyline at golden hour." width="1536" height="1024" loading="lazy" decoding="async" data-parallax="6">
+            <span class="chip chip--available">Available</span>
+            <span class="dev-card__no" aria-hidden="true">05</span>
+          </figure>
+          <div class="dev-card__body">
+            <p class="dev-card__loc">Graça, Lisbon <span aria-hidden="true">·</span> 2025</p>
+            <h3 class="dev-card__name">Miradouro Terrace</h3>
+            <p class="dev-card__meta">3 penthouses · 3 bedrooms · 248 m² + 96 m² terrace</p>
+            <div class="dev-card__foot">
+              <p class="dev-card__price">From €5.6M</p>
+              <span class="dev-card__cue" aria-hidden="true">Details <svg viewBox="0 0 24 24"><path d="M4 12h14M12.5 6.5 18 12l-5.5 5.5"/></svg></span>
+            </div>
+          </div>
+          <button class="dev-card__open" type="button" data-open="miradouro-terrace" aria-label="View details for Miradouro Terrace"></button>
+        </article>
+
+        <article class="dev-card" data-id="shadestate-house" data-status="completed" data-cursor="View residence">
+          <figure class="dev-card__figure" data-curtain>
+            <img src="assets/hero-architecture.jpg" alt="Shadestate House: a limestone and timber villa with deep window reveals, olive trees and a reflecting pool." width="1402" height="1122" loading="lazy" decoding="async" data-parallax="5">
+            <span class="chip chip--completed">Completed</span>
+            <span class="dev-card__no" aria-hidden="true">06</span>
+          </figure>
+          <div class="dev-card__body">
+            <p class="dev-card__loc">Comporta, Portugal <span aria-hidden="true">·</span> 2019</p>
+            <h3 class="dev-card__name">Shadestate House</h3>
+            <p class="dev-card__meta">1 residence · 6 bedrooms · 612 m²</p>
+            <div class="dev-card__foot">
+              <p class="dev-card__price">Sold</p>
+              <span class="dev-card__cue" aria-hidden="true">Details <svg viewBox="0 0 24 24"><path d="M4 12h14M12.5 6.5 18 12l-5.5 5.5"/></svg></span>
+            </div>
+          </div>
+          <button class="dev-card__open" type="button" data-open="shadestate-house" aria-label="View details for Shadestate House"></button>
+        </article>
+
+      </div>
+
+      <p class="dev-footnote" data-reveal>
+        Off-market houses are shown by introduction only.
+        <a href="#inquire" class="link-underline"><span>Ask the studio</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h14M12.5 6.5 18 12l-5.5 5.5"/></svg></a>
+      </p>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════════════════════
+       04 — 3D WALKTHROUGH
+       Casa da Luz, walked in one pinned take. The scene is fully procedural
+       (three.js r160 vendored) and lives in `walkthrough/`:
+
+         walkthrough/scene.js        the whole experience, imports ./vendor
+         walkthrough/walkthrough.css scoped port of the scene's styling (#walk)
+         walkthrough/README.md       camera map, how to re-proportion the house
+
+       The section is 600vh tall on purpose: the canvas is sticky inside it and
+       scene.js reads the section's own progress from the document scroll. Do
+       not wrap it in a scroll-snapping or transform-based smooth-scroll
+       container — Lenis (window-based) is fine, a transformed wrapper is not.
+       No WebGL, or a failed module, collapses to the CSS poster (`.fallback`).
+       ══════════════════════════════════════════════════════════════════════════ -->
+  <section class="walkthrough" id="walkthrough" data-nav="light" aria-label="3D walkthrough">
+    <div class="shell">
+      <div class="walkthrough__head">
+        <div>
+          <p class="eyebrow" data-reveal><span class="rule" aria-hidden="true"></span>04 — Walkthrough</p>
+          <h2 class="display" data-split>Step <em>inside.</em></h2>
+        </div>
+        <p class="walkthrough__note" data-reveal>
+          One continuous take — the approach, the door, the interior, the terrace.
+          Move slowly; the house is best read at walking pace.
+        </p>
+      </div>
+    </div>
+
+    <section class="walk" id="walk" aria-label="Interactive 3D walkthrough of Casa da Luz">
+      <div class="walk__sticky">
+        <canvas id="scene" class="walk__canvas" aria-label="Procedural three-dimensional view of Casa da Luz"></canvas>
+
+        <!-- cinematic grading layers (CSS, no post-processing cost) -->
+        <div class="walk__grade" aria-hidden="true"></div>
+        <div class="walk__bloom" aria-hidden="true"></div>
+        <div class="walk__veil" aria-hidden="true"></div>
+
+        <!-- HUD -->
+        <div class="hud" aria-hidden="true">
+          <div class="hud__brand">Casa da Luz <i>Walkthrough</i></div>
+          <ol class="hud__stages" id="hudStages">
+            <li data-stage="0"><span>01</span>Approach</li>
+            <li data-stage="1"><span>02</span>Entry</li>
+            <li data-stage="2"><span>03</span>Interior</li>
+            <li data-stage="3"><span>04</span>Terrace</li>
+            <li data-stage="4"><span>05</span>Orbit</li>
+          </ol>
+          <div class="hud__bar"><i id="hudBar"></i></div>
+          <div class="hud__num"><span id="hudPct">00</span><i>%</i></div>
+        </div>
+
+        <!-- editorial overlays -->
+        <div class="copy" id="copy">
+          <figure class="copy__item" data-in="0.005" data-out="0.155">
+            <p class="copy__eyebrow">Casa da Luz · Comporta</p>
+            <h2 class="copy__line">You arrive<br>the long way.</h2>
+            <p class="copy__note">Olive trees, gravel, and a house that waits at the end of it.</p>
+          </figure>
+
+          <figure class="copy__item" data-in="0.20" data-out="0.375">
+            <p class="copy__eyebrow">Limestone · Oak · Bronze</p>
+            <h2 class="copy__line">Built from three<br>materials only.</h2>
+            <p class="copy__note">Deep reveals keep the sun out of the glass and the rooms cool.</p>
+          </figure>
+
+          <figure class="copy__item copy__item--center" data-in="0.425" data-out="0.545">
+            <h2 class="copy__line copy__line--xl">Step inside.</h2>
+          </figure>
+
+          <figure class="copy__item" data-in="0.575" data-out="0.735">
+            <p class="copy__eyebrow">The hall</p>
+            <h2 class="copy__line">Every room<br>faces the light.</h2>
+            <p class="copy__note">Seven metres to the ceiling, and one pane of glass from floor to sky.</p>
+          </figure>
+
+          <figure class="copy__item" data-in="0.755" data-out="0.855">
+            <p class="copy__eyebrow">The terrace</p>
+            <h2 class="copy__line">Then step out.</h2>
+            <p class="copy__note">The rear wall slides open onto the pool.</p>
+          </figure>
+
+          <figure class="copy__item copy__item--end" data-in="0.895" data-out="1.001">
+            <p class="copy__eyebrow">Casa da Luz · 6 bedrooms · 1.2 ha</p>
+            <h2 class="copy__line">Walk around it.</h2>
+            <p class="copy__note">Private viewings in Comporta, by appointment.</p>
+            <a class="btn" href="#inquire">Enquire<span aria-hidden="true">→</span></a>
+          </figure>
+        </div>
+
+        <div class="walk__scrollhint" aria-hidden="true"><span>Scroll</span><i></i></div>
+
+        <!-- non-WebGL / failure poster: pure CSS, same typography -->
+        <div class="fallback" id="fallback" role="img" aria-label="Illustration of Casa da Luz: a limestone villa with olive trees, a grass meadow and a reflecting pool at golden hour.">
+          <div class="fallback__sky"></div>
+          <div class="fallback__sun"></div>
+          <div class="fallback__hills"></div>
+          <div class="fallback__trees"><i></i><i></i><i></i><i></i></div>
+          <div class="fallback__house"><span class="fallback__glass"></span><span class="fallback__door"></span><span class="fallback__slats"></span><span class="fallback__wing"></span></div>
+          <div class="fallback__field"></div>
+          <div class="fallback__pool"></div>
+          <div class="fallback__copy">
+            <p class="copy__eyebrow">Casa da Luz · Comporta</p>
+            <h2 class="copy__line">Houses made<br>to be <em>inherited</em>.</h2>
+            <p class="copy__note">Your browser cannot display the 3D walkthrough. The house is a limestone and timber villa with deep window reveals, olive trees and a reflecting pool.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </section>
+
+  <!-- ══════════════════════════════ RESIDENCES EXPLORER ══════════════════════════════ -->
+  <section class="explorer section" id="residences">
+    <div class="shell">
+      <div class="section-head section-head--split">
+        <div>
+          <p class="eyebrow" data-reveal><span class="rule" aria-hidden="true"></span>05 — Residences &amp; Plans</p>
+          <h2 class="display section-title" data-split>Read the <em>plans.</em></h2>
+        </div>
+        <p class="section-note" data-reveal>
+          Choose a house, then a residence. Every figure below is drawn from the
+          architect's specification sheet — areas are internal, terraces counted separately.
+        </p>
+      </div>
+
+      <div class="explorer__panel" id="explorer" data-reveal>
+        <div class="explorer__head">
+          <div class="explorer__tabs" role="tablist" aria-label="Development" id="devTabs"></div>
+        </div>
+
+        <div class="explorer__body">
+          <div class="explorer__info">
+            <p class="explorer__loc" id="exLocation">Comporta, Portugal · 2026</p>
+            <h3 class="explorer__name" id="exName">Casa da Luz</h3>
+            <p class="explorer__desc" id="exDesc">
+              Eight low houses arranged around a shared olive grove, each opening onto its
+              own walled courtyard and pool. The travertine comes from a single quarry
+              batch, so every façade carries the same grain.
+            </p>
+
+            <div class="explorer__types" role="group" aria-label="Residence type" id="exTypes"></div>
+
+            <dl class="explorer__specs" id="exSpecs">
+              <div><dt>Interior</dt><dd>412 m²</dd></div>
+              <div><dt>Terrace</dt><dd>96 m²</dd></div>
+              <div><dt>Bedrooms</dt><dd>4</dd></div>
+              <div><dt>Orientation</dt><dd>South-west</dd></div>
+              <div><dt>Architect</dt><dd>Estúdio Almeida</dd></div>
+              <div><dt>Tenure</dt><dd>Freehold</dd></div>
+            </dl>
+
+            <div class="explorer__cta">
+              <button class="btn btn--solid magnetic" id="exRequest" type="button" data-cursor="Request">
+                <span>Request this residence</span>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h14M12.5 6.5 18 12l-5.5 5.5"/></svg>
+              </button>
+              <p class="explorer__price" id="exPrice">From €3.85M</p>
+            </div>
+          </div>
+
+          <div class="explorer__visual">
+            <div class="plan">
+              <div class="plan__frame">
+                <svg id="exPlanSvg" viewBox="0 0 340 250" role="img" aria-label="Schematic floor plan of the Garden Villa at Casa da Luz">
+                  <g class="plan__grid" aria-hidden="true"></g>
+                  <g class="plan__rooms" id="planRooms"></g>
+                </svg>
+                <div class="plan__compass" aria-hidden="true">
+                  <svg viewBox="0 0 48 48">
+                    <circle cx="24" cy="24" r="21"></circle>
+                    <path class="plan__needle" id="planNeedle" d="M24 8 L29 30 L24 26 L19 30 Z"></path>
+                    <text x="24" y="6.4" text-anchor="middle">N</text>
+                  </svg>
+                </div>
+                <p class="plan__scale" aria-hidden="true"><span>0</span><i></i><span>5 m</span></p>
+              </div>
+              <div class="plan__meta">
+                <p class="plan__type" id="exPlanType">Garden Villa</p>
+                <p class="plan__sub" id="exPlanSub">4 bedrooms · ground floor · private pool</p>
+              </div>
+            </div>
+
+            <div class="explorer__metrics" id="exMetrics">
+              <div class="metric"><span class="metric__label">Interior</span><span class="metric__value">412 m²</span><span class="metric__bar"><i style="--v:0.55"></i></span></div>
+              <div class="metric"><span class="metric__label">Terrace</span><span class="metric__value">96 m²</span><span class="metric__bar"><i style="--v:0.18"></i></span></div>
+              <div class="metric"><span class="metric__label">Plot</span><span class="metric__value">640 m²</span><span class="metric__bar"><i style="--v:1"></i></span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════ CRAFT ══════════════════════════════ -->
+  <section class="craft section" id="craft">
+    <div class="shell">
+      <div class="section-head">
+        <p class="eyebrow" data-reveal><span class="rule" aria-hidden="true"></span>06 — Craft &amp; Materials</p>
+      </div>
+
+      <div class="craft__grid">
+        <figure class="craft__media ph" data-curtain data-parallax-scope>
+          <div class="ph__frame">
+            <img class="ph__img" src="assets/project-5.jpg" alt="Macro detail of honed travertine meeting a bronze reveal and a fumed oak panel in raking light." width="1402" height="1122" loading="lazy" decoding="async" data-parallax="8">
+          </div>
+          <figcaption class="ph__cap"><span>Travertine, bronze reveal, fumed oak</span> — Casa da Luz, 2024</figcaption>
+          <p class="ph__index" aria-hidden="true">Fig. 02</p>
+        </figure>
+
+        <div class="craft__copy">
+          <h2 class="display craft__title" data-split>A palette that improves <em>with weather.</em></h2>
+          <p class="lede" data-reveal>
+            We work from a short list of materials that are quarried, felled or cast within
+            a day's drive of each site. They are chosen for how they behave in twenty years,
+            not how they photograph on the day of handover.
+          </p>
+
+          <ol class="materials" id="materials">
+            <li class="material" data-reveal style="--d:0">
+              <span class="material__num">01</span>
+              <div class="material__body">
+                <h3>Portuguese limestone</h3>
+                <p>Cut from quarries in Alcanede and Pérola, laid in deep single courses so the façade reads as mass rather than surface.</p>
+              </div>
+              <span class="material__sw" style="--sw:#D9C9AE" aria-hidden="true"></span>
+            </li>
+            <li class="material" data-reveal style="--d:1">
+              <span class="material__num">02</span>
+              <div class="material__body">
+                <h3>Fumed oak</h3>
+                <p>Smoked with ammonia rather than stained, so the colour runs through the board and lightens gracefully at the edges.</p>
+              </div>
+              <span class="material__sw" style="--sw:#6B5748" aria-hidden="true"></span>
+            </li>
+            <li class="material" data-reveal style="--d:2">
+              <span class="material__num">03</span>
+              <div class="material__body">
+                <h3>Lime plaster</h3>
+                <p>Hand-applied in three coats. It breathes, it softens the acoustics of a room, and it repairs without a trace.</p>
+              </div>
+              <span class="material__sw" style="--sw:#EFE7DA" aria-hidden="true"></span>
+            </li>
+            <li class="material" data-reveal style="--d:3">
+              <span class="material__num">04</span>
+              <div class="material__body">
+                <h3>Solid bronze</h3>
+                <p>Handles, reveals and thresholds cast in a Lisbon foundry. Left unlacquered, it darkens with touch.</p>
+              </div>
+              <span class="material__sw" style="--sw:#9A7B56" aria-hidden="true"></span>
+            </li>
+          </ol>
+
+          <figure class="craft__quote" data-reveal>
+            <blockquote>“Luxury is not what you add. It is what you refuse to remove.”</blockquote>
+            <figcaption>Inês Falcão, head of interiors</figcaption>
+          </figure>
+        </div>
+      </div>
+
+      <div class="swatches" data-reveal aria-label="Material palette">
+        <span class="swatch" style="--sw:#E6DFD3"><i></i>Alabaster</span>
+        <span class="swatch" style="--sw:#D9C9AE"><i></i>Limestone</span>
+        <span class="swatch" style="--sw:#9A7B56"><i></i>Bronze</span>
+        <span class="swatch" style="--sw:#6B5748"><i></i>Fumed oak</span>
+        <span class="swatch" style="--sw:#1C1A17"><i></i>Espresso</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════ INQUIRE ══════════════════════════════ -->
+  <section class="inquire section" id="inquire" data-nav="light">
+    <div class="shell">
+      <div class="section-head">
+        <p class="eyebrow" data-reveal><span class="rule" aria-hidden="true"></span>07 — Private Viewings</p>
+      </div>
+
+      <div class="inquire__grid">
+        <div class="inquire__intro">
+          <h2 class="display inquire__title" data-split>Come and stand <em>in the light.</em></h2>
+          <p class="lede" data-reveal>
+            Viewings are by appointment and always with one of the partners. Tell us which
+            house interests you and we will send the full presentation — plans, specification
+            and availability — before you travel.
+          </p>
+
+          <dl class="studio" data-reveal style="--d:1">
+            <div>
+              <dt>Studio</dt>
+              <dd>Avenida da Liberdade 214<br>1250-149 Lisboa, Portugal</dd>
+            </div>
+            <div>
+              <dt>Direct</dt>
+              <dd><a href="mailto:inquiries@shadestate.com">inquiries@shadestate.com</a><br><a href="tel:+351210000000">+351 21 000 0000</a></dd>
+            </div>
+            <div>
+              <dt>Hours</dt>
+              <dd>Monday – Friday<br>09:00 – 18:00 WET</dd>
+            </div>
+            <div>
+              <dt>Lisbon</dt>
+              <dd><span class="studio__time" id="lisbonTimeCard">—:—</span> local time</dd>
+            </div>
+          </dl>
+        </div>
+
+        <div class="inquire__form" data-reveal style="--d:1">
+          <form class="form" id="inquiryForm" novalidate>
+            <div class="form__row">
+              <div class="field">
+                <label for="name">Full name</label>
+                <input type="text" id="name" name="name" autocomplete="name" placeholder="Alexandra Reis" required aria-describedby="name-error">
+                <p class="field__error" id="name-error" hidden>Please tell us your name.</p>
+              </div>
+              <div class="field">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" autocomplete="email" placeholder="you@example.com" required aria-describedby="email-error">
+                <p class="field__error" id="email-error" hidden>Please enter a valid email address.</p>
+              </div>
+            </div>
+
+            <div class="form__row">
+              <div class="field">
+                <label for="phone">Telephone <span class="optional">optional</span></label>
+                <input type="tel" id="phone" name="phone" autocomplete="tel" placeholder="+351 900 000 000" aria-describedby="phone-error">
+                <p class="field__error" id="phone-error" hidden>Please enter a number we can reach you on.</p>
+              </div>
+              <div class="field">
+                <label for="viewingDate">Preferred viewing</label>
+                <input type="date" id="viewingDate" name="viewingDate" aria-describedby="viewingDate-error">
+                <p class="field__error" id="viewingDate-error" hidden>Please choose today or a future date.</p>
+              </div>
+            </div>
+
+            <div class="form__row">
+              <div class="field">
+                <label for="development">Development</label>
+                <div class="select">
+                  <select id="development" name="development">
+                    <option value="general">General enquiry — what is available</option>
+                    <option value="casa-da-luz">Casa da Luz — Comporta · 2026</option>
+                    <option value="alto-principe">Alto Príncipe — Lisbon · 2027</option>
+                    <option value="mare-residences">Maré Residences — Cascais · 2028</option>
+                    <option value="quinta-do-vale">Quinta do Vale — Alentejo · 2023</option>
+                    <option value="miradouro-terrace">Miradouro Terrace — Lisbon · 2025</option>
+                    <option value="shadestate-house">Shadestate House — Comporta · 2019</option>
+                  </select>
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                </div>
+              </div>
+              <div class="field">
+                <label for="residence">Residence type</label>
+                <div class="select">
+                  <select id="residence" name="residence">
+                    <option value="">Any remaining residence</option>
+                  </select>
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                </div>
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="message">A note for the studio <span class="optional">optional</span></label>
+              <textarea id="message" name="message" rows="3" placeholder="We are looking for a house near Comporta, ideally with four bedrooms and a garden for our children —"></textarea>
+            </div>
+
+            <button class="btn btn--ivory submit" type="submit">
+              <span class="submit__label">Request the presentation</span>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h14M12.5 6.5 18 12l-5.5 5.5"/></svg>
+            </button>
+            <p class="form__note">We reply within one business day. Your details are never shared or sold.</p>
+          </form>
+
+          <div class="form-success" id="inquirySuccess" hidden>
+            <svg class="form-success__mark" viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="23"/><path d="m15 24.5 6.5 6.5L34 18"/></svg>
+            <h3 class="form-success__title">Thank you, <span id="successName">—</span>.</h3>
+            <p id="successCopy">Your enquiry is with the studio. A partner will write to you within one business day with the full presentation.</p>
+            <dl class="form-success__summary" id="successSummary"></dl>
+            <button class="link-underline" type="button" id="resetForm">Send another enquiry</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════ CLOSING ══════════════════════════════ -->
+  <section class="closing" aria-label="Studio statement">
+    <div class="shell closing__inner">
+      <p class="closing__line" data-split>Three houses a year. Twenty-five years of them.</p>
+      <a class="closing__link magnetic" href="#developments" data-cursor="Portfolio">
+        <span>See the portfolio</span>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h14M12.5 6.5 18 12l-5.5 5.5"/></svg>
+      </a>
+    </div>
+  </section>
+
+</main>
+
+<!-- ══════════════════════════════ FOOTER ══════════════════════════════ -->
+<footer class="site-footer" data-nav="light">
+  <div class="shell">
+    <div class="footer__top">
+      <div class="footer__brand">
+        <p class="footer__wordmark" data-footer-mark>Shade<em>state</em></p>
+        <p class="footer__tag">Developments · Lisbon<br>Houses made to be inherited.</p>
+      </div>
+
+      <nav class="footer__nav" aria-label="Footer">
+        <div>
+          <h2 class="footer__head">Explore</h2>
+          <ul>
+            <li><a href="#philosophy">Philosophy</a></li>
+            <li><a href="#featured">Featured project</a></li>
+            <li><a href="#developments">Portfolio</a></li>
+            <li><a href="#walkthrough">Walkthrough</a></li>
+            <li><a href="#residences">Residences &amp; plans</a></li>
+            <li><a href="#craft">Craft &amp; materials</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2 class="footer__head">Studio</h2>
+          <ul>
+            <li><a href="mailto:inquiries@shadestate.com">inquiries@shadestate.com</a></li>
+            <li><a href="tel:+351210000000">+351 21 000 0000</a></li>
+            <li><a href="https://www.instagram.com/" target="_blank" rel="noopener">Instagram</a></li>
+            <li><a href="https://www.linkedin.com/" target="_blank" rel="noopener">LinkedIn</a></li>
+            <li><a href="#inquire">Private viewings</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2 class="footer__head">Fine print</h2>
+          <ul>
+            <li><a href="#privacy">Privacy</a></li>
+            <li><a href="#legal">Terms &amp; conditions</a></li>
+            <li><a href="#legal">Agency disclosure</a></li>
+          </ul>
+        </div>
+      </nav>
+    </div>
+
+    <div class="footer__note" id="privacy">
+      <p>
+        This is a demonstration template. Nothing entered in the enquiry form is transmitted,
+        stored or shared — the form is validated in the browser only. Guide prices and
+        availability shown here are illustrative.
+      </p>
+      <p id="legal">
+        Shadestate is a fictional studio created for this template.
+        Property particulars are prepared for illustration and do not form part of any offer
+        or contract.
+      </p>
+    </div>
+
+    <div class="footer__bottom">
+      <p>© <span id="year">2026</span> Shadestate. All rights reserved.</p>
+      <p class="footer__credit">Template design — Luxury &amp; Editorial</p>
+      <a class="back-top magnetic" href="#top">
+        <span>Back to top</span>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M6.5 10.5 12 5l5.5 5.5"/></svg>
+      </a>
+    </div>
+  </div>
+</footer>
+
+<!-- ══════════════════════════════ DEVELOPMENT MODAL ══════════════════════════════ -->
+<div class="modal" id="devModal" hidden>
+  <div class="modal__backdrop" data-close></div>
+  <div class="modal__panel" role="dialog" aria-modal="true" aria-labelledby="modalTitle" aria-describedby="modalDesc" tabindex="-1">
+    <button class="modal__close" type="button" data-close aria-label="Close development details">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+    </button>
+    <div class="modal__scroll">
+      <figure class="modal__media">
+        <img id="modalImage" src="assets/project-1.jpg" alt="" width="1402" height="1122">
+        <figcaption id="modalCaption"></figcaption>
+      </figure>
+      <div class="modal__body">
+        <p class="modal__eyebrow"><span id="modalStatus" class="chip chip--available">Available</span><span id="modalLocation">Comporta, Portugal</span></p>
+        <h2 class="modal__title" id="modalTitle">Casa da Luz</h2>
+        <p class="modal__desc" id="modalDesc"></p>
+
+        <dl class="spec-grid" id="modalSpecs"></dl>
+
+        <div class="modal__types">
+          <h3>Residence types</h3>
+          <ul id="modalTypes"></ul>
+        </div>
+
+        <div class="modal__amenities">
+          <h3>Included</h3>
+          <ul id="modalAmenities"></ul>
+        </div>
+
+        <div class="modal__cta">
+          <a class="btn btn--dark" href="#inquire" data-enquire id="modalEnquire">
+            <span>Request the presentation</span>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h14M12.5 6.5 18 12l-5.5 5.5"/></svg>
+          </a>
+          <p class="modal__price" id="modalPrice"></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/ScrollTrigger.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.3.11/dist/lenis.min.js" defer></script>
+<script src="script.js" defer></script>
+<script type="module" src="walkthrough/scene.js"></script>
+</body>
+</html>
