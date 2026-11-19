@@ -272,3 +272,7 @@
 .lightbox__cap { position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%); font-size: 10px; letter-spacing: .16em; text-transform: uppercase; color: rgba(247,244,239,.6); }
 .lightbox__close { position: absolute; top: 18px; right: 22px; width: 40px; height: 40px; display: grid; place-items: center; color: var(--bone); border: var(--hair) solid rgba(247,244,239,.25); font-size: 15px; }
 .project-page .explore .catalog { border-top: var(--hair) solid var(--line); }
+
+.project-page .overview__text { font-size: var(--fs-lede); line-height: 1.55; letter-spacing: 0; }
+.project-page .plan__title { font-family: var(--serif); font-weight: 300; font-size: var(--fs-display-s); letter-spacing: -.01em; line-height: 1.1; }
+.project-page .cta__title { font-family: var(--serif); font-weight: 300; text-transform: none; letter-spacing: var(--ls-display-l); }
