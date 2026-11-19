@@ -97,7 +97,8 @@ html.js-ready .pcard:not(.is-in) .pcard__media { clip-path: inset(0 0 100% 0); }
 
 /* index view keeps the numbered hairline table */
 .catalog--index[hidden] { display: none; }
-#cataloguePreview { width: min(24vw, 330px); }
+.catalog--index .crow:hover, .catalog--index .crow:focus-within { background: var(--bone); }
+.catalog--index .crow:hover .crow__num, .catalog--index .crow:focus-within .crow__num { color: var(--gold-deep); }
 .crow__state { grid-column: auto; }
 @media (max-width: 860px) {
   .crow__state { grid-column: 3 / 4; }

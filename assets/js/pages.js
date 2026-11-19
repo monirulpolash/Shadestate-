@@ -26,11 +26,8 @@
     var viewBtns = $$('.viewtoggle__btn');
     var count = $('#catalogueCount');
     var empty = $('#catalogueEmpty');
-    var box = $('#cataloguePreview');
-    var img = box && $('img', box);
     var status = 'all', country = 'all';
     var total = pool.length;
-    var current = -1;
 
     var SPANS = ['pcard--s4', 'pcard--s5', 'pcard--s7', 'pcard--s8', 'pcard--s12', 'pcard--off'];
     var PAIRS = [[7, 5], [5, 7]];
@@ -100,7 +97,6 @@
       if (count) count.textContent = 'Showing ' + shown + ' of ' + total;
       if (empty) empty.hidden = shown !== 0;
       recount();
-      if (current !== -1 && (!index || index.hidden || status !== 'all' || country !== 'all')) hidePreview();
       if (window.ScrollTrigger) window.ScrollTrigger.refresh();
     }
 
@@ -132,13 +128,6 @@
       });
     });
 
-    function hidePreview() {
-      current = -1;
-      if (!box) return;
-      if (window.gsap) window.gsap.to(box, { opacity: 0, duration: 0.3 });
-      else box.style.opacity = '0';
-    }
-
     function setView(v) {
       var isGrid = v !== 'index';
       if (grid) grid.hidden = !isGrid;
@@ -148,7 +137,6 @@
         b.classList.toggle('is-active', on);
         b.setAttribute('aria-pressed', on ? 'true' : 'false');
       });
-      if (isGrid) hidePreview();
       if (window.ScrollTrigger) window.ScrollTrigger.refresh();
     }
     viewBtns.forEach(function (b) {
@@ -156,41 +144,6 @@
     });
 
     apply();
-
-    /* index view: one shared photo follows the pointer down the rows */
-    if (box && img) {
-      var xTo = null, yTo = null;
-      if (window.gsap) {
-        xTo = window.gsap.quickTo(box, 'x', { duration: 0.6, ease: 'power3.out' });
-        yTo = window.gsap.quickTo(box, 'y', { duration: 0.6, ease: 'power3.out' });
-      }
-      rows.forEach(function (row, i) {
-        var link = $('.crow__link', row);
-        if (!link) return;
-        function activate() {
-          if (index && index.hidden) return;
-          if (i === current) return;
-          current = i;
-          img.src = link.getAttribute('data-preview');
-          if (window.gsap) {
-            window.gsap.fromTo(img, { scale: 1.08 }, { scale: 1, duration: 0.6, ease: 'power2.out' });
-            window.gsap.to(box, { opacity: 1, duration: 0.35 });
-          } else {
-            box.style.opacity = '1';
-          }
-        }
-        link.addEventListener('mouseenter', activate);
-        link.addEventListener('focus', activate);
-        link.addEventListener('mouseleave', hidePreview);
-        link.addEventListener('blur', hidePreview);
-        link.addEventListener('mousemove', function (e) {
-          var x = e.clientX + 28;
-          var y = e.clientY - box.offsetHeight * 0.5;
-          if (xTo) { xTo(x); yTo(y); }
-          else box.style.transform = 'translate3d(' + x + 'px,' + y + 'px,0)';
-        });
-      });
-    }
   }
 
   /* ── studio: team list ↔ portrait (Hale Arden rhythm) ────────────────── */
