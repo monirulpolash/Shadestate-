@@ -8,12 +8,104 @@
 .btn--outline:hover { background: var(--ink); color: var(--bone); border-color: var(--ink); }
 .contact .btn--bone, .viewing .btn--outline { border-color: var(--bone-line); color: var(--bone); }
 
-/* ---------- projects index ---------- */
-.catalogue__bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px 28px; padding-bottom: clamp(20px, 3vw, 36px); }
-.catalogue__bar .filter-status { margin-left: auto; }
+/* ==========================================================================
+   Projects — editorial showcase (Hale Arden grid · OH asymmetry · Cargo metadata)
+   ========================================================================== */
+.catalogue__bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px 30px; padding-bottom: clamp(22px, 3vw, 38px); }
+.catalogue__meta { display: flex; align-items: center; gap: 16px; margin-left: auto; }
+.catalogue__meta .filter-status { margin-left: 0; }
+
+.viewtoggle { display: inline-flex; align-items: center; gap: 2px; padding: 3px; border: var(--hair) solid var(--line); border-radius: 999px; }
+.viewtoggle__btn { height: 27px; padding: 0 13px; border-radius: 999px; font-size: 9.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-40); transition: background .3s var(--ease), color .3s var(--ease); }
+.viewtoggle__btn:hover { color: var(--ink); }
+.viewtoggle__btn.is-active { background: var(--ink); color: var(--bone); }
+
+/* the grid itself: 12 columns, rows balanced by JS so spans always fill */
+.pgrid { display: grid; grid-template-columns: minmax(0, 1fr); column-gap: var(--gap); row-gap: clamp(38px, 5.4vw, 78px); }
+.pgrid[hidden] { display: none; }
+.pcard { grid-column: 1 / -1; }
+.pcard.is-off { display: none; }
+.pcard__link { display: grid; gap: 0; color: inherit; }
+.pcard__link:focus-visible { outline: 1px solid var(--gold); outline-offset: 8px; }
+
+.pcard__media { position: relative; overflow: hidden; background: var(--bone-2); aspect-ratio: 4 / 3; clip-path: inset(0 0 0 0); transition: clip-path 1.05s var(--ease-secondary); transition-delay: calc(var(--d, 0) * .09s); }
+html.js-ready .pcard:not(.is-in) .pcard__media { clip-path: inset(0 0 100% 0); }
+.pcard__zoom { position: absolute; inset: 0; display: block; transform: scale(1.09); transition: transform 1.6s var(--ease-secondary); transition-delay: calc(var(--d, 0) * .09s); }
+.pcard.is-in .pcard__zoom { transform: scale(1); }
+.pcard__img { display: block; width: 100%; height: 100%; object-fit: cover; transition: transform 1.3s var(--ease-secondary); }
+.pcard__media::after { content: ""; position: absolute; inset: 0; background: rgba(17, 17, 17, .15); opacity: 0; transition: opacity .6s var(--ease); pointer-events: none; }
+
+.pcard__badge { position: absolute; top: 13px; left: 13px; display: inline-flex; align-items: center; gap: .44rem; padding: 6px 10px 5px; background: rgba(247, 244, 239, .92); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); font-size: 9px; letter-spacing: .16em; text-transform: uppercase; color: var(--ink); }
+.pcard__badge .dot { width: 5px; height: 5px; }
+.pcard__cta { position: absolute; right: 13px; bottom: 13px; display: inline-flex; align-items: center; gap: 8px; padding: 9px 13px 8px; background: rgba(247, 244, 239, .94); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); font-size: 9px; letter-spacing: .16em; text-transform: uppercase; color: var(--ink); transform: translateY(9px); opacity: 0; transition: opacity .5s var(--ease), transform .6s var(--ease-secondary); pointer-events: none; }
+.pcard__cta svg { width: 11px; height: 11px; stroke: currentColor; fill: none; stroke-width: 1.6; }
+@media (hover: none) { .pcard__cta { display: none; } }
+
+/* metadata — Cargo's Swiss rows under the plate */
+.pcard__meta { display: grid; gap: 9px; margin-top: 0; padding-top: 14px; border-top: var(--hair) solid var(--line); }
+.pcard__kicker { display: flex; align-items: baseline; gap: 12px; font-size: 9.5px; letter-spacing: .17em; text-transform: uppercase; color: var(--ink-40); font-variant-numeric: tabular-nums; }
+.pcard__num { color: var(--ink); }
+.pcard__type { position: relative; padding-left: 13px; }
+.pcard__type::before { content: ""; position: absolute; left: 0; top: .52em; width: 6px; height: 1px; background: var(--line-strong); }
+.pcard__head { display: flex; align-items: baseline; justify-content: space-between; gap: 18px; }
+.pcard__title { font-family: var(--serif); font-weight: 300; font-size: clamp(1.45rem, 5.6vw, 1.85rem); line-height: 1.05; letter-spacing: -.02em; transition: transform .5s var(--ease-secondary); }
+.pcard__arrow { flex: 0 0 auto; width: 17px; height: 17px; stroke: currentColor; fill: none; stroke-width: 1.3; opacity: .32; transition: opacity .35s var(--ease), transform .5s var(--ease); }
+.pcard__foot { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 16px; font-size: 13px; color: var(--ink-55); }
+.pcard__price { color: var(--ink); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.pcard:hover .pcard__title { transform: translateX(3px); }
+.pcard:hover .pcard__arrow, .pcard:focus-within .pcard__arrow { opacity: 1; transform: translateX(4px); }
+@media (hover: hover) {
+  .pcard:hover .pcard__media::after { opacity: 1; }
+  .pcard:hover .pcard__img, .pcard:focus-within .pcard__img { transform: scale(1.04); }
+  .pcard:hover .pcard__cta, .pcard:focus-within .pcard__cta { opacity: 1; transform: none; }
+}
+.pcard[data-status="Completed"] .dot { background: var(--ink); }
+.pcard[data-status="Upcoming"] .dot { background: transparent; border: 1px solid var(--ink-40); }
+
+@media (min-width: 861px) {
+  .pgrid { grid-template-columns: repeat(12, minmax(0, 1fr)); }
+  .pcard { grid-column: span 12; }
+  .pcard--s7 { grid-column: span 7; }
+  .pcard--s5 { grid-column: span 5; }
+  .pcard--s4 { grid-column: span 4; }
+  .pcard--s8 { grid-column: span 8; }
+  .pcard--s12 { grid-column: span 12; }
+  .pcard--off { margin-top: clamp(26px, 3.6vw, 58px); }
+  .pcard--s5 .pcard__media { aspect-ratio: 5 / 4; }
+  .pcard--s12 .pcard__media { aspect-ratio: 21 / 9; }
+  .pcard--s8 .pcard__media { aspect-ratio: 3 / 2; }
+  .pcard--s12 .pcard__title { font-size: clamp(1.9rem, 3.1vw, 3.05rem); }
+  .pcard--s7 .pcard__title { font-size: clamp(1.6rem, 2.2vw, 2.15rem); }
+  .pcard--s5 .pcard__title { font-size: clamp(1.38rem, 1.75vw, 1.7rem); }
+  .pcard--s4 .pcard__title { font-size: clamp(1.28rem, 1.45vw, 1.5rem); }
+  .pcard--s4 .pcard__foot, .pcard--s5 .pcard__foot { font-size: 12.5px; }
+  .pcard--s4 .pcard__kicker { gap: 9px; letter-spacing: .14em; }
+}
+@media (max-width: 860px) {
+  .catalogue__meta { margin-left: 0; width: 100%; justify-content: space-between; }
+  .catalogue__bar { gap: 14px 22px; }
+  .filter-group__label { width: auto; }
+  .pcard__media { aspect-ratio: 4 / 3; }
+  .pcard__title { font-size: clamp(1.5rem, 6.4vw, 1.9rem); }
+  .pcard__badge { top: 10px; left: 10px; }
+}
+
+.catalogue__empty { padding: clamp(30px, 5vw, 64px) 0; border-top: var(--hair) solid var(--line); font-size: var(--fs-small); color: var(--ink-55); }
+.catalogue__empty[hidden] { display: none; }
+.linkish { color: var(--ink); border-bottom: var(--hair) solid var(--line-strong); padding-bottom: 1px; }
+.linkish:hover { color: var(--gold-deep); border-color: var(--gold); }
+
+/* index view keeps the numbered hairline table */
+.catalog--index[hidden] { display: none; }
+#cataloguePreview { width: min(24vw, 330px); }
 .crow__state { grid-column: auto; }
 @media (max-width: 860px) {
   .crow__state { grid-column: 3 / 4; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pcard__media { clip-path: none; }
+  .pcard__zoom, .pcard__img, .pcard__cta, .pcard__title { transition: none; }
+  .pcard__zoom { transform: none; }
 }
 
 /* ---------- about: story ---------- */

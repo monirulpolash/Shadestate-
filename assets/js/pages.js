@@ -10,28 +10,98 @@
   var $$ = function (s, c) { return Array.prototype.slice.call((c || document).querySelectorAll(s)); };
   var money = window.shadeMoney;
 
-  /* ── projects: status × country filters + one shared preview ─────────── */
+  /* ── projects: editorial showcase grid + numbered index ─────────────────
+     Grid spans are re-balanced on every filter change so each row always
+     fills 12 columns (Hale Arden's large/small rhythm, OH's stagger, Cargo's
+     Swiss metadata). Index view keeps the numbered hairline table. */
   function initCatalogue() {
-    var list = $('#catalogue');
-    if (!list) return;
-    var rows = $$('.crow', list);
+    var grid = $('#projectGrid');
+    var index = $('#projectIndex');
+    if (!grid && !index) return;
+    var cards = grid ? $$('.pcard', grid) : [];
+    var rows = index ? $$('.crow', index) : [];
+    var pool = cards.length ? cards : rows;
     var statusBtns = $$('#statusFilters .filter');
     var countryBtns = $$('#countryFilters .filter');
+    var viewBtns = $$('.viewtoggle__btn');
     var count = $('#catalogueCount');
+    var empty = $('#catalogueEmpty');
     var box = $('#cataloguePreview');
     var img = box && $('img', box);
     var status = 'all', country = 'all';
+    var total = pool.length;
     var current = -1;
 
-    function apply() {
-      var shown = 0;
-      rows.forEach(function (row) {
-        var ok = (status === 'all' || row.dataset.status === status) &&
-                 (country === 'all' || row.dataset.country === country);
-        row.classList.toggle('is-off', !ok);
-        if (ok) shown++;
+    var SPANS = ['pcard--s4', 'pcard--s5', 'pcard--s7', 'pcard--s8', 'pcard--s12', 'pcard--off'];
+    var PAIRS = [[7, 5], [5, 7]];
+
+    function plan(n) {
+      var out = [], rem = n, k = 0;
+      while (rem > 0) {
+        if (rem === 1) { out.push([12]); rem = 0; }
+        else if (rem === 2) { out.push(PAIRS[k % 2]); rem = 0; }
+        else if (rem === 3) { out.push([4, 4, 4]); rem = 0; }
+        else { out.push(PAIRS[k % 2]); k++; rem -= 2; }
+      }
+      return out;
+    }
+
+    function assign(list) {
+      if (!list.length) return;
+      var ordered = plan(list.length), i = 0;
+      ordered.forEach(function (row) {
+        row.forEach(function (span, j) {
+          var el = list[i++];
+          if (!el) return;
+          SPANS.forEach(function (c) { el.classList.remove(c); });
+          el.classList.add('pcard--s' + span);
+          el.style.setProperty('--d', j);
+          /* drop the smaller plate of each pair so the pair reads as a stagger,
+             whichever side it lands on */
+          if (row.length === 2 && span === 5) el.classList.add('pcard--off');
+        });
       });
-      if (count) count.textContent = 'Showing ' + shown + ' of ' + rows.length;
+    }
+
+    function match(el) {
+      return (status === 'all' || el.getAttribute('data-status') === status) &&
+             (country === 'all' || el.getAttribute('data-country') === country);
+    }
+
+    function tally(list, key, value) {
+      var n = 0;
+      list.forEach(function (el) {
+        if (!match(el)) return;
+        if (value === 'all' || el.getAttribute('data-' + key) === value) n++;
+      });
+      return n;
+    }
+
+    function recount() {
+      statusBtns.forEach(function (b) {
+        var span = $('.count', b);
+        if (span) span.textContent = tally(pool, 'status', b.getAttribute('data-status'));
+      });
+      countryBtns.forEach(function (b) {
+        var span = $('.count', b);
+        if (span) span.textContent = tally(pool, 'country', b.getAttribute('data-country'));
+      });
+    }
+
+    function apply() {
+      var shown = 0, visible = [];
+      cards.forEach(function (el) {
+        var ok = match(el);
+        el.classList.toggle('is-off', !ok);
+        if (ok) { shown++; visible.push(el); }
+      });
+      rows.forEach(function (el) { el.classList.toggle('is-off', !match(el)); });
+      assign(visible);
+      if (count) count.textContent = 'Showing ' + shown + ' of ' + total;
+      if (empty) empty.hidden = shown !== 0;
+      recount();
+      if (current !== -1 && (!index || index.hidden || status !== 'all' || country !== 'all')) hidePreview();
+      if (window.ScrollTrigger) window.ScrollTrigger.refresh();
     }
 
     function wire(btns, key, set) {
@@ -40,15 +110,54 @@
           btns.forEach(function (b) { b.classList.remove('is-active'); b.setAttribute('aria-pressed', 'false'); });
           btn.classList.add('is-active');
           btn.setAttribute('aria-pressed', 'true');
-          set(btn.dataset[key]);
+          set(btn.getAttribute('data-' + key));
           apply();
         });
       });
     }
     wire(statusBtns, 'status', function (v) { status = v; });
     wire(countryBtns, 'country', function (v) { country = v; });
+
+    $$('[data-reset]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        status = 'all'; country = 'all';
+        [statusBtns, countryBtns].forEach(function (group) {
+          group.forEach(function (b) {
+            var on = (b.getAttribute('data-status') === 'all' || b.getAttribute('data-country') === 'all');
+            b.classList.toggle('is-active', on);
+            b.setAttribute('aria-pressed', on ? 'true' : 'false');
+          });
+        });
+        apply();
+      });
+    });
+
+    function hidePreview() {
+      current = -1;
+      if (!box) return;
+      if (window.gsap) window.gsap.to(box, { opacity: 0, duration: 0.3 });
+      else box.style.opacity = '0';
+    }
+
+    function setView(v) {
+      var isGrid = v !== 'index';
+      if (grid) grid.hidden = !isGrid;
+      if (index) index.hidden = isGrid;
+      viewBtns.forEach(function (b) {
+        var on = b.getAttribute('data-view') === (isGrid ? 'grid' : 'index');
+        b.classList.toggle('is-active', on);
+        b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      });
+      if (isGrid) hidePreview();
+      if (window.ScrollTrigger) window.ScrollTrigger.refresh();
+    }
+    viewBtns.forEach(function (b) {
+      b.addEventListener('click', function () { setView(b.getAttribute('data-view')); });
+    });
+
     apply();
 
+    /* index view: one shared photo follows the pointer down the rows */
     if (box && img) {
       var xTo = null, yTo = null;
       if (window.gsap) {
@@ -59,9 +168,10 @@
         var link = $('.crow__link', row);
         if (!link) return;
         function activate() {
+          if (index && index.hidden) return;
           if (i === current) return;
           current = i;
-          img.src = link.dataset.preview;
+          img.src = link.getAttribute('data-preview');
           if (window.gsap) {
             window.gsap.fromTo(img, { scale: 1.08 }, { scale: 1, duration: 0.6, ease: 'power2.out' });
             window.gsap.to(box, { opacity: 1, duration: 0.35 });
@@ -69,15 +179,10 @@
             box.style.opacity = '1';
           }
         }
-        function leave() {
-          current = -1;
-          if (window.gsap) window.gsap.to(box, { opacity: 0, duration: 0.3 });
-          else box.style.opacity = '0';
-        }
         link.addEventListener('mouseenter', activate);
         link.addEventListener('focus', activate);
-        link.addEventListener('mouseleave', leave);
-        link.addEventListener('blur', leave);
+        link.addEventListener('mouseleave', hidePreview);
+        link.addEventListener('blur', hidePreview);
         link.addEventListener('mousemove', function (e) {
           var x = e.clientX + 28;
           var y = e.clientY - box.offsetHeight * 0.5;

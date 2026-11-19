@@ -114,17 +114,233 @@
         <div class="filter-group">
           <span class="filter-group__label">Country</span>
           <div class="filters" id="countryFilters" role="group" aria-label="Filter by country">
-            <button class="filter is-active" type="button" data-country="all" aria-pressed="true">All</button>
-            <button class="filter" type="button" data-country="Dubai" aria-pressed="false">Dubai</button>
-            <button class="filter" type="button" data-country="Saudi Arabia" aria-pressed="false">Saudi Arabia</button>
+            <button class="filter is-active" type="button" data-country="all" aria-pressed="true">All <span class="count">9</span></button>
+            <button class="filter" type="button" data-country="Dubai" aria-pressed="false">Dubai <span class="count">5</span></button>
+            <button class="filter" type="button" data-country="Saudi Arabia" aria-pressed="false">Saudi Arabia <span class="count">4</span></button>
           </div>
         </div>
-        <p class="filter-status" id="catalogueCount" aria-live="polite">Showing 9 of 9</p>
+        <div class="catalogue__meta">
+          <p class="filter-status" id="catalogueCount" aria-live="polite">Showing 9 of 9</p>
+          <div class="viewtoggle" role="group" aria-label="View">
+            <button class="viewtoggle__btn is-active" type="button" data-view="grid" aria-pressed="true">Grid</button>
+            <button class="viewtoggle__btn" type="button" data-view="index" aria-pressed="false">Index</button>
+          </div>
+        </div>
       </div>
 
-      <ol class="catalog" id="catalogue">
-        <li class="crow" data-status="Ongoing" data-country="Dubai">
-          <a class="crow__link" href="project.html?project=arbour-townhomes" data-preview="assets/ksa/arbour-townhomes.jpg" data-cursor="Open project">
+      <ol class="pgrid" id="projectGrid">
+        <li class="pcard reveal" data-status="Ongoing" data-country="Dubai" data-slug="arbour-townhomes">
+          <a class="pcard__link" href="project.html?project=arbour-townhomes" data-cursor="View">
+            <figure class="pcard__media">
+              <span class="pcard__zoom">
+                <img class="pcard__img" src="assets/ksa/cards/arbour-townhomes-1400.jpg"
+                     srcset="assets/ksa/cards/arbour-townhomes-800.jpg 800w, assets/ksa/cards/arbour-townhomes-1400.jpg 1400w"
+                     sizes="(max-width: 860px) 92vw, (max-width: 1280px) 48vw, 40vw"
+                     width="1400" height="876" alt="Arbour Townhomes — pale limestone townhouses beneath mature ghaf trees in Dubai Hills"
+                     loading="eager" fetchpriority="high" decoding="async">
+              </span>
+              <span class="pcard__badge"><i class="dot" aria-hidden="true"></i>Ongoing</span>
+              <span class="pcard__cta" aria-hidden="true">View<svg viewBox="0 0 24 24"><path d="M7 17 17 7M9 7h8v8"/></svg></span>
+            </figure>
+            <div class="pcard__meta">
+              <p class="pcard__kicker"><span class="pcard__num">01</span><span class="pcard__type">Townhouse</span></p>
+              <div class="pcard__head">
+                <h3 class="pcard__title">Arbour Townhomes</h3>
+                <span class="pcard__arrow" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 12h14M12.5 6.5 18 12l-5.5 5.5"/></svg></span>
+              </div>
+              <p class="pcard__foot"><span class="pcard__loc">Dubai Hills, Dubai</span><span class="pcard__price">From AED 2.45M</span></p>
+            </div>
+          </a>
+        </li>
+        <li class="pcard reveal" data-status="Ongoing" data-country="Saudi Arabia" data-slug="diriyah-courtyard-villas">
+          <a class="pcard__link" href="project.html?project=diriyah-courtyard-villas" data-cursor="View">
+            <figure class="pcard__media">
+              <span class="pcard__zoom">
+                <img class="pcard__img" src="assets/ksa/cards/diriyah-courtyard-villas-1400.jpg"
+                     srcset="assets/ksa/cards/diriyah-courtyard-villas-800.jpg 800w, assets/ksa/cards/diriyah-courtyard-villas-1400.jpg 1400w"
+                     sizes="(max-width: 860px) 92vw, (max-width: 1280px) 48vw, 40vw"
+                     width="1400" height="876" alt="Diriyah Courtyard Villas — rammed-earth walls, triangular openings and date palms in a shaded courtyard"
+                     loading="eager" decoding="async">
+              </span>
+              <span class="pcard__badge"><i class="dot" aria-hidden="true"></i>Ongoing</span>
+              <span class="pcard__cta" aria-hidden="true">View<svg viewBox="0 0 24 24"><path d="M7 17 17 7M9 7h8v8"/></svg></span>
+            </figure>
+            <div class="pcard__meta">
+              <p class="pcard__kicker"><span class="pcard__num">02</span><span class="pcard__type">Villa</span></p>
+              <div class="pcard__head">
+                <h3 class="pcard__title">Diriyah Courtyard Villas</h3>
+                <span class="pcard__arrow" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 12h14M12.5 6.5 18 12l-5.5 5.5"/></svg></span>
+              </div>
+              <p class="pcard__foot"><span class="pcard__loc">Diriyah, Riyadh</span><span class="pcard__price">From SAR 4.2M</span></p>
+            </div>
+          </a>
+        </li>
+        <li class="pcard reveal" data-status="Completed" data-country="Dubai" data-slug="sun-bliss-residence">
+          <a class="pcard__link" href="project.html?project=sun-bliss-residence" data-cursor="View">
+            <figure class="pcard__media">
+              <span class="pcard__zoom">
+                <img class="pcard__img" src="assets/ksa/cards/sun-bliss-residence-1400.jpg"
+                     srcset="assets/ksa/cards/sun-bliss-residence-800.jpg 800w, assets/ksa/cards/sun-bliss-residence-1400.jpg 1400w"
+                     sizes="(max-width: 860px) 92vw, (max-width: 1280px) 48vw, 40vw"
+                     width="1400" height="876" alt="Sun-Bliss Residence — a limestone beach villa with an infinity pool and the Dubai skyline across the water"
+                     loading="lazy" decoding="async">
+              </span>
+              <span class="pcard__badge"><i class="dot" aria-hidden="true"></i>Completed</span>
+              <span class="pcard__cta" aria-hidden="true">View<svg viewBox="0 0 24 24"><path d="M7 17 17 7M9 7h8v8"/></svg></span>
+            </figure>
+            <div class="pcard__meta">
+              <p class="pcard__kicker"><span class="pcard__num">03</span><span class="pcard__type">Villa</span></p>
+              <div class="pcard__head">
+                <h3 class="pcard__title">Sun-Bliss Residence</h3>
+                <span class="pcard__arrow" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 12h14M12.5 6.5 18 12l-5.5 5.5"/></svg></span>
+              </div>
+              <p class="pcard__foot"><span class="pcard__loc">Palm Jumeirah, Dubai</span><span class="pcard__price">From AED 18.5M</span></p>
+            </div>
+          </a>
+        </li>
+        <li class="pcard reveal" data-status="Upcoming" data-country="Saudi Arabia" data-slug="red-sea-horizon">
+          <a class="pcard__link" href="project.html?project=red-sea-horizon" data-cursor="View">
+            <figure class="pcard__media">
+              <span class="pcard__zoom">
+                <img class="pcard__img" src="assets/ksa/cards/red-sea-horizon-1400.jpg"
+                     srcset="assets/ksa/cards/red-sea-horizon-800.jpg 800w, assets/ksa/cards/red-sea-horizon-1400.jpg 1400w"
+                     sizes="(max-width: 860px) 92vw, (max-width: 1280px) 48vw, 40vw"
+                     width="1400" height="876" alt="Red Sea Horizon — coral-stone waterfront residences with an infinity pool at dusk"
+                     loading="lazy" decoding="async">
+              </span>
+              <span class="pcard__badge"><i class="dot" aria-hidden="true"></i>Upcoming</span>
+              <span class="pcard__cta" aria-hidden="true">View<svg viewBox="0 0 24 24"><path d="M7 17 17 7M9 7h8v8"/></svg></span>
+            </figure>
+            <div class="pcard__meta">
+              <p class="pcard__kicker"><span class="pcard__num">04</span><span class="pcard__type">Waterfront</span></p>
+              <div class="pcard__head">
+                <h3 class="pcard__title">Red Sea Horizon</h3>
+                <span class="pcard__arrow" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 12h14M12.5 6.5 18 12l-5.5 5.5"/></svg></span>
+              </div>
+              <p class="pcard__foot"><span class="pcard__loc">Jeddah, Saudi Arabia</span><span class="pcard__price">From SAR 6.8M</span></p>
+            </div>
+          </a>
+        </li>
+        <li class="pcard reveal" data-status="Ongoing" data-country="Dubai" data-slug="skyline-towers">
+          <a class="pcard__link" href="project.html?project=skyline-towers" data-cursor="View">
+            <figure class="pcard__media">
+              <span class="pcard__zoom">
+                <img class="pcard__img" src="assets/ksa/cards/skyline-towers-1400.jpg"
+                     srcset="assets/ksa/cards/skyline-towers-800.jpg 800w, assets/ksa/cards/skyline-towers-1400.jpg 1400w"
+                     sizes="(max-width: 860px) 92vw, (max-width: 1280px) 48vw, 40vw"
+                     width="1122" height="1402" alt="Skyline Towers — stepped pale stone and bronze towers above the Business Bay canal"
+                     loading="lazy" decoding="async">
+              </span>
+              <span class="pcard__badge"><i class="dot" aria-hidden="true"></i>Ongoing</span>
+              <span class="pcard__cta" aria-hidden="true">View<svg viewBox="0 0 24 24"><path d="M7 17 17 7M9 7h8v8"/></svg></span>
+            </figure>
+            <div class="pcard__meta">
+              <p class="pcard__kicker"><span class="pcard__num">05</span><span class="pcard__type">Apartments</span></p>
+              <div class="pcard__head">
+                <h3 class="pcard__title">Skyline Towers</h3>
+                <span class="pcard__arrow" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 12h14M12.5 6.5 18 12l-5.5 5.5"/></svg></span>
+              </div>
+              <p class="pcard__foot"><span class="pcard__loc">Business Bay, Dubai</span><span class="pcard__price">From AED 1.65M</span></p>
+            </div>
+          </a>
+        </li>
+        <li class="pcard reveal" data-status="Upcoming" data-country="Dubai" data-slug="palm-crest-villas">
+          <a class="pcard__link" href="project.html?project=palm-crest-villas" data-cursor="View">
+            <figure class="pcard__media">
+              <span class="pcard__zoom">
+                <img class="pcard__img" src="assets/ksa/cards/palm-crest-villas-1400.jpg"
+                     srcset="assets/ksa/cards/palm-crest-villas-800.jpg 800w, assets/ksa/cards/palm-crest-villas-1400.jpg 1400w"
+                     sizes="(max-width: 860px) 92vw, (max-width: 1280px) 48vw, 40vw"
+                     width="1400" height="1120" alt="Palm Crest Villas — a stone and timber beach house glowing at blue hour behind planting"
+                     loading="lazy" decoding="async">
+              </span>
+              <span class="pcard__badge"><i class="dot" aria-hidden="true"></i>Upcoming</span>
+              <span class="pcard__cta" aria-hidden="true">View<svg viewBox="0 0 24 24"><path d="M7 17 17 7M9 7h8v8"/></svg></span>
+            </figure>
+            <div class="pcard__meta">
+              <p class="pcard__kicker"><span class="pcard__num">06</span><span class="pcard__type">Villa</span></p>
+              <div class="pcard__head">
+                <h3 class="pcard__title">Palm Crest Villas</h3>
+                <span class="pcard__arrow" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 12h14M12.5 6.5 18 12l-5.5 5.5"/></svg></span>
+              </div>
+              <p class="pcard__foot"><span class="pcard__loc">Palm Jumeirah, Dubai</span><span class="pcard__price">From AED 22.0M</span></p>
+            </div>
+          </a>
+        </li>
+        <li class="pcard reveal" data-status="Completed" data-country="Dubai" data-slug="luxurious-villas">
+          <a class="pcard__link" href="project.html?project=luxurious-villas" data-cursor="View">
+            <figure class="pcard__media">
+              <span class="pcard__zoom">
+                <img class="pcard__img" src="assets/ksa/cards/luxurious-villas-1400.jpg"
+                     srcset="assets/ksa/cards/luxurious-villas-800.jpg 800w, assets/ksa/cards/luxurious-villas-1400.jpg 1400w"
+                     sizes="(max-width: 860px) 92vw, (max-width: 1280px) 48vw, 40vw"
+                     width="1400" height="875" alt="Luxurious Villas — a limestone villa with deep loggias above the Emirates Hills golf course"
+                     loading="lazy" decoding="async">
+              </span>
+              <span class="pcard__badge"><i class="dot" aria-hidden="true"></i>Completed</span>
+              <span class="pcard__cta" aria-hidden="true">View<svg viewBox="0 0 24 24"><path d="M7 17 17 7M9 7h8v8"/></svg></span>
+            </figure>
+            <div class="pcard__meta">
+              <p class="pcard__kicker"><span class="pcard__num">07</span><span class="pcard__type">Villa</span></p>
+              <div class="pcard__head">
+                <h3 class="pcard__title">Luxurious Villas</h3>
+                <span class="pcard__arrow" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 12h14M12.5 6.5 18 12l-5.5 5.5"/></svg></span>
+              </div>
+              <p class="pcard__foot"><span class="pcard__loc">Emirates Hills, Dubai</span><span class="pcard__price">From AED 12.8M</span></p>
+            </div>
+          </a>
+        </li>
+        <li class="pcard reveal" data-status="Upcoming" data-country="Saudi Arabia" data-slug="wadi-alula-residences">
+          <a class="pcard__link" href="project.html?project=wadi-alula-residences" data-cursor="View">
+            <figure class="pcard__media">
+              <span class="pcard__zoom">
+                <img class="pcard__img" src="assets/ksa/cards/wadi-alula-residences-1400.jpg"
+                     srcset="assets/ksa/cards/wadi-alula-residences-800.jpg 800w, assets/ksa/cards/wadi-alula-residences-1400.jpg 1400w"
+                     sizes="(max-width: 860px) 92vw, (max-width: 1280px) 48vw, 40vw"
+                     width="1024" height="640" alt="Wadi AlUla Residences — a low white-stone house on a desert site with cactus planting"
+                     loading="lazy" decoding="async">
+              </span>
+              <span class="pcard__badge"><i class="dot" aria-hidden="true"></i>Upcoming</span>
+              <span class="pcard__cta" aria-hidden="true">View<svg viewBox="0 0 24 24"><path d="M7 17 17 7M9 7h8v8"/></svg></span>
+            </figure>
+            <div class="pcard__meta">
+              <p class="pcard__kicker"><span class="pcard__num">08</span><span class="pcard__type">Villas &amp; lodges</span></p>
+              <div class="pcard__head">
+                <h3 class="pcard__title">Wadi AlUla Residences</h3>
+                <span class="pcard__arrow" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 12h14M12.5 6.5 18 12l-5.5 5.5"/></svg></span>
+              </div>
+              <p class="pcard__foot"><span class="pcard__loc">AlUla, Saudi Arabia</span><span class="pcard__price">From SAR 3.9M</span></p>
+            </div>
+          </a>
+        </li>
+        <li class="pcard reveal" data-status="Completed" data-country="Saudi Arabia" data-slug="al-nakheel-house">
+          <a class="pcard__link" href="project.html?project=al-nakheel-house" data-cursor="View">
+            <figure class="pcard__media">
+              <span class="pcard__zoom">
+                <img class="pcard__img" src="assets/ksa/cards/al-nakheel-house-1400.jpg"
+                     srcset="assets/ksa/cards/al-nakheel-house-800.jpg 800w, assets/ksa/cards/al-nakheel-house-1400.jpg 1400w"
+                     sizes="(max-width: 860px) 92vw, (max-width: 1280px) 48vw, 40vw"
+                     width="1400" height="1120" alt="Al Nakheel House — a travertine courtyard with a still pool and a single palm in warm light"
+                     loading="lazy" decoding="async">
+              </span>
+              <span class="pcard__badge"><i class="dot" aria-hidden="true"></i>Completed</span>
+              <span class="pcard__cta" aria-hidden="true">View<svg viewBox="0 0 24 24"><path d="M7 17 17 7M9 7h8v8"/></svg></span>
+            </figure>
+            <div class="pcard__meta">
+              <p class="pcard__kicker"><span class="pcard__num">09</span><span class="pcard__type">Residences</span></p>
+              <div class="pcard__head">
+                <h3 class="pcard__title">Al Nakheel House</h3>
+                <span class="pcard__arrow" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 12h14M12.5 6.5 18 12l-5.5 5.5"/></svg></span>
+              </div>
+              <p class="pcard__foot"><span class="pcard__loc">Riyadh, Saudi Arabia</span><span class="pcard__price">From SAR 9.4M</span></p>
+            </div>
+          </a>
+        </li>
+      </ol>
+
+      <ol class="catalog catalog--index" id="projectIndex" hidden>
+        <li class="crow" data-status="Ongoing" data-country="Dubai" data-slug="arbour-townhomes">
+          <a class="crow__link" href="project.html?project=arbour-townhomes" data-preview="assets/ksa/arbour-townhomes.jpg" data-cursor="View">
             <span class="crow__num">01</span>
             <span class="crow__name">Arbour Townhomes</span>
             <span class="crow__loc">Dubai Hills, Dubai</span>
@@ -134,8 +350,8 @@
             <svg class="crow__arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h14M12.5 6.5 18 12l-5.5 5.5"/></svg>
           </a>
         </li>
-        <li class="crow" data-status="Ongoing" data-country="Saudi Arabia">
-          <a class="crow__link" href="project.html?project=diriyah-courtyard-villas" data-preview="assets/ksa/diriyah-courtyard-villas.jpg" data-cursor="Open project">
+        <li class="crow" data-status="Ongoing" data-country="Saudi Arabia" data-slug="diriyah-courtyard-villas">
+          <a class="crow__link" href="project.html?project=diriyah-courtyard-villas" data-preview="assets/ksa/diriyah-courtyard-villas.jpg" data-cursor="View">
             <span class="crow__num">02</span>
             <span class="crow__name">Diriyah Courtyard Villas</span>
             <span class="crow__loc">Diriyah, Riyadh</span>
@@ -145,8 +361,8 @@
             <svg class="crow__arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h14M12.5 6.5 18 12l-5.5 5.5"/></svg>
           </a>
         </li>
-        <li class="crow" data-status="Completed" data-country="Dubai">
-          <a class="crow__link" href="project.html?project=sun-bliss-residence" data-preview="assets/ksa/sun-bliss-residence.jpg" data-cursor="Open project">
+        <li class="crow" data-status="Completed" data-country="Dubai" data-slug="sun-bliss-residence">
+          <a class="crow__link" href="project.html?project=sun-bliss-residence" data-preview="assets/ksa/sun-bliss-residence.jpg" data-cursor="View">
             <span class="crow__num">03</span>
             <span class="crow__name">Sun-Bliss Residence</span>
             <span class="crow__loc">Palm Jumeirah, Dubai</span>
@@ -156,8 +372,8 @@
             <svg class="crow__arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h14M12.5 6.5 18 12l-5.5 5.5"/></svg>
           </a>
         </li>
-        <li class="crow" data-status="Upcoming" data-country="Saudi Arabia">
-          <a class="crow__link" href="project.html?project=red-sea-horizon" data-preview="assets/ksa/red-sea-horizon.jpg" data-cursor="Open project">
+        <li class="crow" data-status="Upcoming" data-country="Saudi Arabia" data-slug="red-sea-horizon">
+          <a class="crow__link" href="project.html?project=red-sea-horizon" data-preview="assets/ksa/red-sea-horizon.jpg" data-cursor="View">
             <span class="crow__num">04</span>
             <span class="crow__name">Red Sea Horizon</span>
             <span class="crow__loc">Jeddah, Saudi Arabia</span>
@@ -167,8 +383,8 @@
             <svg class="crow__arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h14M12.5 6.5 18 12l-5.5 5.5"/></svg>
           </a>
         </li>
-        <li class="crow" data-status="Ongoing" data-country="Dubai">
-          <a class="crow__link" href="project.html?project=skyline-towers" data-preview="assets/project-3.jpg" data-cursor="Open project">
+        <li class="crow" data-status="Ongoing" data-country="Dubai" data-slug="skyline-towers">
+          <a class="crow__link" href="project.html?project=skyline-towers" data-preview="assets/project-3.jpg" data-cursor="View">
             <span class="crow__num">05</span>
             <span class="crow__name">Skyline Towers</span>
             <span class="crow__loc">Business Bay, Dubai</span>
@@ -178,8 +394,8 @@
             <svg class="crow__arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h14M12.5 6.5 18 12l-5.5 5.5"/></svg>
           </a>
         </li>
-        <li class="crow" data-status="Upcoming" data-country="Dubai">
-          <a class="crow__link" href="project.html?project=palm-crest-villas" data-preview="assets/project-4.jpg" data-cursor="Open project">
+        <li class="crow" data-status="Upcoming" data-country="Dubai" data-slug="palm-crest-villas">
+          <a class="crow__link" href="project.html?project=palm-crest-villas" data-preview="assets/project-4.jpg" data-cursor="View">
             <span class="crow__num">06</span>
             <span class="crow__name">Palm Crest Villas</span>
             <span class="crow__loc">Palm Jumeirah, Dubai</span>
@@ -189,8 +405,8 @@
             <svg class="crow__arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h14M12.5 6.5 18 12l-5.5 5.5"/></svg>
           </a>
         </li>
-        <li class="crow" data-status="Completed" data-country="Dubai">
-          <a class="crow__link" href="project.html?project=luxurious-villas" data-preview="assets/img/hero.jpg" data-cursor="Open project">
+        <li class="crow" data-status="Completed" data-country="Dubai" data-slug="luxurious-villas">
+          <a class="crow__link" href="project.html?project=luxurious-villas" data-preview="assets/img/hero.jpg" data-cursor="View">
             <span class="crow__num">07</span>
             <span class="crow__name">Luxurious Villas</span>
             <span class="crow__loc">Emirates Hills, Dubai</span>
@@ -200,19 +416,19 @@
             <svg class="crow__arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h14M12.5 6.5 18 12l-5.5 5.5"/></svg>
           </a>
         </li>
-        <li class="crow" data-status="Upcoming" data-country="Saudi Arabia">
-          <a class="crow__link" href="project.html?project=wadi-alula-residences" data-preview="assets/img/ex-2.jpg" data-cursor="Open project">
+        <li class="crow" data-status="Upcoming" data-country="Saudi Arabia" data-slug="wadi-alula-residences">
+          <a class="crow__link" href="project.html?project=wadi-alula-residences" data-preview="assets/img/ex-2.jpg" data-cursor="View">
             <span class="crow__num">08</span>
             <span class="crow__name">Wadi AlUla Residences</span>
             <span class="crow__loc">AlUla, Saudi Arabia</span>
-            <span class="crow__type">Villas & lodges</span>
+            <span class="crow__type">Villas &amp; lodges</span>
             <span class="crow__price">From SAR 3.9M</span>
             <span class="crow__state"><i class="dot" aria-hidden="true"></i>Upcoming</span>
             <svg class="crow__arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h14M12.5 6.5 18 12l-5.5 5.5"/></svg>
           </a>
         </li>
-        <li class="crow" data-status="Completed" data-country="Saudi Arabia">
-          <a class="crow__link" href="project.html?project=al-nakheel-house" data-preview="assets/project-1.jpg" data-cursor="Open project">
+        <li class="crow" data-status="Completed" data-country="Saudi Arabia" data-slug="al-nakheel-house">
+          <a class="crow__link" href="project.html?project=al-nakheel-house" data-preview="assets/project-1.jpg" data-cursor="View">
             <span class="crow__num">09</span>
             <span class="crow__name">Al Nakheel House</span>
             <span class="crow__loc">Riyadh, Saudi Arabia</span>
@@ -223,6 +439,9 @@
           </a>
         </li>
       </ol>
+      <div class="catalogue__empty" id="catalogueEmpty" hidden>
+        <p>No residences match those two filters. Try another country, or <button type="button" class="linkish" data-reset>see the full index</button>.</p>
+      </div>
       <div class="preview" id="cataloguePreview" aria-hidden="true"><img src="assets/ksa/arbour-townhomes.jpg" alt=""></div>
     </div>
   </section>
