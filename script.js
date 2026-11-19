@@ -655,7 +655,7 @@
       hideCurtain();
       heroTitleIn(0.05);
       gsap.to(fade, { y: 0, autoAlpha: 1, duration: 1, ease: 'power3.out', stagger: 0.08, delay: 0.05 });
-      heroIntro(0);
+      heroIntro();
       if (!seen) finishIntro();
       return;
     }

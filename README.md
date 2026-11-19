@@ -296,7 +296,8 @@ Verified again after the hero rewrite and the project pages (headless
 Chromium, 1440 × 900 and 390 × 844):
 
 - **Console** 0 errors · **page errors** 0 · **failed requests** 0 ·
-  **HTTP ≥ 400** 0 · **broken images** 0 of 40 after scrolling the page.
+  **HTTP ≥ 400** 0 · **broken images** 0 of 16 on `index.html` and 0 of 16 on a
+  project page, after scrolling each from top to bottom.
 - **Horizontal overflow** none (the hero's clouds, smoke and mist are clipped
   by `.hero__bg`; `scrollWidth === innerWidth` at both sizes, at every
   checkpoint).
