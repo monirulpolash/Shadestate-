@@ -17,10 +17,14 @@ real-estate-template/
 ├── index.html                    the page
 ├── styles.css                    design system + layout + motion states
 ├── script.js                     interactions, Lenis + GSAP choreography
+├── project.html                  one residence, driven by ?project=<slug>
+├── project.css                   its own type system and layout
+├── project.js                    project data + rendering + interactions
 ├── FramerDevelopmentsSection.tsx single-file Framer variant (kept for older projects)
 ├── framer/                       modular Framer code components (new)
 │   ├── ShadestateHero.tsx        the original photographic hero
-│   ├── ShadestateSkyHero.tsx     the layered sky hero (this page's hero)
+│   ├── ShadestateSkyHero.tsx     the earlier layer-drift hero (superseded by
+│   │                             the scroll take in index.html)
 │   ├── ShadestateDevelopments.tsx
 │   ├── ShadestateResidences.tsx
 │   ├── ShadestateInquiry.tsx
@@ -31,9 +35,13 @@ real-estate-template/
 │   ├── vendor/three.module.js    three.js r160, vendored — no CDN needed
 │   └── README.md                 camera map, how to re-proportion the house
 ├── assets/                       7 architectural images + local GSAP/Lenis fallbacks
-│   └── hero-find/                the three hero layers: back.jpg (sky, 1920w),
+│   ├── img/                      the project page's photography, plans, masterplan
+│   └── hero-find/                the hero layers: back.jpg (sky, 1920w),
 │                                 house.webp (cut-out building, 1920w RGBA),
-│                                 smoke.webp (drifting mist, 1920w RGBA)
+│                                 cloud.webp (drifting cloud, 1600w RGBA),
+│                                 smoke.webp (mist, 1920w RGBA),
+│                                 wordmark.svg (SHADESTATE + DEVELOPMENTS,
+│                                 filled — used as the composite's mask)
 ├── preview-desktop.png           hero at 1440 × 900
 ├── preview-mobile.png            hero at 390 × 844
 └── previews/                     section and state captures (incl. the walkthrough)
@@ -46,10 +54,12 @@ or behind any static host.
 
 ## 2. Page order (design direction §6)
 
-1. **Hero** — FIND-style layered composition: a painted dawn sky, a centred
-   dark display headline, one pill CTA, an architectural cut-out rising out of
-   the lower half and a band of drifting mist across its base; sticky stage
-   inside a 175vh section so the three layers drift apart on scroll.
+1. **Hero** — one scroll take over five viewports. A painted dawn sky, a
+   centred display headline, one pill CTA, an architectural cut-out rising out
+   of the lower half, two clouds drifting apart, and a band of mist that climbs
+   from the floor. The wordmark draws itself as a hairline and is then filled by
+   the building, clipped to its letterforms. Sticky stage, `500vh` desktop
+   (`350vh` mobile).
 2. **Press strip** — slow marquee of publication names.
 3. **Philosophy + figures** — sticky portrait beside the studio statement,
    four counters.
@@ -57,7 +67,9 @@ or behind any static host.
    and grows to full-bleed as it enters the viewport (transform + clip-path
    only), with a three-part approach note beneath.
 5. **Developments** — asymmetric offset grid, live filters (All / Available /
-   Upcoming / Completed), detail modal with residence types and amenities.
+   Upcoming / Completed); every card opens `project.html?project=<slug>`, a
+   full residence page (specification, gallery, floor plans, map, FAQ). The
+   featured project links to its page the same way.
 6. **3D walkthrough** — a pinned 600vh scroll take of Casa da Luz: approach,
    door, hall, terrace, orbit. Fully procedural WebGL (see §5).
 7. **Residences & plans** — interactive typology explorer: development tabs,
@@ -93,7 +105,7 @@ static, navigation visible, all copy and images in place). **Reduced motion**
 | Moment | Technique |
 |---|---|
 | Arch-mask intro | Three dark panels (left, right, crown with a semicircular bottom) driven by `--arch-w` / `--arch-h`; the arch rises and widens to reveal the hero. Wordmark lines rise, a counter runs 00→100. |
-| Hero | CSS-sticky stage inside a 175vh section. GSAP scrubs three layers at different speeds — sky scales and drifts down, the building lifts and grows, the mist rises — while the copy lifts away. On load the building settles from 1.055 and the sky from 1.08. |
+| Hero | CSS-sticky stage inside a 500vh section (350vh on mobile). One GSAP timeline, `scrub: 0.1`, `start: top top`, `end: bottom top`, default ease `power1.out`: building `y -40% scale 1.3` and mist `y 70% → 0` over 0→1; clouds `x ±15%`; copy `y 20% scale .9` and out by 0.2; wordmark in at 0.10 with `strokeDashoffset` drawn over 0.10→0.40 and out 0.28→0.48; the building-in-the-wordmark composite in at 0.30 as the plain building fades. The arrival (sky 1.1→1, clouds settling, building fading up) only animates the images, never the layers. |
 | Type reveals | `script.js` splits display type into measured lines wrapped in overflow masks; `expo.out` yPercent 112 → 0, 85ms stagger. Re-splits after fonts load and on resize. |
 | Image reveals | `clip-path: inset(0 0 100% 0)` → `inset(0)` plus scale 1.1 → 1, once per element. |
 | Featured project | Container `scale .72 → 1` and `clip-path inset(0 9%) → 0` while the inner image counter-scales `1.35 → 1`: inset to full-bleed, transform-only. |
@@ -200,7 +212,7 @@ Each component exposes its copy, colours, fonts and images as properties:
 | Component | Property groups |
 |---|---|
 | `ShadestateHero` | Eyebrow, headline + italic line, subline, two CTAs, hero image + focus %, statistics array, coordinates, survey frame toggle, colours, fonts, `onPrimary` / `onSecondary` events. |
-| `ShadestateSkyHero` | Layered hero: sky / building / mist images (PNG with alpha), headline, subline + quiet subline, CTA label, building top / width / left, mist height, colours, fonts, `onPrimary` event. |
+| `ShadestateSkyHero` | The earlier layer-drift hero: sky / building / mist images (PNG with alpha), headline, subline + quiet subline, CTA label, building top / width / left, mist height, colours, fonts, `onPrimary` event. It predates the five-viewport scroll take now in `index.html`, which needs ScrollTrigger and so is not ported here. |
 | `ShadestateDevelopments` | Heading trio, note, developments array (image, status, price, bedrooms, size, architect, description, **types**, amenities), filters toggle, columns, colours, fonts, `onInquire` event. |
 | `ShadestateResidences` | Heading trio, note, developments array (each with residences: beds, interior, terrace, plot, orientation, compass°, price, meta, plan preset), colours, fonts, `onInquire` event. |
 | `ShadestateInquiry` | Heading trio, intro, studio address/email/phone/hours, destinations array (name + residences), colours, fonts, `onSubmitted` event. |
@@ -280,7 +292,28 @@ SwiftShader, 1440 × 900 and 390 × 844):
   walkthrough links to `#inquire` and lands on the form, and the Lenis/GSAP
   behaviour of the rest of the page is unchanged.
 
-Screenshots: `preview-desktop.png`, `preview-mobile.png`, and `previews/`
+Verified again after the hero rewrite and the project pages (headless
+Chromium, 1440 × 900 and 390 × 844):
+
+- **Console** 0 errors · **page errors** 0 · **failed requests** 0 ·
+  **HTTP ≥ 400** 0 · **broken images** 0 of 40 after scrolling the page.
+- **Horizontal overflow** none (the hero's clouds, smoke and mist are clipped
+  by `.hero__bg`; `scrollWidth === innerWidth` at both sizes, at every
+  checkpoint).
+- **Hero measured against the reference tween**: at 18 % of the section the
+  building is at `scale 1.098 / y −167.9` and the copy is at `opacity 0.01`;
+  at 35 % the wordmark is at `opacity 0.42`, the composite at `0.75` and the
+  plain building at `0.25`; at 78 % the mist has risen to `y 3 %`.
+- **Cards** `a.dev-card__open` on all six residences → `project.html?project=`
+  opens the right page (`Casa da Luz`, `Alto Príncipe`, …) with the right
+  title, price and specification; the featured project links to
+  `project.html?project=quinta-do-vale`.
+- **No-JS** renders the hero as one static viewport (no giant empty scroll).
+- **Reduced motion** renders the hero at 100svh with no transforms.
+
+Screenshots: `preview-desktop.png`, `preview-hero-scroll-1.png` (18 % — copy
+behind the rising building, wordmark drawing), `preview-hero-scroll-2.png`
+(35 % — the building filling the wordmark), `preview-mobile.png`, and `previews/`
 (`walkthrough-3d-desktop.png`, `walkthrough-3d-mobile.png`, plus every UI state).
 A single full-page capture no longer represents the page: the walkthrough only
 exists in the viewport, so it is captured at its own section instead.
@@ -289,13 +322,21 @@ exists in the viewport, so it is captured at its own section instead.
 
 ## 8. Notes and credits
 
-- All photography, copy, names and figures are fictional and were generated
-  for this template. Nothing is transmitted or stored: the inquiry form is
-  validated in the browser and shows a local confirmation only.
+- Copy, names and figures are fictional and were written for this template.
+  Nothing is transmitted or stored: the inquiry and enquiry forms are validated
+  in the browser and show a local confirmation only.
 - Motion patterns are original implementations. Structural references studied
-  for this build: FIND Real Estate (hero composition), Hale Arden (project
-  image scale-on-scroll), Era Residence (arch-mask intro timing). No code,
-  imagery, copy or fonts from those sites are included.
+  for this build: FIND Real Estate (hero choreography), Hale Arden (project
+  image scale-on-scroll), Era Residence (arch-mask intro timing).
+- **The four hero layer images** (`assets/hero-find/back.jpg`, `house.webp`,
+  `cloud.webp`, `smoke.webp`) are the reference treatment's own artwork, kept
+  so the choreography can be judged exactly; the wordmark itself is ours
+  (Plus Jakarta Sans outlines, generated into `wordmark.svg`). Replace those
+  four with licensed photography before any commercial use.
+- The project page (`project.html`) keeps its own type system (Inter) and its
+  own inventory — including three Dubai projects — so it reads as the detail
+  template it is; align it with the site's Cormorant/Plus Jakarta pair if the
+  two are to share one voice.
 - Fonts are Google Fonts under the SIL Open Font License.
 - GSAP and Lenis keep their own licences; local copies in `assets/vendor/` are
   the same public builds as the CDN links.

@@ -122,24 +122,72 @@
 <main id="main">
 
   <!-- ══════════════════════════════ HERO ══════════════════════════════ -->
+  <!-- Layered sky, one continuous scroll take: the building rises, the wordmark
+       draws itself, then the building fills the wordmark while the mist climbs.
+       Height 500vh with a -100vh overlap, so the next section slides over the
+       completed frame — the choreography is FIND's, the content is ours. -->
   <section class="hero" id="top">
     <div class="hero__stage">
-      <div class="hero__sky" aria-hidden="true">
-        <img class="hero__back" src="assets/hero-find/back.jpg" alt="" width="1920" height="1306" fetchpriority="high" decoding="async">
+
+      <div class="hero__bg" aria-hidden="true">
+        <div class="hero__back">
+          <img src="assets/hero-find/back.jpg" alt="" width="1920" height="1306" fetchpriority="high" decoding="async">
+        </div>
+
+        <div class="hero__house">
+          <img src="assets/hero-find/house.webp" alt="A modern residence of pale brick and floor-to-ceiling glass, its planted terraces catching the first warm light of the day." width="1920" height="1708" fetchpriority="high" decoding="async">
+        </div>
+
+        <!-- the building again, clipped to the wordmark -->
+        <div class="hero__composite">
+          <div class="hero__house">
+            <img src="assets/hero-find/house.webp" alt="" width="1920" height="1708" loading="eager" decoding="async">
+          </div>
+        </div>
+
+        <div class="hero__clouds">
+          <div class="hero__cloud hero__cloud--l"><img src="assets/hero-find/cloud.webp" alt="" width="1600" height="679" decoding="async"></div>
+          <div class="hero__cloud hero__cloud--r"><img src="assets/hero-find/cloud.webp" alt="" width="1600" height="679" decoding="async"></div>
+        </div>
+
+        <div class="hero__logo">
+          <svg viewBox="0 -10 1830.1 360" aria-hidden="true" focusable="false">
+          <g fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" >
+          <path d="M90.5 211.2Q71.7 211.2 55.2 204.4Q38.7 197.5 26.7 184.9Q14.8 172.3 8.9 155.1L43 139.8Q50.5 156.2 63.8 165.6Q77 175 93.2 175Q101.7 175 107.9 172.3Q114.1 169.6 117.6 164.9Q121.1 160.2 121.1 153.8Q121.1 146.8 116.8 141.8Q112.5 136.9 103.4 133.9L64.2 121Q40.3 113.2 28.2 98.9Q16.1 84.5 16.1 64.4Q16.1 46.7 24.8 33.2Q33.6 19.8 49.3 12.3Q65 4.8 85.4 4.8Q103.4 4.8 118.7 11Q134 17.1 145.1 28.4Q156.2 39.7 161.9 55.5L128.1 70.8Q122.4 56.9 111.1 48.9Q99.9 41 85.4 41Q77 41 70.6 43.7Q64.2 46.4 60.7 51.4Q57.2 56.3 57.2 62.8Q57.2 69.7 61.7 75Q66.3 80.2 75.4 83.2L113.8 95.5Q138 103.3 149.9 117.3Q161.9 131.2 161.9 151.4Q161.9 168.8 152.8 182.4Q143.6 195.9 127.7 203.6Q111.7 211.2 90.5 211.2Z"/>
+          <path d="M200.5 208V8H242.1V94.4H320V8H361.6V208H320V130.7H242.1V208Z"/>
+          <path d="M391.4 208 459.1 8H514.4L582 208H536.6L523.2 167.2H449.9L436.5 208ZM461.5 131H511.7L481.1 36.5H492.3Z"/>
+          <path d="M611.8 208V8H677Q709.5 8 733.4 20.9Q757.3 33.8 770.5 56.3Q783.6 78.9 783.6 107.9Q783.6 136.9 770.5 159.5Q757.3 182.2 733.4 195.1Q709.5 208 677 208ZM653.4 171.8H678.1Q697.7 171.8 711.9 163.8Q726.2 155.9 734.1 141.6Q742 127.2 742 107.9Q742 88.3 734.1 74Q726.2 59.8 711.9 52Q697.7 44.2 678.1 44.2H653.4Z"/>
+          <path d="M819.3 208V8H953.8V44.2H860.9V89.6H948.5V125.9H860.9V171.8H953.8V208Z"/>
+          <path d="M1059.3 211.2Q1040.5 211.2 1024 204.4Q1007.5 197.5 995.6 184.9Q983.6 172.3 977.7 155.1L1011.8 139.8Q1019.3 156.2 1032.6 165.6Q1045.9 175 1062 175Q1070.6 175 1076.8 172.3Q1083 169.6 1086.4 164.9Q1089.9 160.2 1089.9 153.8Q1089.9 146.8 1085.6 141.8Q1081.3 136.9 1072.2 133.9L1033 121Q1009.1 113.2 997 98.9Q985 84.5 985 64.4Q985 46.7 993.7 33.2Q1002.4 19.8 1018.1 12.3Q1033.8 4.8 1054.2 4.8Q1072.2 4.8 1087.5 11Q1102.8 17.1 1114 28.4Q1125.1 39.7 1130.7 55.5L1096.9 70.8Q1091.3 56.9 1080 48.9Q1068.7 41 1054.2 41Q1045.9 41 1039.5 43.7Q1033 46.4 1029.5 51.4Q1026 56.3 1026 62.8Q1026 69.7 1030.6 75Q1035.2 80.2 1044.3 83.2L1082.7 95.5Q1106.8 103.3 1118.8 117.3Q1130.7 131.2 1130.7 151.4Q1130.7 168.8 1121.6 182.4Q1112.5 195.9 1096.5 203.6Q1080.5 211.2 1059.3 211.2Z"/>
+          <path d="M1205.4 208V44.2H1154.6V8H1296.9V44.2H1247V208Z"/>
+          <path d="M1311.9 208 1379.6 8H1434.9L1502.6 208H1457.2L1443.8 167.2H1370.5L1357 208ZM1382 131H1432.2L1401.6 36.5H1412.9Z"/>
+          <path d="M1568.3 208V44.2H1517.6V8H1659.9V44.2H1609.9V208Z"/>
+          <path d="M1689.7 208V8H1824.2V44.2H1731.3V89.6H1818.8V125.9H1731.3V171.8H1824.2V208Z"/>
+          <path d="M5.5 342V280H25.7Q35.8 280 43.2 284Q50.6 288 54.7 295Q58.8 302 58.8 311Q58.8 319.9 54.7 327Q50.6 334 43.2 338Q35.8 342 25.7 342ZM18.4 330.8H26Q32.1 330.8 36.5 328.3Q40.9 325.9 43.4 321.4Q45.9 317 45.9 311Q45.9 304.9 43.4 300.5Q40.9 296.1 36.5 293.6Q32.1 291.2 26 291.2H18.4Z"/>
+          <path d="M171.7 342V280H213.4V291.2H184.6V305.3H211.8V316.5H184.6V330.8H213.4V342Z"/>
+          <path d="M342.2 342 320.9 280H335.1L351.1 329.8H348.2L364.2 280H378.4L357.1 342Z"/>
+          <path d="M489.5 342V280H531.2V291.2H502.4V305.3H529.5V316.5H502.4V330.8H531.2V342Z"/>
+          <path d="M643.3 342V280H656.2V330.8H682.4V342Z"/>
+          <path d="M824.6 343Q817.6 343 811.6 340.6Q805.6 338.2 801.2 333.8Q796.7 329.4 794.2 323.6Q791.7 317.8 791.7 311Q791.7 304.1 794.2 298.3Q796.6 292.5 801.1 288.2Q805.5 283.8 811.5 281.4Q817.5 279 824.6 279Q831.7 279 837.7 281.4Q843.6 283.8 848.1 288.2Q852.5 292.5 855 298.3Q857.5 304.1 857.5 311Q857.5 317.8 855 323.6Q852.5 329.4 848 333.8Q843.6 338.2 837.6 340.6Q831.6 343 824.6 343ZM824.6 331.3Q828.8 331.3 832.5 329.8Q836.1 328.4 838.8 325.6Q841.6 322.9 843.1 319.2Q844.6 315.5 844.6 311Q844.6 306.5 843.1 302.8Q841.6 299.1 838.8 296.3Q836.1 293.6 832.5 292.1Q828.8 290.7 824.6 290.7Q820.3 290.7 816.7 292.1Q813.1 293.6 810.4 296.3Q807.6 299.1 806.1 302.8Q804.6 306.5 804.6 311Q804.6 315.5 806.1 319.2Q807.6 322.9 810.4 325.6Q813.1 328.4 816.7 329.8Q820.3 331.3 824.6 331.3Z"/>
+          <path d="M971.4 342V280H995.2Q1001.6 280 1006.5 282.2Q1011.5 284.5 1014.3 288.9Q1017.1 293.3 1017.1 299.8Q1017.1 306.1 1014.3 310.5Q1011.4 315 1006.4 317.2Q1001.5 319.5 995.2 319.5H984.3V342ZM984.3 308.3H995.2Q998 308.3 1000 307.2Q1002 306.1 1003.1 304.2Q1004.2 302.3 1004.2 299.8Q1004.2 297.2 1003.1 295.3Q1002 293.4 1000 292.3Q998 291.2 995.2 291.2H984.3Z"/>
+          <path d="M1130.1 342V280H1142.6L1165.8 310.8H1160L1182.5 280H1195V342H1182.1V294.2L1187.3 295.4L1163.4 326.2H1161.7L1138.7 295.4L1143 294.2V342Z"/>
+          <path d="M1310.8 342V280H1352.5V291.2H1323.7V305.3H1350.8V316.5H1323.7V330.8H1352.5V342Z"/>
+          <path d="M1464.5 342V280H1474.4L1507.7 323.9L1502.4 325.1V280H1515.3V342H1505.3L1472.6 297.8L1477.4 296.6V342Z"/>
+          <path d="M1642.2 342V291.2H1626.5V280H1670.6V291.2H1655.1V342Z"/>
+          <path d="M1804.3 343Q1798.4 343 1793.3 340.9Q1788.2 338.8 1784.5 334.8Q1780.8 330.9 1779 325.6L1789.5 320.9Q1791.9 325.9 1796 328.9Q1800.1 331.8 1805.1 331.8Q1807.8 331.8 1809.7 330.9Q1811.6 330.1 1812.7 328.6Q1813.8 327.2 1813.8 325.2Q1813.8 323 1812.4 321.5Q1811.1 319.9 1808.3 319L1796.1 315Q1788.7 312.6 1785 308.2Q1781.2 303.7 1781.2 297.5Q1781.2 292 1783.9 287.8Q1786.6 283.7 1791.5 281.3Q1796.4 279 1802.7 279Q1808.3 279 1813 280.9Q1817.8 282.8 1821.2 286.3Q1824.7 289.8 1826.4 294.7L1815.9 299.5Q1814.2 295.1 1810.7 292.7Q1807.2 290.2 1802.7 290.2Q1800.1 290.2 1798.1 291.1Q1796.1 291.9 1795 293.4Q1793.9 295 1793.9 297Q1793.9 299.1 1795.4 300.8Q1796.8 302.4 1799.6 303.3L1811.5 307.1Q1819 309.5 1822.7 313.9Q1826.4 318.2 1826.4 324.4Q1826.4 329.8 1823.6 334.1Q1820.7 338.3 1815.8 340.6Q1810.8 343 1804.3 343Z"/>
+          </g>
+          </svg>
+        </div>
+
+        <div class="hero__smoke">
+          <img src="assets/hero-find/smoke.webp" alt="" width="1920" height="620" decoding="async">
+        </div>
+
+        <div class="hero__overlay"></div>
       </div>
 
-      <div class="hero__house-layer">
-        <img class="hero__house" src="assets/hero-find/house.webp" alt="A modern residence of pale brick and floor-to-ceiling glass, its planted terraces catching the first warm light of the day." width="1920" height="1708" fetchpriority="high" decoding="async">
-      </div>
-
-      <div class="hero__smoke" aria-hidden="true">
-        <img src="assets/hero-find/smoke.webp" alt="" width="1920" height="620" decoding="async">
-      </div>
-
-      <div class="hero__fade" aria-hidden="true"></div>
-
-      <div class="shell hero__inner">
-        <h1 class="hero__title">Find What Moves You</h1>
+      <div class="shell hero__content">
+        <h1 class="hero__title"><span class="hw">Houses</span> <span class="hw">made</span> <span class="hw">to</span> <span class="hw">be</span> <em class="hw">inherited</em></h1>
 
         <p class="hero__sub" data-hero-fade>
           Curated architecture. Quiet light. <span class="em">Homes built to outlast trends.</span>
@@ -257,7 +305,7 @@
             <span class="feature__tag">Alentejo · 2023 · Sold</span>
             <span class="feature__line">Stone from the property. Oak from the valley. The old threshing floor kept as the terrace.</span>
           </div>
-          <a class="feature__link" href="#developments" data-cursor="Open project">
+          <a class="feature__link" href="project.html?project=quinta-do-vale" data-cursor="Open project">
             <span>View the residence</span>
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h14M12.5 6.5 18 12l-5.5 5.5"/></svg>
           </a>
@@ -332,7 +380,7 @@
               <span class="dev-card__cue" aria-hidden="true">Details <svg viewBox="0 0 24 24"><path d="M4 12h14M12.5 6.5 18 12l-5.5 5.5"/></svg></span>
             </div>
           </div>
-          <button class="dev-card__open" type="button" data-open="casa-da-luz" aria-label="View details for Casa da Luz"></button>
+          <a class="dev-card__open" href="project.html?project=casa-da-luz" aria-label="View details for Casa da Luz"></a>
         </article>
 
         <article class="dev-card" data-id="alto-principe" data-status="upcoming" data-cursor="View residence">
@@ -350,7 +398,7 @@
               <span class="dev-card__cue" aria-hidden="true">Details <svg viewBox="0 0 24 24"><path d="M4 12h14M12.5 6.5 18 12l-5.5 5.5"/></svg></span>
             </div>
           </div>
-          <button class="dev-card__open" type="button" data-open="alto-principe" aria-label="View details for Alto Príncipe"></button>
+          <a class="dev-card__open" href="project.html?project=alto-principe" aria-label="View details for Alto Príncipe"></a>
         </article>
 
         <article class="dev-card" data-id="mare-residences" data-status="upcoming" data-cursor="View residence">
@@ -368,7 +416,7 @@
               <span class="dev-card__cue" aria-hidden="true">Details <svg viewBox="0 0 24 24"><path d="M4 12h14M12.5 6.5 18 12l-5.5 5.5"/></svg></span>
             </div>
           </div>
-          <button class="dev-card__open" type="button" data-open="mare-residences" aria-label="View details for Maré Residences"></button>
+          <a class="dev-card__open" href="project.html?project=mare-residences" aria-label="View details for Maré Residences"></a>
         </article>
 
         <article class="dev-card" data-id="quinta-do-vale" data-status="completed" data-cursor="View residence">
@@ -386,7 +434,7 @@
               <span class="dev-card__cue" aria-hidden="true">Details <svg viewBox="0 0 24 24"><path d="M4 12h14M12.5 6.5 18 12l-5.5 5.5"/></svg></span>
             </div>
           </div>
-          <button class="dev-card__open" type="button" data-open="quinta-do-vale" aria-label="View details for Quinta do Vale"></button>
+          <a class="dev-card__open" href="project.html?project=quinta-do-vale" aria-label="View details for Quinta do Vale"></a>
         </article>
 
         <article class="dev-card" data-id="miradouro-terrace" data-status="available" data-cursor="View residence">
@@ -404,7 +452,7 @@
               <span class="dev-card__cue" aria-hidden="true">Details <svg viewBox="0 0 24 24"><path d="M4 12h14M12.5 6.5 18 12l-5.5 5.5"/></svg></span>
             </div>
           </div>
-          <button class="dev-card__open" type="button" data-open="miradouro-terrace" aria-label="View details for Miradouro Terrace"></button>
+          <a class="dev-card__open" href="project.html?project=miradouro-terrace" aria-label="View details for Miradouro Terrace"></a>
         </article>
 
         <article class="dev-card" data-id="shadestate-house" data-status="completed" data-cursor="View residence">
@@ -422,7 +470,7 @@
               <span class="dev-card__cue" aria-hidden="true">Details <svg viewBox="0 0 24 24"><path d="M4 12h14M12.5 6.5 18 12l-5.5 5.5"/></svg></span>
             </div>
           </div>
-          <button class="dev-card__open" type="button" data-open="shadestate-house" aria-label="View details for Shadestate House"></button>
+          <a class="dev-card__open" href="project.html?project=shadestate-house" aria-label="View details for Shadestate House"></a>
         </article>
 
       </div>

@@ -599,11 +599,17 @@
       initProgress();
       intro();
 
-      if (document.fonts && document.fonts.ready) {
-        document.fonts.ready.then(function () {
+      /* Split text bakes its line breaks from measured metrics, so wait for the
+         two faces it actually sets before measuring again. */
+      if (document.fonts && document.fonts.load) {
+        Promise.all([
+          document.fonts.load('700 1em "Plus Jakarta Sans"'),
+          document.fonts.load('italic 400 1em "Cormorant Garamond"'),
+          document.fonts.load('400 1em "Cormorant Garamond"')
+        ]).then(function () { return document.fonts.ready; }).then(function () {
           resplitAll();
           window.ScrollTrigger.refresh();
-        });
+        }).catch(function () {});
       }
     }).catch(function () {
       hideCurtain();
@@ -626,8 +632,6 @@
 
   function initSplits() {
     $$('[data-split]').forEach(function (el) { buildSplit(el); });
-    var heroTitle = $('.hero__title');
-    if (heroTitle) buildSplit(heroTitle);
   }
 
   /* ------------------------------------------------------------------ */
@@ -640,7 +644,6 @@
     var inner = $('.curtain__inner');
     var countEl = $('#curtainCount');
     var bar = $('#curtainBar');
-    var heroTitle = $('.hero__title');
     var fade = $$('[data-hero-fade]');
 
     var seen = false;
@@ -650,10 +653,9 @@
 
     if (!curtain || seen) {
       hideCurtain();
-      revealSplit(heroTitle, 0.05);
+      heroTitleIn(0.05);
       gsap.to(fade, { y: 0, autoAlpha: 1, duration: 1, ease: 'power3.out', stagger: 0.08, delay: 0.05 });
-      gsap.fromTo('.hero__house', { scale: 1.055, yPercent: 3 }, { scale: 1, yPercent: 0, duration: 1.9, ease: 'power2.out' });
-      gsap.fromTo('.hero__back', { scale: 1.08 }, { scale: 1.02, duration: 2.2, ease: 'power2.out' });
+      heroIntro(0);
       if (!seen) finishIntro();
       return;
     }
@@ -690,13 +692,31 @@
       .to(arch, { y: 62, duration: 1.05, ease: 'power1.inOut' }, 0.55)
       .to(inner, { autoAlpha: 0, y: -26, duration: 0.5, ease: 'power2.in' }, 1.5)
       .to(arch, { y: -12, w: 140, duration: 1.15, ease: 'power3.in' }, 1.5)
-      .fromTo('.hero__house', { scale: 1.08, yPercent: 4 }, { scale: 1, yPercent: 0, duration: 2.4, ease: 'power2.out' }, 1.35)
-      .fromTo('.hero__back', { scale: 1.12 }, { scale: 1.02, duration: 2.6, ease: 'power2.out' }, 1.35)
+      .add(heroIntro, 1.45)
       .add(function () {
-        revealSplit(heroTitle, 0);
+        heroTitleIn(0);
         gsap.to(fade, { y: 0, autoAlpha: 1, duration: 1.05, ease: 'power3.out', stagger: 0.09 });
         finishIntro();
       }, 1.95);
+  }
+
+  /* The headline arrives word by word — measured masks would freeze a line
+     break, and this headline has to be free to rewrap at every width. */
+  function heroTitleIn(delay) {
+    state.gsap.fromTo('.hero__title .hw',
+      { opacity: 0, yPercent: 14 },
+      { opacity: 1, yPercent: 0, duration: 1.15, ease: 'expo.out', stagger: 0.075, delay: delay || 0 });
+  }
+
+  /* The hero's arrival: sky settles, clouds drift down into place, the building
+     fades up. It only ever touches the images inside the layers, never the
+     layers themselves, so the scroll timeline owns their transforms. */
+  function heroIntro() {
+    var gsap = state.gsap;
+    gsap.fromTo('.hero__back', { scale: 1.1 }, { scale: 1, duration: 3.4, ease: 'expo.out' });
+    gsap.fromTo('.hero__cloud--l', { yPercent: 40 }, { yPercent: 0, duration: 2.8, ease: 'expo.out' });
+    gsap.fromTo('.hero__cloud--r', { yPercent: 60 }, { yPercent: 0, duration: 3.2, ease: 'expo.out', delay: 0.1 });
+    gsap.fromTo('.hero__house img', { opacity: 0, yPercent: 8 }, { opacity: 1, yPercent: 0, duration: 2.6, ease: 'expo.out', delay: 0.15 });
   }
 
   function finishIntro() {
@@ -742,18 +762,53 @@
     var gsap = state.gsap;
     var ST = window.ScrollTrigger;
 
-    /* Hero: the pinned stage drifts its three layers apart */
+    /* Hero: one take over five viewports.
+       0.00–1.00  the building rises and grows, the mist climbs, the clouds part
+       0.00–0.20  the copy sinks and fades, going behind the building
+       0.10–0.40  the wordmark draws itself as a hairline, then fades
+       0.30–1.00  the building reappears inside the wordmark as the plain
+                  copy fades away                                                  */
+    var heroPaths = $$('.hero__logo path');
+    heroPaths.forEach(function (p) {
+      var len = 0;
+      try { len = p.getTotalLength(); } catch (e) {}
+      if (!len) len = 1000;
+      p.style.strokeDasharray = len + ' ' + len;
+      p.style.strokeDashoffset = len;
+    });
+
+    /* the CSS parks the mist below the floor; re-declare it as a percentage so
+       the tween below starts from 70% rather than a baked matrix */
+    gsap.set('.hero__smoke', { yPercent: 70, y: 0 });
+
     var heroMM = gsap.matchMedia();
     heroMM.add('(min-width: 1px)', function () {
       var tl = gsap.timeline({
-        scrollTrigger: { trigger: '.hero', start: 'top top', end: 'bottom bottom', scrub: true }
+        defaults: { ease: 'power1.out' },
+        scrollTrigger: {
+          trigger: '.hero',
+          start: 'top top',
+          end: 'bottom top',
+          scrub: 0.1
+        }
       });
-      tl.to('.hero__back', { scale: 1.1, yPercent: 3, ease: 'none' }, 0)
-        .to('.hero__house-layer', { yPercent: -4.5, scale: 1.035, ease: 'none' }, 0)
-        .to('.hero__smoke', { yPercent: -26, ease: 'none' }, 0)
-        .to('.hero__inner', { yPercent: -16, autoAlpha: 0, ease: 'none' }, 0);
+
+      tl.to(['.hero__house', '.hero__composite .hero__house'], { yPercent: -40, scale: 1.3, duration: 1 }, 0)
+        .to('.hero__smoke', { yPercent: 0, duration: 1 }, 0)
+        .to('.hero__cloud--l', { xPercent: -15, duration: 1 }, 0)
+        .to('.hero__cloud--r', { xPercent: 15, duration: 1 }, 0)
+        .to('.hero__content', { yPercent: 20, scale: 0.9, duration: 1 }, 0)
+        .to('.hero__content', { autoAlpha: 0, duration: 0.2 }, 0)
+        .to('.hero__logo', { autoAlpha: 1, duration: 0.01 }, 0.1)
+        .to(heroPaths, { strokeDashoffset: 0, duration: 0.3 }, 0.1)
+        .to('.hero__logo', { autoAlpha: 0, duration: 0.2 }, 0.28)
+        .to('.hero__composite', { opacity: 1, duration: 0.1 }, 0.3)
+        .to('.hero__bg > .hero__house', { opacity: 0, duration: 0.1 }, 0.3)
+        .add(function () {}, 1);
+
       return function () {
-        gsap.set(['.hero__back', '.hero__house-layer', '.hero__smoke', '.hero__inner'], { clearProps: 'all' });
+        gsap.set(['.hero__house', '.hero__composite', '.hero__smoke', '.hero__content', '.hero__logo', '.hero__cloud--l', '.hero__cloud--r'], { clearProps: 'all' });
+        gsap.set('.hero__bg > .hero__house', { clearProps: 'opacity' });
       };
     });
 
