@@ -652,7 +652,8 @@
       hideCurtain();
       revealSplit(heroTitle, 0.05);
       gsap.to(fade, { y: 0, autoAlpha: 1, duration: 1, ease: 'power3.out', stagger: 0.08, delay: 0.05 });
-      gsap.fromTo('.hero__img', { scale: 1.1 }, { scale: 1.02, duration: 1.8, ease: 'power2.out' });
+      gsap.fromTo('.hero__house', { scale: 1.055, yPercent: 3 }, { scale: 1, yPercent: 0, duration: 1.9, ease: 'power2.out' });
+      gsap.fromTo('.hero__back', { scale: 1.08 }, { scale: 1.02, duration: 2.2, ease: 'power2.out' });
       if (!seen) finishIntro();
       return;
     }
@@ -689,7 +690,8 @@
       .to(arch, { y: 62, duration: 1.05, ease: 'power1.inOut' }, 0.55)
       .to(inner, { autoAlpha: 0, y: -26, duration: 0.5, ease: 'power2.in' }, 1.5)
       .to(arch, { y: -12, w: 140, duration: 1.15, ease: 'power3.in' }, 1.5)
-      .fromTo('.hero__img', { scale: 1.14 }, { scale: 1.02, duration: 2.2, ease: 'power2.out' }, 1.55)
+      .fromTo('.hero__house', { scale: 1.08, yPercent: 4 }, { scale: 1, yPercent: 0, duration: 2.4, ease: 'power2.out' }, 1.35)
+      .fromTo('.hero__back', { scale: 1.12 }, { scale: 1.02, duration: 2.6, ease: 'power2.out' }, 1.35)
       .add(function () {
         revealSplit(heroTitle, 0);
         gsap.to(fade, { y: 0, autoAlpha: 1, duration: 1.05, ease: 'power3.out', stagger: 0.09 });
@@ -740,18 +742,18 @@
     var gsap = state.gsap;
     var ST = window.ScrollTrigger;
 
-    /* Hero: sticky stage, scroll-driven camera */
+    /* Hero: the pinned stage drifts its three layers apart */
     var heroMM = gsap.matchMedia();
-    heroMM.add('(min-width: 901px)', function () {
+    heroMM.add('(min-width: 1px)', function () {
       var tl = gsap.timeline({
         scrollTrigger: { trigger: '.hero', start: 'top top', end: 'bottom bottom', scrub: true }
       });
-      tl.to('.hero__media', { scale: 1.12, yPercent: 7, ease: 'none' }, 0)
-        .to('.hero__inner', { yPercent: -10, autoAlpha: 0, ease: 'none' }, 0.04)
-        .to('.hero__foot', { autoAlpha: 0, yPercent: 8, ease: 'none' }, 0)
-        .to('.hero__frame', { autoAlpha: 0.3, scale: 1.03, ease: 'none' }, 0);
+      tl.to('.hero__back', { scale: 1.1, yPercent: 3, ease: 'none' }, 0)
+        .to('.hero__house-layer', { yPercent: -4.5, scale: 1.035, ease: 'none' }, 0)
+        .to('.hero__smoke', { yPercent: -26, ease: 'none' }, 0)
+        .to('.hero__inner', { yPercent: -16, autoAlpha: 0, ease: 'none' }, 0);
       return function () {
-        gsap.set(['.hero__media', '.hero__inner', '.hero__foot', '.hero__frame'], { clearProps: 'all' });
+        gsap.set(['.hero__back', '.hero__house-layer', '.hero__smoke', '.hero__inner'], { clearProps: 'all' });
       };
     });
 
@@ -998,6 +1000,8 @@
     function moveThumb(btn) {
       if (!thumb || !btn) return;
       thumb.style.width = btn.offsetWidth + 'px';
+      thumb.style.height = btn.offsetHeight + 'px';
+      thumb.style.top = btn.offsetTop + 'px';
       thumb.style.transform = 'translateX(' + btn.offsetLeft + 'px)';
     }
 
@@ -1547,6 +1551,8 @@
         var thumb = $('.filters__thumb');
         if (active && thumb) {
           thumb.style.width = active.offsetWidth + 'px';
+          thumb.style.height = active.offsetHeight + 'px';
+          thumb.style.top = active.offsetTop + 'px';
           thumb.style.transform = 'translateX(' + active.offsetLeft + 'px)';
         }
       }, 220);

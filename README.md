@@ -19,7 +19,8 @@ real-estate-template/
 ├── script.js                     interactions, Lenis + GSAP choreography
 ├── FramerDevelopmentsSection.tsx single-file Framer variant (kept for older projects)
 ├── framer/                       modular Framer code components (new)
-│   ├── ShadestateHero.tsx
+│   ├── ShadestateHero.tsx        the original photographic hero
+│   ├── ShadestateSkyHero.tsx     the layered sky hero (this page's hero)
 │   ├── ShadestateDevelopments.tsx
 │   ├── ShadestateResidences.tsx
 │   ├── ShadestateInquiry.tsx
@@ -30,6 +31,9 @@ real-estate-template/
 │   ├── vendor/three.module.js    three.js r160, vendored — no CDN needed
 │   └── README.md                 camera map, how to re-proportion the house
 ├── assets/                       7 architectural images + local GSAP/Lenis fallbacks
+│   └── hero-find/                the three hero layers: back.jpg (sky, 1920w),
+│                                 house.webp (cut-out building, 1920w RGBA),
+│                                 smoke.webp (drifting mist, 1920w RGBA)
 ├── preview-desktop.png           hero at 1440 × 900
 ├── preview-mobile.png            hero at 390 × 844
 └── previews/                     section and state captures (incl. the walkthrough)
@@ -42,9 +46,10 @@ or behind any static host.
 
 ## 2. Page order (design direction §6)
 
-1. **Hero** — FIND-style composition: full-bleed photograph, centred serif
-   headline, one CTA pair, thin statistics bar; sticky stage with a
-   scroll-driven camera push.
+1. **Hero** — FIND-style layered composition: a painted dawn sky, a centred
+   dark display headline, one pill CTA, an architectural cut-out rising out of
+   the lower half and a band of drifting mist across its base; sticky stage
+   inside a 175vh section so the three layers drift apart on scroll.
 2. **Press strip** — slow marquee of publication names.
 3. **Philosophy + figures** — sticky portrait beside the studio statement,
    four counters.
@@ -88,7 +93,7 @@ static, navigation visible, all copy and images in place). **Reduced motion**
 | Moment | Technique |
 |---|---|
 | Arch-mask intro | Three dark panels (left, right, crown with a semicircular bottom) driven by `--arch-w` / `--arch-h`; the arch rises and widens to reveal the hero. Wordmark lines rise, a counter runs 00→100. |
-| Hero | CSS-sticky stage inside a 190vh section; GSAP scrubs the photograph's scale and lifts the copy away. |
+| Hero | CSS-sticky stage inside a 175vh section. GSAP scrubs three layers at different speeds — sky scales and drifts down, the building lifts and grows, the mist rises — while the copy lifts away. On load the building settles from 1.055 and the sky from 1.08. |
 | Type reveals | `script.js` splits display type into measured lines wrapped in overflow masks; `expo.out` yPercent 112 → 0, 85ms stagger. Re-splits after fonts load and on resize. |
 | Image reveals | `clip-path: inset(0 0 100% 0)` → `inset(0)` plus scale 1.1 → 1, once per element. |
 | Featured project | Container `scale .72 → 1` and `clip-path inset(0 9%) → 0` while the inner image counter-scales `1.35 → 1`: inset to full-bleed, transform-only. |
@@ -171,7 +176,8 @@ CSS, no imports from this folder, no assets.
 For each file:
 
 1. In the Framer canvas, open the **Assets** panel → **Code** → **New Code File**.
-2. Name it exactly `ShadestateHero`, `ShadestateDevelopments`,
+2. Name it exactly `ShadestateHero` (or `ShadestateSkyHero` for the layered
+   version), `ShadestateDevelopments`,
    `ShadestateResidences`, `ShadestateInquiry`.
 3. Delete the placeholder content and paste the whole `.tsx` file.
 4. Wait for the green check in the code editor (no imports to install —
@@ -194,6 +200,7 @@ Each component exposes its copy, colours, fonts and images as properties:
 | Component | Property groups |
 |---|---|
 | `ShadestateHero` | Eyebrow, headline + italic line, subline, two CTAs, hero image + focus %, statistics array, coordinates, survey frame toggle, colours, fonts, `onPrimary` / `onSecondary` events. |
+| `ShadestateSkyHero` | Layered hero: sky / building / mist images (PNG with alpha), headline, subline + quiet subline, CTA label, building top / width / left, mist height, colours, fonts, `onPrimary` event. |
 | `ShadestateDevelopments` | Heading trio, note, developments array (image, status, price, bedrooms, size, architect, description, **types**, amenities), filters toggle, columns, colours, fonts, `onInquire` event. |
 | `ShadestateResidences` | Heading trio, note, developments array (each with residences: beds, interior, terrace, plot, orientation, compass°, price, meta, plan preset), colours, fonts, `onInquire` event. |
 | `ShadestateInquiry` | Heading trio, intro, studio address/email/phone/hours, destinations array (name + residences), colours, fonts, `onSubmitted` event. |
