@@ -16,46 +16,39 @@
   --shell: var(--wrap);
 }
 
-/* ---------- curtain (arch mask + counter) ---------- */
+/* ---------- preloader: minimal wordmark + fast counter ---------- */
 .curtain {
-  --arch-w: 30vw;
-  --arch-y: 100vh;
   position: fixed; inset: 0; z-index: 900;
   display: grid; place-items: center;
-  color: var(--bone); overflow: hidden; pointer-events: none;
-  animation: curtainFallback .6s var(--ease) 3.6s forwards;
+  background: var(--ivory); color: var(--ink);
+  overflow: hidden; pointer-events: none;
+  -webkit-clip-path: inset(0 0 0 0); clip-path: inset(0 0 0 0);
+  will-change: clip-path, opacity;
+  animation: curtainFallback .5s var(--ease) 5s forwards;
 }
 .no-js .curtain { display: none; }
 @keyframes curtainFallback { to { opacity: 0; visibility: hidden; } }
-.curtain__cover { position: absolute; inset: 0; overflow: hidden; }
-.curtain__side { position: absolute; top: 0; bottom: 0; background: var(--dark); will-change: transform; }
-.curtain__side--l { left: 0; right: calc(50% + var(--arch-w) / 2); }
-.curtain__side--r { left: calc(50% + var(--arch-w) / 2); right: 0; }
-.curtain__crown {
-  position: absolute; top: 0; left: 50%; width: var(--arch-w);
-  height: clamp(0px, var(--arch-y), 220vh); margin-left: calc(var(--arch-w) / -2);
-  background: var(--dark);
-  border-bottom-left-radius: calc(var(--arch-w) / 2);
-  border-bottom-right-radius: calc(var(--arch-w) / 2);
-  will-change: height, width;
-}
+/* the old arch halves and crown bar are retired — hooks stay, paint goes */
+.curtain__cover { display: none; }
+html.is-locked, body.is-locked { overflow: hidden; }
 .curtain__inner {
   position: relative; z-index: 1;
-  width: min(100% - 2 * var(--pad), var(--wrap));
-  display: flex; flex-direction: column; gap: 22px; padding-inline: var(--pad);
+  width: min(100% - 2 * var(--pad), 560px);
+  display: flex; flex-direction: column; gap: clamp(14px, 2.4vh, 22px);
 }
 .curtain__word {
   font-family: var(--serif); font-weight: 300;
-  font-size: clamp(2.6rem, 7.6vw, 6.4rem); line-height: .9; letter-spacing: -.02em;
-  display: flex; overflow: hidden;
+  font-size: clamp(2.5rem, 6.6vw, 4.5rem); line-height: 1.02; letter-spacing: -.02em;
+  color: var(--ink); display: flex; justify-content: center; overflow: hidden;
+  padding-bottom: .1em;
 }
-.curtain__word span, .curtain__word em { display: inline-block; transform: translateY(110%); }
-.curtain__word em { font-style: italic; color: var(--gold); }
-.curtain__row { display: flex; align-items: baseline; justify-content: space-between; gap: 20px; font-size: .62rem; letter-spacing: .22em; text-transform: uppercase; color: var(--bone-45); }
-.curtain__count { font-family: var(--serif); font-size: 1rem; letter-spacing: .08em; color: var(--bone); font-variant-numeric: tabular-nums; }
-.curtain__count i { font-style: normal; font-size: .62rem; color: var(--gold); margin-left: 2px; }
-.curtain__track { height: 1px; width: 100%; background: var(--bone-line); overflow: hidden; }
-.curtain__track i { display: block; height: 100%; width: 100%; background: var(--gold); transform: scaleX(0); transform-origin: left; }
+.curtain__word span, .curtain__word em { display: inline-block; }
+.curtain__word em { font-style: italic; color: var(--gold-deep); }
+.curtain__row { display: flex; align-items: baseline; justify-content: space-between; gap: 20px; font-size: .58rem; letter-spacing: .22em; text-transform: uppercase; color: rgba(17, 17, 17, .42); }
+.curtain__count { font-family: var(--serif); font-size: 1rem; letter-spacing: .06em; color: var(--ink); font-variant-numeric: tabular-nums; }
+.curtain__count i { font-style: normal; font-size: .58rem; color: var(--gold-deep); margin-left: 2px; }
+.curtain__track { height: 1px; width: 100%; background: rgba(17, 17, 17, .12); overflow: hidden; }
+.curtain__track i { display: block; height: 100%; width: 100%; background: var(--ink); transform: scaleX(0); transform-origin: left; }
 
 /* ---------- hero: the FIND take, kept intact ---------- */
 .hero {
@@ -89,11 +82,11 @@
 .hero__cloud img { width: 100%; height: 100%; object-fit: cover; }
 .hero__cloud--l { top: 25%; left: -17.56vw; width: 58.54vw; height: 24.84vw; }
 .hero__cloud--r { top: 20%; right: -17.56vw; width: 48.75vw; height: 20.68vw; }
-.hero__smoke { position: absolute; left: 0; right: 0; bottom: 0; height: 32.3vw; z-index: 3; transform: translateY(70%); will-change: transform; }
+.hero__smoke { position: absolute; left: 0; right: 0; bottom: 0; height: clamp(360px, 48svh, 620px); z-index: 3; transform: translateY(42%); will-change: transform; }
 .hero__smoke img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 0; }
 .hero__overlay {
-  position: absolute; left: 0; right: 0; bottom: 0; height: 16.1vw; z-index: 3;
-  background: linear-gradient(180deg, rgba(247, 244, 239, 0) 0%, rgba(247, 244, 239, .5) 52%, var(--ivory) 100%);
+  position: absolute; left: 0; right: 0; bottom: 0; height: clamp(64px, 9svh, 110px); z-index: 4;
+  background: linear-gradient(180deg, rgba(247, 244, 239, 0) 0%, rgba(247, 244, 239, .55) 60%, var(--ivory) 100%);
 }
 .hero__content {
   position: relative; height: 100%; display: grid; align-content: center; justify-items: center;
@@ -101,8 +94,8 @@
 }
 .hero__content a { pointer-events: auto; }
 .hero__title {
-  width: 100%; font-family: var(--sans); font-weight: 700;
-  font-size: clamp(2.1rem, 6vw, 7.1rem); line-height: .98; letter-spacing: -.035em; color: #14120f;
+  width: 100%; font-family: var(--serif); font-weight: 300;
+  font-size: var(--fs-display-xl); line-height: var(--lh-display); letter-spacing: var(--ls-display); color: #14120f;
 }
 .hero__title .hw { display: inline-block; }
 [data-split] .w.is-em { font-style: italic; color: var(--gold-deep); }
@@ -128,7 +121,7 @@
 .hero__textlink { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: rgba(20, 18, 15, .66); border-bottom: 1px solid rgba(20, 18, 15, .3); padding-bottom: 4px; transition: color .3s, border-color .3s; }
 .hero__textlink:hover { color: #14120f; border-color: #14120f; }
 @media (max-width: 640px) {
-  .hero__title { font-size: clamp(2rem, 10.5vw, 3.2rem); }
+  .hero__title { font-size: clamp(2.4rem, 11vw, 3.6rem); }
   .hero__sub { font-size: .92rem; padding: 0 6vw; }
   .hero__actions { flex-direction: column; gap: 14px; }
   .hero__pill { padding: 14px 22px; font-size: .66rem; }

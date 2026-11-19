@@ -632,7 +632,7 @@
   }
 
   /* ------------------------------------------------------------------ */
-  /*  6. Intro: wordmark, counter, arch-mask reveal                     */
+  /*  6. Intro: wordmark, fast counter, clip reveal                     */
   /* ------------------------------------------------------------------ */
   function intro() {
     var gsap = state.gsap;
@@ -658,19 +658,18 @@
     }
 
     document.documentElement.classList.add('is-locked');
-    var arch = { w: 24, y: 104 };
-    curtain.style.setProperty('--arch-w', arch.w + 'vw');
-    curtain.style.setProperty('--arch-y', arch.y + 'vh');
     if (state.lenis) state.lenis.scrollTo(0, { immediate: true, force: true });
     else window.scrollTo(0, 0);
 
+    /* a bright architectural plate, a wordmark, one hairline, one number:
+       about a second from first paint to the hero */
+    gsap.set(curtain, { yPercent: 0, autoAlpha: 1, clipPath: 'inset(0% 0% 0% 0%)' });
+    gsap.set(word, { yPercent: 112 });
+    gsap.set(bar, { scaleX: 0, transformOrigin: '0% 50%' });
+
     var counter = { v: 0 };
     var tl = gsap.timeline({
-      defaults: { ease: 'power3.out' },
-      onUpdate: function () {
-        curtain.style.setProperty('--arch-w', arch.w.toFixed(2) + 'vw');
-        curtain.style.setProperty('--arch-y', arch.y.toFixed(2) + 'vh');
-      },
+      defaults: { ease: 'power2.out' },
       onComplete: function () {
         hideCurtain();
         document.documentElement.classList.remove('is-locked');
@@ -678,23 +677,23 @@
       }
     });
 
-    tl.to(word, { yPercent: 0, duration: 1, stagger: 0.08, ease: 'expo.out' }, 0)
+    tl.to(word, { yPercent: 0, duration: 0.5, stagger: 0.06, ease: 'expo.out' }, 0)
       .to(counter, {
-        v: 100, duration: 1.25, ease: 'power2.inOut',
+        v: 100, duration: 0.46, ease: 'power2.inOut',
         onUpdate: function () {
           if (countEl) countEl.textContent = String(Math.round(counter.v)).padStart(2, '0');
         }
-      }, 0.1)
-      .fromTo(bar, { scaleX: 0 }, { scaleX: 1, duration: 1.25, ease: 'power2.inOut' }, 0.1)
-      .to(arch, { y: 62, duration: 1.05, ease: 'power1.inOut' }, 0.55)
-      .to(inner, { autoAlpha: 0, y: -26, duration: 0.5, ease: 'power2.in' }, 1.5)
-      .to(arch, { y: -12, w: 140, duration: 1.15, ease: 'power3.in' }, 1.5)
-      .add(heroIntro, 1.45)
+      }, 0.02)
+      .to(bar, { scaleX: 1, duration: 0.46, ease: 'power2.inOut' }, 0.02)
+      .add(heroIntro, 0.06)
+      .to(inner, { autoAlpha: 0, y: -14, duration: 0.22, ease: 'power2.in' }, 0.46)
+      .to(curtain, { clipPath: 'inset(0% 0% 100% 0%)', duration: 0.55, ease: 'power3.inOut' }, 0.5)
       .add(function () {
         heroTitleIn(0);
         gsap.to(fade, { y: 0, autoAlpha: 1, duration: 1.05, ease: 'power3.out', stagger: 0.09 });
-        finishIntro();
-      }, 1.95);
+      }, 0.6)
+      .set(curtain, { autoAlpha: 0 }, 1.05)
+      .add(finishIntro, 1.05);
   }
 
   /* The headline arrives word by word — measured masks would freeze a line
@@ -775,8 +774,8 @@
     });
 
     /* the CSS parks the mist below the floor; re-declare it as a percentage so
-       the tween below starts from 70% rather than a baked matrix */
-    gsap.set('.hero__smoke', { yPercent: 70, y: 0 });
+       the tween below starts from 42% rather than a baked matrix */
+    gsap.set('.hero__smoke', { yPercent: 42, y: 0 });
 
     var heroMM = gsap.matchMedia();
     heroMM.add('(min-width: 1px)', function () {
@@ -791,7 +790,7 @@
       });
 
       tl.to(['.hero__house', '.hero__composite .hero__house'], { yPercent: -40, scale: 1.3, duration: 1 }, 0)
-        .to('.hero__smoke', { yPercent: 0, duration: 1 }, 0)
+        .to('.hero__smoke', { yPercent: -10, duration: 1 }, 0)
         .to('.hero__cloud--l', { xPercent: -15, duration: 1 }, 0)
         .to('.hero__cloud--r', { xPercent: 15, duration: 1 }, 0)
         .to('.hero__content', { yPercent: 20, scale: 0.9, duration: 1 }, 0)
