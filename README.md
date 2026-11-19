@@ -263,7 +263,9 @@ Measured in headless Chromium, served from `localhost`:
 - **Horizontal overflow** none at any width (`scrollWidth === innerWidth` at
   1440 / 1024 / 390, at every section).
 - **Filters** Available → "Showing 2 of 6", 2 cards visible.
-- **Modal** opens, fills 6 specs and the residence types, closes on Escape.
+- **Modal** (the earlier quick-view) still builds and closes correctly, but no
+  control opens it now that every card links to its residence page — see
+  §8, the note on that choice.
 - **Explorer** tab + type switch updates the plan, the specification and the
   metrics; prefill sets development, residence and note, and focuses the form.
 - **Form** blocks with 2 errors on empty submit, then confirms with a summary
@@ -334,6 +336,10 @@ exists in the viewport, so it is captured at its own section instead.
   so the choreography can be judged exactly; the wordmark itself is ours
   (Plus Jakarta Sans outlines, generated into `wordmark.svg`). Replace those
   four with licensed photography before any commercial use.
+- Each residence card is a full-card `<a>` (`a.dev-card__open`) to
+  `project.html?project=<slug>`; the quick-view modal (`#devModal`) is still in
+  the page and `script.js` but nothing opens it. Delete both, or put a
+  "Quick view" button back on the card, whichever the site prefers.
 - The project page (`project.html`) keeps its own type system (Inter) and its
   own inventory — including three Dubai projects — so it reads as the detail
   template it is; align it with the site's Cormorant/Plus Jakarta pair if the
@@ -347,6 +353,8 @@ exists in the viewport, so it is captured at its own section instead.
 - Colours and spacing: `:root` in `styles.css` (`--alabaster`, `--espresso`,
   `--sand`, `--bronze`, `--ink-60`, `--ink-10`, `--section-y`).
 - Developments and residences: one data object at the top of `script.js`
-  (`DEVELOPMENTS`) feeds the cards, the modal, the explorer and the form.
+  (`DEVELOPMENTS`) feeds the cards, the explorer, the form and the (currently
+  unwired) quick-view modal; `PROJECTS` at the top of `project.js` feeds the
+  residence pages. Keep the six slugs in step between the two.
 - The preloader runs once per session; delete the `sessionStorage` guard in
   `intro()` if you want it on every load.
