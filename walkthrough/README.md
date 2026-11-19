@@ -11,7 +11,7 @@ mullion, the pool and the horizon always reflect the same sun.
 
 ```
 walkthrough/
-├── scene.js                the whole experience (ES module, ~1,800 lines)
+├── scene.js                the whole experience (ES module, ~3,030 lines)
 ├── walkthrough.css         HUD, grading layers, editorial overlay, fallback —
 │                           every selector scoped to #walk for the host page
 ├── vendor/three.module.js  three.js r160, vendored (see "Three.js" below)
@@ -61,9 +61,13 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.m
 | concrete | `makeConcrete()` — speckle, mottling, form-board seams |
 | gravel drive | `makeGravel()` — 9k pebbles, dust, strong normal map |
 | meadow | `makeMeadow()` — grass strokes over mottled base + normal map |
-| olive foliage | `makeLeafCluster()` — 760 leaves on an alpha card, instanced |
-| water | `makeWaterNormal()` — three interfering wave sets → tileable normal map, UV-scrolled every frame |
-| linen, bark | fibre strokes / vertical bark streaks |
+| limestone ashlar | `makeAshlar()` — five courses, staggered joints, per-block tone, sediment bands, joints recessed in the normal map |
+| olive foliage | `makeLeafCluster()` — ~1,900 leaves over a soft green body, so thin cards fuse instead of reading as puffballs |
+| bark | `makeBarkTextures()` — long flaking fissures with a lit lip, lichen, plus normal and roughness maps; trunks are swept, tapered, root-flared tubes (`limb()`) |
+| grass | one instanced draw of 62k blades (12k mobile) in tufts — per-blade tint, dark base to sunlit tip, backlit rim, two gust frequencies, hand-applied fog |
+| bougainvillea | `makeBractCard()` (three papery bracts round a small eye) and `makeVineLeafCard()`, tinted per instance in magenta / crimson / coral / warm pink |
+| water | `makeWaterNormal()` — three wave sets → tileable normal map, driving a `ShaderMaterial` (Fresnel, sun glitter, sparkle) that mixes it over a half-res planar mirror |
+| linen | fibre strokes |
 
 ### Shader detail (`onBeforeCompile`)
 
@@ -237,7 +241,9 @@ import with a bundled copy.
 | shadow map | 2048² + four 1024² point cubes (baked once) | 1024² + four 512² |
 | post chain | bloom + grade (5 passes at ¼ res) | none, CSS grade only |
 | leaves / shrubs / pebbles | 100% | ~55% |
-| draw calls | ~25–105 depending on frustum | ~40 |
+| grass blades | 62k (1 draw) | 12k (1 draw) |
+| draw calls | ~55–200 depending on stage (approach 118, terrace 57) | ~40 |
+| triangles | ~630k approach, ~1.24M terrace | ~320k |
 
 Additional discipline:
 
@@ -253,14 +259,16 @@ Additional discipline:
 
 ## 8. Known limitations
 
-- **The water reflects the sky only.** A planar mirror pass would reflect the house;
-  it is deliberately omitted for frame-time. The pool reads through banked sky reflection,
-  the tinted surface and animated normals.
+- **The water's mirror is planar and half-res.** It reflects what is above the surface
+  (house, trees, sky) from a second camera reflected about the water plane; the pass is
+  skipped unless the pool is on screen, within 52 m and the eye is above the surface, and
+  mobile falls back to a sky-colour reflection.
 - **No SSAO/GTAO.** Contact darkening comes from the sun shadow map, the baked point-light
   cubes and the shader's base darkening. Corners at oblique angles can look a touch light.
 - **The interior furniture is modelled from primitives** (sofa, table, stair, pendant,
   lamp, island) and reads well at walk-through speed, less so if you freeze and stare.
-- **Dust motes and the camera path are the only per-frame animation** — everything else is
-  static, which is why the shadow maps can be frozen.
+- **Frames animate the camera, the water, the grass, the leaf and bract sway and the dust
+  motes**; the buildings, trunks and shadows are static, which is why the shadow maps can
+  be frozen. Sway is one shared clock in the vertex shader, so it costs one uniform.
 - **Pinned scroll** assumes the document scrolls. Scroll-hijacking libraries that transform
   a wrapper will break the sticky canvas (see integration step 7).
