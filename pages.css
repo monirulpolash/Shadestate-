@@ -45,8 +45,8 @@ html.js-ready .pcard:not(.is-in) .pcard__media { clip-path: inset(0 0 100% 0); }
 .pcard__meta { display: grid; gap: 9px; margin-top: 0; padding-top: 14px; border-top: var(--hair) solid var(--line); }
 .pcard__kicker { display: flex; align-items: baseline; gap: 12px; font-size: 9.5px; letter-spacing: .17em; text-transform: uppercase; color: var(--ink-40); font-variant-numeric: tabular-nums; }
 .pcard__num { color: var(--ink); }
-.pcard__type { position: relative; padding-left: 13px; }
-.pcard__type::before { content: ""; position: absolute; left: 0; top: .52em; width: 6px; height: 1px; background: var(--line-strong); }
+.pcard__type { position: relative; }
+.pcard__type::before { content: "·"; margin-right: 8px; color: var(--line-strong); }
 .pcard__head { display: flex; align-items: baseline; justify-content: space-between; gap: 18px; }
 .pcard__title { font-family: var(--serif); font-weight: 300; font-size: clamp(1.45rem, 5.6vw, 1.85rem); line-height: 1.05; letter-spacing: -.02em; transition: transform .5s var(--ease-secondary); }
 .pcard__arrow { flex: 0 0 auto; width: 17px; height: 17px; stroke: currentColor; fill: none; stroke-width: 1.3; opacity: .32; transition: opacity .35s var(--ease), transform .5s var(--ease); }
