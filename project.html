@@ -4,113 +4,162 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Arbour Townhomes — Shadestate</title>
-<meta name="description" content="Arbour Townhomes by Shadestate — a new collection of garden townhomes in Dubai Hills, Dubai. Specifications, residences, floor plans and everything close by.">
+<meta name="description" content="Arbour Townhomes by Shadestate — garden townhomes in Dubai Hills, Dubai. Specifications, residences, floor plans, landmarks and availability.">
 <meta name="theme-color" content="#F7F4EF">
 <meta name="color-scheme" content="light">
 <meta property="og:title" content="Arbour Townhomes — Shadestate">
-<meta property="og:description" content="A new collection of garden townhomes in Dubai Hills, Dubai.">
-<meta property="og:image" content="assets/img/hero.jpg">
+<meta property="og:description" content="Garden townhomes in Dubai Hills, Dubai.">
+<meta property="og:image" content="assets/ksa/arbour-townhomes.jpg">
 <meta property="og:type" content="website">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%23121212'/%3E%3Ctext x='32' y='46' font-family='Helvetica,Arial,sans-serif' font-size='38' fill='%23F3F0E9' text-anchor='middle'%3ES%3C/text%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%23121212'/%3E%3Ctext x='32' y='45' font-family='Georgia,serif' font-size='36' fill='%23C9A55A' text-anchor='middle'%3ES%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="project.css">
-<script>document.documentElement.classList.replace('no-js','js');</script>
+<link rel="stylesheet" href="site.css">
+<link rel="stylesheet" href="pages.css">
+<link rel="stylesheet" href="walkthrough/walkthrough.css">
+<script>
+  document.documentElement.classList.replace('no-js','js');
+  try { if (sessionStorage.getItem('shade-nav')) { document.documentElement.classList.add('is-arriving'); sessionStorage.removeItem('shade-nav'); } } catch (e) {}
+</script>
+<noscript><style>.cursor,.page-transition{display:none!important}.reveal{opacity:1!important;transform:none!important}.dock,.quick{display:none!important}</style></noscript>
 </head>
-<body>
+<body class="project-page">
 
 <a class="skip-link" href="#main">Skip to content</a>
+<div class="page-transition" aria-hidden="true"><span class="page-transition__word">Shadestate</span></div>
+<div class="cursor" id="cursor" aria-hidden="true"><span class="cursor__dot"></span><span class="cursor__label"></span></div>
 
-<!-- ─────────────────────────── HEADER ─────────────────────────── -->
-<header class="topbar" id="topbar">
+<header class="topbar" id="topbar" data-topbar>
   <div class="topbar__inner">
-    <a class="brand" href="index.html" aria-label="Shadestate — home">
-      <span class="brand__mark">SHADE</span><span class="brand__thin">STATE</span>
+    <a class="wordmark" href="index.html" aria-label="Shadestate — home">
+      <span class="wordmark__name"><b>SHADE</b>STATE</span>
+      <span class="wordmark__sub">Dubai · Riyadh</span>
     </a>
-
     <div class="topbar__actions">
-      <button class="btn btn--dark" type="button" data-open="enquire">ENQUIRE <span aria-hidden="true">•</span></button>
-      <button class="btn btn--light" type="button" id="menuBtn" aria-expanded="false" aria-controls="menu">MENU <span class="btn__dots" aria-hidden="true">••</span></button>
+      <a class="btn-pill btn-pill--dark magnetic" id="enquireLink" href="contact.html" data-cursor="Enquire">
+        <span data-roll="Enquire •">Enquire •</span>
+      </a>
+      <button class="btn-pill btn-pill--line" type="button" id="menuBtn" data-menu-toggle aria-expanded="false" aria-controls="menu">
+        <span data-roll="Menu ••">Menu ••</span>
+      </button>
     </div>
   </div>
 </header>
 
-<!-- ─────────────────────────── MENU OVERLAY ─────────────────────────── -->
 <div class="menu" id="menu" hidden>
   <div class="menu__inner">
-    <div class="menu__cols">
-      <nav class="menu__nav" aria-label="Primary">
-        <a href="index.html"><span class="menu__idx">01</span><span class="menu__word">Home</span></a>
-        <a href="index.html#developments"><span class="menu__idx">02</span><span class="menu__word">Projects</span></a>
-        <a href="index.html#walkthrough"><span class="menu__idx">03</span><span class="menu__word">Walkthrough</span></a>
-        <a href="index.html#craft"><span class="menu__idx">04</span><span class="menu__word">About</span></a>
-        <a href="#enquire"><span class="menu__idx">05</span><span class="menu__word">Contact</span></a>
+    <div class="menu__head">
+      <a class="wordmark" href="index.html"><span class="wordmark__name"><b>SHADE</b>STATE</span><span class="wordmark__sub">Dubai · Riyadh</span></a>
+      <button class="menu__close" type="button" data-menu-close>Close <span aria-hidden="true">✕</span></button>
+    </div>
+    <div class="menu__body">
+      <nav class="menu__nav" aria-label="Menu">
+        <a href="index.html"><span class="menu__num">01</span><span class="menu__word" data-roll="Home">Home</span></a>
+        <a href="projects.html"><span class="menu__num">02</span><span class="menu__word" data-roll="Projects">Projects</span></a>
+        <a href="about.html"><span class="menu__num">03</span><span class="menu__word" data-roll="Studio &amp; legacy">Studio &amp; legacy</span></a>
+        <a href="blog.html"><span class="menu__num">04</span><span class="menu__word" data-roll="Journal">Journal</span></a>
+        <a href="#walkthrough"><span class="menu__num">05</span><span class="menu__word" data-roll="Walkthrough">Walkthrough</span></a>
+        <a href="contact.html"><span class="menu__num">06</span><span class="menu__word" data-roll="Contact">Contact</span></a>
       </nav>
-      <div class="menu__side">
-        <p class="menu__label">Residences</p>
-        <ul class="menu__projects" id="menuProjects"></ul>
-      </div>
+      <aside class="menu__aside">
+        <div>
+          <h2>Dubai</h2>
+          <p>Office 1204, Bay Square 7<br>Business Bay<br>Dubai, United Arab Emirates</p>
+          <p><a href="tel:+97140000000">+971 4 000 0000</a></p>
+        </div>
+        <div>
+          <h2>Riyadh</h2>
+          <p>Villa 12, Al Nakheel<br>Riyadh 12381<br>Saudi Arabia</p>
+          <p><a href="tel:+966110000000">+966 11 000 0000</a></p>
+        </div>
+        <div>
+          <h2>Enquiries</h2>
+          <p><a href="mailto:hello@shadestate.com">hello@shadestate.com</a></p>
+          <p><span data-clock="dubai">—:—</span> Dubai · <span data-clock="riyadh">—:—</span> Riyadh</p>
+        </div>
+      </aside>
     </div>
-    <div class="menu__foot">
-      <p>Office 1204, Bay Square 7<br>Business Bay, Dubai, United Arab Emirates</p>
-      <p><a href="mailto:hello@shadestate.com">hello@shadestate.com</a><br><a href="tel:+97140000000">+971 4 000 0000</a></p>
-      <p class="menu__close"><button type="button" class="linkbtn" data-close-menu>Close <span aria-hidden="true">✕</span></button></p>
-    </div>
+    <div class="menu__foot"><span>Shadestate Developments</span><span>Dubai · Riyadh · Jeddah</span><span>Est. 2008</span></div>
   </div>
 </div>
 
 <main id="main">
-<noscript><p style="max-width:1280px;margin:24px auto 0;padding:0 40px;font:400 14px/1.6 Inter,Arial,sans-serif;color:#111">Enable JavaScript to see the gallery, floor plans and the neighbourhood map. The project specification above is complete without it.</p></noscript>
+  <noscript><p class="no-script-note">Enable JavaScript to see the gallery, plans and neighbourhood map. The project specification above is complete without it.</p></noscript>
 
-  <!-- ─────────────────────────── HERO / SPEC ─────────────────────────── -->
-  <section class="hero" id="project">
+  <!-- ───────── hero / spec ───────── -->
+  <section class="hero pj-hero" id="project">
     <div class="wrap">
-      <div class="hero__head">
-        <h1 class="display" id="projectTitle">ARBOUR TOWNHOMES</h1>
+      <div class="pj-hero__head">
+        <div>
+          <p class="eyebrow" id="projectEyebrow">Dubai Hills, Dubai · Ongoing</p>
+          <h1 class="display pj-hero__title" id="projectTitle">Arbour Townhomes</h1>
+        </div>
         <div class="hero__price">
-          <p class="label">STARTING FROM</p>
+          <p class="label">Starting from</p>
           <p class="hero__amount" id="projectPrice">AED 2.45M</p>
+          <div class="currency" role="group" aria-label="Display currency">
+            <button class="currency__btn is-active" type="button" data-cur="AED" aria-pressed="true">AED</button>
+            <button class="currency__btn" type="button" data-cur="SAR" aria-pressed="false">SAR</button>
+            <button class="currency__btn" type="button" data-cur="USD" aria-pressed="false">USD</button>
+          </div>
         </div>
       </div>
 
       <dl class="spec" id="specList" aria-label="Project specifications">
-        <div class="spec__row"><dt>STATUS</dt><dd>New launch</dd></div>
-        <div class="spec__row"><dt>LOCATION</dt><dd>Dubai Hills, Dubai</dd></div>
-        <div class="spec__row"><dt>PROPERTY TYPE</dt><dd>Townhouse</dd></div>
-        <div class="spec__row"><dt>HANDOVER</dt><dd>Q4 2028</dd></div>
-        <div class="spec__row"><dt>UNIT SIZE</dt><dd>760 – 1480 sq. ft.</dd></div>
+        <div class="spec__row"><dt>Status</dt><dd>Ongoing</dd></div>
+        <div class="spec__row"><dt>Location</dt><dd>Dubai Hills, Dubai</dd></div>
+        <div class="spec__row"><dt>Property type</dt><dd>Townhouse</dd></div>
+        <div class="spec__row"><dt>Handover</dt><dd>Q4 2028</dd></div>
+        <div class="spec__row"><dt>Unit size</dt><dd>760 – 1,480 sq. ft.</dd></div>
       </dl>
 
       <figure class="hero__media">
-        <img id="heroImage" src="assets/img/hero.jpg" alt="Arbour Townhomes — limestone façades above a shaded courtyard" width="2048" height="1280" fetchpriority="high" decoding="async">
+        <img id="heroImage" src="assets/ksa/arbour-townhomes.jpg" alt="Arbour Townhomes — limestone townhouses beneath ghaf trees in Dubai Hills" width="1586" height="992" fetchpriority="high" decoding="async">
+        <figcaption id="heroCaption">Dubai Hills · Phase one</figcaption>
       </figure>
 
+      <!-- status-aware payment plan + construction progress -->
+      <div class="payplan" id="payplan">
+        <div class="payplan__head">
+          <p class="label" id="payplanLabel">Payment plan</p>
+          <p class="payplan__pct"><span id="payplanPct">42</span><i>%</i> <em id="payplanStage">built</em></p>
+        </div>
+        <div class="payplan__cells" id="payplanCells"></div>
+        <div class="payplan__track"><i id="payplanBar"></i></div>
+        <p class="payplan__note" id="payplanNote"></p>
+      </div>
+
+      <!-- five direct actions -->
       <div class="actionbar" role="group" aria-label="Project actions">
-        <a class="actionbar__item" id="waLink" href="https://wa.me/971000000000" target="_blank" rel="noopener">
+        <a class="actionbar__item magnetic" id="waLink" href="https://wa.me/971400000000" target="_blank" rel="noopener">
           <svg viewBox="0 0 24 24" aria-hidden="true" class="ico"><path d="M20.5 11.6a8.4 8.4 0 0 1-12.4 7.4L3.5 20.5l1.5-4.5a8.4 8.4 0 1 1 15.5-4.4Z" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M8.6 8.5c.2-.5.5-.5.8-.5h.6c.2 0 .4.1.5.4l.7 1.6c.1.2 0 .4-.1.6l-.5.6c-.1.2-.2.3 0 .6.4.7 1.4 1.7 2.2 2.1.3.1.4.1.6-.1l.6-.7c.2-.2.4-.2.6-.1l1.6.8c.2.1.3.3.3.5 0 .8-.6 1.7-1.4 1.9-.6.2-1.5.2-2.6-.3-1.1-.5-2.6-1.8-3.4-3-.5-.7-.9-1.6-.9-2.3 0-.6.1-1 .4-1.5Z" fill="currentColor"/></svg>
-          <span>WHATSAPP</span>
+          <span data-roll="WhatsApp">WhatsApp</span>
         </a>
-        <button class="actionbar__item" type="button" data-open="enquire">
+        <a class="actionbar__item magnetic" id="enquiryAction" href="contact.html">
           <svg viewBox="0 0 24 24" aria-hidden="true" class="ico"><path d="M3.5 5.5h17v13h-17z" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="m4 6.5 8 6 8-6" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>
-          <span>ENQUIRY</span>
-        </button>
-        <a class="actionbar__item" id="callLink" href="tel:+97140000000">
-          <svg viewBox="0 0 24 24" aria-hidden="true" class="ico"><path d="M6.5 3.8 9 3.4l1.6 4-1.9 1.4a12 12 0 0 0 6.5 6.5l1.4-1.9 4 1.6-.4 2.5c-.2 1-1 1.6-2 1.5C11.6 18.4 5.6 12.4 5 5.8c-.1-1 .5-1.8 1.5-2Z" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>
-          <span>CALL</span>
+          <span data-roll="Enquiry">Enquiry</span>
         </a>
-        <button class="actionbar__item" type="button" data-open="brochure">
+        <a class="actionbar__item magnetic" id="callLink" href="tel:+97140000000">
+          <svg viewBox="0 0 24 24" aria-hidden="true" class="ico"><path d="M6.5 3.8 9 3.4l1.6 4-1.9 1.4a12 12 0 0 0 6.5 6.5l1.4-1.9 4 1.6-.4 2.5c-.2 1-1 1.6-2 1.5C11.6 18.4 5.6 12.4 5 5.8c-.1-1 .5-1.8 1.5-2Z" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>
+          <span data-roll="Call">Call</span>
+        </a>
+        <a class="actionbar__item magnetic" id="brochureLink" href="contact.html">
           <svg viewBox="0 0 24 24" aria-hidden="true" class="ico"><path d="M6 3.5h8.5L19 8v12.5H6z" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M14 3.5V8h5M9 12h7M9 15.5h7M9 8.5h2.5" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>
-          <span>BROCHURE</span>
-        </button>
+          <span data-roll="Brochure">Brochure</span>
+        </a>
+        <a class="actionbar__item magnetic" href="index.html#walkthrough" data-no-transition>
+          <svg viewBox="0 0 24 24" aria-hidden="true" class="ico"><path d="M12 3.2 3.5 8v9.5L12 21l8.5-3.5V8Z" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M3.8 8.2 12 12l8.2-3.8M12 12v8.6" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>
+          <span data-roll="3D Tour">3D Tour</span>
+        </a>
       </div>
     </div>
   </section>
 
-  <!-- ─────────────────────────── OVERVIEW ─────────────────────────── -->
   <section class="section overview" id="overview">
     <div class="wrap overview__grid">
-      <h2 class="display overview__title">OVERVIEW</h2>
+      <h2 class="display overview__title">Overview</h2>
       <div class="overview__body">
         <p class="overview__text" id="overviewText"></p>
         <p class="overview__note" id="overviewNote"></p>
@@ -118,22 +167,20 @@
     </div>
   </section>
 
-  <!-- ─────────────────────────── LANDMARKS ─────────────────────────── -->
   <section class="section landmarks" id="landmarks">
     <div class="wrap">
       <div class="section__head">
-        <h2 class="display">KEY LANDMARKS NEARBY</h2>
+        <h2 class="display">Key landmarks nearby</h2>
         <p class="section__sub" id="landmarksSub">Drive times from the community gate, measured at off-peak hours.</p>
       </div>
       <ul class="landmarks__row" id="landmarkRow"></ul>
     </div>
   </section>
 
-  <!-- ─────────────────────────── GALLERY ─────────────────────────── -->
   <section class="section gallery" id="gallery">
     <div class="wrap">
       <div class="section__head section__head--row">
-        <h2 class="display">INSIDE THE RESIDENCE</h2>
+        <h2 class="display">Inside the residence</h2>
         <div class="gallery__nav">
           <button class="round" type="button" id="galPrev" aria-label="Previous images"><span aria-hidden="true">←</span></button>
           <button class="round" type="button" id="galNext" aria-label="Next images"><span aria-hidden="true">→</span></button>
@@ -143,21 +190,18 @@
     <div class="gallery__track" id="galleryTrack" tabindex="0" role="region" aria-label="Residence gallery, scroll horizontally"></div>
   </section>
 
-  <!-- ─────────────────────────── AMENITIES ─────────────────────────── -->
   <section class="section amenities" id="amenities">
     <div class="wrap">
-      <div class="section__head">
-        <h2 class="display">AMENITIES &amp; SERVICES</h2>
-      </div>
+      <div class="section__head"><h2 class="display">Amenities &amp; services</h2></div>
       <div class="amenities__grid" id="amenityGrid"></div>
     </div>
   </section>
 
-  <!-- ─────────────────────────── LAYOUTS ─────────────────────────── -->
   <section class="section layouts" id="plans">
     <div class="wrap">
       <div class="section__head">
-        <h2 class="display">CHOOSE YOUR LAYOUT</h2>
+        <h2 class="display">Choose your layout</h2>
+        <p class="section__sub">Availability is shown against each layout and updates with the sales release.</p>
       </div>
 
       <div class="tabs" id="layoutTabs" role="tablist" aria-label="Floor plans"></div>
@@ -166,33 +210,31 @@
         <div class="plan__stage" id="planStage" role="tabpanel" aria-labelledby="tab-0">
           <p class="plan__count" id="planCount">01 <span>/ 05</span></p>
           <p class="plan__stage-name" id="planStageName">First Floor</p>
-          <img id="planImage" src="assets/img/plan-1.png" alt="First Floor floor plan" width="1344" height="732" decoding="async">
+          <p class="plan__avail" id="planAvail"><i class="dot" aria-hidden="true"></i>Available</p>
+          <button class="plan__zoom" id="planZoom" type="button" aria-label="Open plan full size"><img id="planImage" src="assets/img/plan-1.png" alt="First Floor floor plan" width="1344" height="732" decoding="async"></button>
         </div>
         <div class="plan__body">
           <h3 class="plan__title" id="planTitle">First Floor</h3>
           <dl class="plan__spec" id="planSpec"></dl>
           <div class="plan__actions">
             <a class="btn btn--outline" id="planDownload" href="assets/img/plan-1.png" download>Download plan <span aria-hidden="true">↓</span></a>
-            <button class="btn btn--dark" type="button" data-open="enquire">Enquire</button>
+            <a class="btn btn--dark" id="planEnquire" href="contact.html">Enquire</a>
           </div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- ─────────────────────────── NEARBY ─────────────────────────── -->
   <section class="section nearby" id="location">
     <div class="wrap">
-      <div class="section__head">
-        <h2 class="display">EVERYTHING CLOSE BY</h2>
-      </div>
+      <div class="section__head"><h2 class="display">Everything close by</h2></div>
 
       <div class="nearby__grid">
         <div class="mapcard">
           <div class="mapcard__canvas" id="mapCanvas">
             <svg class="mapcard__svg" viewBox="0 0 800 620" role="img" aria-label="Stylised map of the neighbourhood" id="mapSvg"></svg>
             <div class="mapcard__pins" id="mapPins"></div>
-            <p class="mapcard__credit">© OpenStreetMap contributors</p>
+            <p class="mapcard__credit">Illustrative plan</p>
             <p class="mapcard__scale"><span></span>500 m</p>
             <p class="mapcard__north">N<i aria-hidden="true"></i></p>
           </div>
@@ -207,100 +249,192 @@
     </div>
   </section>
 
-  <!-- ─────────────────────────── MASTERPLAN ─────────────────────────── -->
-  <section class="masterplan" data-theme="dark" id="masterplan">
+  <section class="masterplan" data-theme="dark" data-navbar-dark id="masterplan">
     <img id="masterplanImage" src="assets/img/masterplan.jpg" alt="Arbour Townhomes masterplan, aerial view" loading="lazy" decoding="async" width="2000" height="1121">
-    <h2 class="masterplan__title">THE MASTERPLAN<br>FROM ABOVE</h2>
+    <h2 class="masterplan__title">The masterplan<br>from above</h2>
   </section>
 
-  <!-- ─────────────────────────── FAQ ─────────────────────────── -->
   <section class="section faq" id="faq">
     <div class="wrap">
-      <div class="section__head">
-        <h2 class="display">QUESTIONS, ANSWERED</h2>
-      </div>
+      <div class="section__head"><h2 class="display">Questions, answered</h2></div>
       <div class="faq__list" id="faqList"></div>
     </div>
   </section>
 
-  <!-- ─────────────────────────── EXPLORE ─────────────────────────── -->
   <section class="section explore" id="explore">
     <div class="wrap">
-      <div class="section__head">
-        <h2 class="display">EXPLORE OTHER RESIDENCES</h2>
+      <div class="section__head section-head--split">
+        <div><h2 class="display">Explore other residences</h2></div>
+        <p class="section-note">Three more addresses, chosen by the studio — the same building standards, a different landscape.</p>
       </div>
-      <div class="explore__grid" id="exploreGrid"></div>
+      <ol class="catalog" id="exploreGrid"></ol>
+      <a class="tlink" href="projects.html" style="margin-top:26px"><span>All nine developments</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h14M12.5 6.5 18 12l-5.5 5.5"/></svg></a>
     </div>
   </section>
 
-  <!-- ─────────────────────────── CTA ─────────────────────────── -->
-  <section class="cta" id="enquire">
-    <div class="wrap cta__grid">
-      <div class="cta__body">
-        <h2 class="display cta__title">BOOK A PRIVATE<br>VIEWING</h2>
-        <p class="cta__text">Walk the residences with the people who planned and built them, in Dubai or Riyadh. By appointment, at a time that suits you.</p>
-        <div class="cta__actions">
-          <button class="btn btn--dark btn--lg" type="button" data-open="enquire">Book a viewing <span aria-hidden="true">→</span></button>
-          <a class="btn btn--outline btn--lg" href="index.html#developments">View projects <span aria-hidden="true">→</span></a>
+  <!-- ───────── 3D walkthrough + end-of-orbit CTA ───────── -->
+  <section class="walkthrough" id="walkthrough" aria-label="3D walkthrough">
+    <div class="wrap">
+      <div class="walkthrough__head">
+        <div>
+          <p class="eyebrow"><span class="rule" aria-hidden="true"></span>The Shadestate House</p>
+          <h2 class="display section-title">Step <em>inside.</em></h2>
         </div>
-        <p class="cta__hint">By appointment only · Response within one working day</p>
+        <p class="walkthrough__note">One continuous take through a Shadestate villa — the approach, the door, the interior, the terrace, then a full orbit. Drag to look around as you go.</p>
       </div>
-      <div class="cta__art" id="ctaArt" aria-hidden="true"></div>
     </div>
+
+    <section class="walk" id="walk" aria-label="Interactive 3D walkthrough of a Shadestate villa">
+      <div class="walk__sticky">
+        <canvas id="scene" class="walk__canvas" aria-label="Procedural three-dimensional view of a Shadestate villa"></canvas>
+        <div class="walk__grade" aria-hidden="true"></div>
+        <div class="walk__bloom" aria-hidden="true"></div>
+        <div class="walk__veil" aria-hidden="true"></div>
+
+        <div class="hud" aria-hidden="true">
+          <div class="hud__brand">Shadestate House <i>Walkthrough</i></div>
+          <ol class="hud__stages" id="hudStages">
+            <li data-stage="0"><span>01</span>Approach</li>
+            <li data-stage="1"><span>02</span>Entry</li>
+            <li data-stage="2"><span>03</span>Interior</li>
+            <li data-stage="3"><span>04</span>Terrace</li>
+            <li data-stage="4"><span>05</span>Orbit</li>
+          </ol>
+          <div class="hud__bar"><i id="hudBar"></i></div>
+          <div class="hud__num"><span id="hudPct">00</span><i>%</i></div>
+        </div>
+
+        <div class="copy" id="copy">
+          <figure class="copy__item" data-in="0.005" data-out="0.155">
+            <p class="copy__eyebrow" id="walkEyebrow">The Shadestate House</p>
+            <h2 class="copy__line">You arrive<br>the long way.</h2>
+            <p class="copy__note">Ghaf trees, gravel, and a house that waits at the end of it.</p>
+          </figure>
+          <figure class="copy__item" data-in="0.20" data-out="0.375">
+            <p class="copy__eyebrow">Limestone · Oak · Bronze</p>
+            <h2 class="copy__line">Built from three<br>materials only.</h2>
+            <p class="copy__note">Deep reveals keep the sun off the glass and the rooms cool.</p>
+          </figure>
+          <figure class="copy__item copy__item--center" data-in="0.425" data-out="0.545">
+            <h2 class="copy__line copy__line--xl">Step inside.</h2>
+          </figure>
+          <figure class="copy__item" data-in="0.575" data-out="0.735">
+            <p class="copy__eyebrow">The hall</p>
+            <h2 class="copy__line">Every room<br>faces the light.</h2>
+            <p class="copy__note">Seven metres to the ceiling, and one pane of glass from floor to sky.</p>
+          </figure>
+          <figure class="copy__item" data-in="0.755" data-out="0.855">
+            <p class="copy__eyebrow">The terrace</p>
+            <h2 class="copy__line">Then step out.</h2>
+            <p class="copy__note">The rear wall slides open onto the pool.</p>
+          </figure>
+        </div>
+
+        <div class="orbit-cta" id="orbitCta" data-orbit-cta aria-hidden="true">
+          <div class="orbit-cta__card">
+            <p class="orbit-cta__eyebrow">Private viewing · <span id="orbitProject">Arbour Townhomes</span></p>
+            <h3 class="orbit-cta__title">Walk the house with the people who built it.</h3>
+            <p class="orbit-cta__text">Viewings in Dubai and Riyadh, by appointment, with a partner from the studio. We will send the full presentation for <span id="orbitProjectCopy">Arbour Townhomes</span> before you travel.</p>
+            <div class="orbit-cta__actions">
+              <a class="btn btn--gold magnetic" id="orbitEnquire" href="contact.html?project=arbour-townhomes" data-cursor="Enquire">Enquire about this residence</a>
+              <a class="btn btn--bone magnetic" href="projects.html">All residences</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="walk__scrollhint" aria-hidden="true"><span>Scroll</span><i></i></div>
+
+        <div class="fallback" id="fallback" role="img" aria-label="Illustration of a limestone villa with ghaf trees, a meadow and a reflecting pool at golden hour.">
+          <div class="fallback__sky"></div>
+          <div class="fallback__sun"></div>
+          <div class="fallback__hills"></div>
+          <div class="fallback__trees"><i></i><i></i><i></i><i></i></div>
+          <div class="fallback__house"><span class="fallback__glass"></span><span class="fallback__door"></span><span class="fallback__slats"></span><span class="fallback__wing"></span></div>
+          <div class="fallback__field"></div>
+          <div class="fallback__pool"></div>
+          <div class="fallback__copy">
+            <p class="copy__eyebrow">A Shadestate villa</p>
+            <h2 class="copy__line">Architecture built<br>to <em>endure</em>.</h2>
+            <p class="copy__note">Your browser cannot display the 3D walkthrough. The house is a limestone and timber villa with deep window reveals, ghaf trees and a reflecting pool.</p>
+          </div>
+        </div>
+      </div>
+    </section>
   </section>
 
+  <section class="viewing" id="enquire" data-navbar-dark>
+    <div class="wrap viewing__grid">
+      <div>
+        <p class="eyebrow eyebrow--dark"><span class="rule" aria-hidden="true"></span>Private viewing</p>
+        <h2 class="viewing__title">Book a private <em>viewing.</em></h2>
+        <p class="viewing__lede" id="enquireCopy">Walk the residences with the people who planned and built them, in Dubai or Riyadh. By appointment, at a time that suits you.</p>
+        <div class="viewing__meta">
+          <p><a href="tel:+97140000000">+971 4 000 0000</a> · <a href="tel:+966110000000">+966 11 000 0000</a></p>
+          <p><a href="mailto:hello@shadestate.com">hello@shadestate.com</a></p>
+        </div>
+      </div>
+      <div class="viewing__meta" style="align-self:center">
+        <p><a class="btn btn--gold btn--lg magnetic" id="viewingEnquire" href="contact.html">Start an enquiry <span aria-hidden="true">→</span></a></p>
+        <p><a class="btn btn--bone btn--lg magnetic" href="projects.html">View all projects</a></p>
+        <p class="viewing__note">By appointment only · Response within one working day</p>
+      </div>
+    </div>
+  </section>
 </main>
 
-<!-- ─────────────────────────── FOOTER ─────────────────────────── -->
-<footer class="footer" data-theme="dark">
-  <div class="wrap footer__top">
-    <nav class="footer__nav" aria-label="Footer">
-      <a href="index.html">HOME</a>
-      <a href="index.html#craft">ABOUT</a>
-      <a href="index.html#developments">PROJECTS</a>
-      <a href="index.html#philosophy">PHILOSOPHY</a>
-      <a href="#enquire">CONTACT</a>
-    </nav>
-    <form class="news" id="newsForm" novalidate>
-      <h3 class="news__title">NEWSLETTER</h3>
-      <label class="sr-only" for="newsEmail">Your email</label>
-      <input class="news__input" id="newsEmail" name="email" type="email" placeholder="Your email" autocomplete="email" required>
-      <button class="news__btn" type="submit">Subscribe</button>
-      <p class="news__msg" id="newsMsg" role="status"></p>
-    </form>
-  </div>
-
-  <div class="wrap footer__mid">
-    <div class="footer__col">
-      <p class="footer__label">OFFICE · DUBAI</p>
-      <p>Office 1204, Bay Square 7<br>Business Bay<br>Dubai, United Arab Emirates</p>
-      <p><a href="mailto:hello@shadestate.com">hello@shadestate.com</a><br><a href="tel:+97140000000">+971 4 000 0000</a></p>
+<footer class="footer" data-navbar-dark>
+  <div class="wrap">
+    <div class="footer__top">
+      <nav class="footer__nav" aria-label="Footer">
+        <a href="index.html">Home</a>
+        <a href="projects.html">Projects</a>
+        <a href="about.html">Studio &amp; legacy</a>
+        <a href="blog.html">Journal</a>
+        <a href="index.html#expertise">Expertise</a>
+        <a href="index.html#presence-map">Where we build</a>
+        <a href="contact.html">Contact</a>
+      </nav>
+      <form class="news" data-news novalidate>
+        <label for="newsEmail">Newsletter — new residences, four times a year</label>
+        <input id="newsEmail" name="email" type="email" placeholder="Your email" autocomplete="email" required>
+        <button type="submit">Subscribe</button>
+        <p class="news__msg" data-news-msg role="status"></p>
+      </form>
     </div>
-    <div class="footer__col footer__col--follow">
-      <p class="footer__label">FOLLOW</p>
-      <p><a href="https://instagram.com" target="_blank" rel="noopener">Instagram</a></p>
-      <p><a href="https://linkedin.com" target="_blank" rel="noopener">LinkedIn</a></p>
-      <p><a href="https://x.com" target="_blank" rel="noopener">X (Twitter)</a></p>
-      <p><a href="https://youtube.com" target="_blank" rel="noopener">YouTube</a></p>
+    <div class="footer__offices">
+      <div class="footer__office">
+        <h2>Office · Dubai</h2>
+        <p>Office 1204, Bay Square 7<br>Business Bay<br>Dubai, United Arab Emirates</p>
+        <p><a href="tel:+97140000000">+971 4 000 0000</a></p>
+      </div>
+      <div class="footer__office">
+        <h2>Office · Riyadh</h2>
+        <p>Villa 12, Al Nakheel<br>Riyadh 12381<br>Saudi Arabia</p>
+        <p><a href="tel:+966110000000">+966 11 000 0000</a></p>
+      </div>
+      <div class="footer__office">
+        <h2>Enquiries</h2>
+        <p><a href="mailto:hello@shadestate.com">hello@shadestate.com</a></p>
+        <p>Sunday – Thursday<br>09:00 – 18:00 GST</p>
+      </div>
     </div>
-    <div class="footer__word" aria-hidden="true">SHADESTATE</div>
-  </div>
-
-  <div class="footer__skyline" id="skyline" aria-hidden="true"></div>
-
-  <div class="wrap footer__legal">
-    <p>© 2026 Shadestate. All rights reserved.</p>
-    <nav aria-label="Legal">
-      <a href="#">Privacy policy</a>
-      <a href="#">Terms of use</a>
-      <a href="#">Style guide</a>
-      <a href="#">Licensing</a>
-      <button type="button" class="linkbtn footer__top-link" data-top>BACK TO TOP ↑</button>
-    </nav>
+    <div class="footer__word">
+      <div class="footer__letters" data-footer-letters="SHADESTATE" aria-hidden="true">SHADESTATE</div>
+    </div>
+    <div class="footer__skyline" data-skyline aria-hidden="true"></div>
+    <div class="footer__legal">
+      <p>© <span id="year">2026</span> Shadestate. All rights reserved.</p>
+      <nav aria-label="Legal">
+        <a href="privacy.html">Privacy</a>
+        <a href="terms.html">Terms</a>
+        <a href="terms.html#agency">Agency disclosure</a>
+        <button type="button" onclick="window.scrollTo({top:0,behavior:'smooth'})">Back to top ↑</button>
+      </nav>
+      <p>Demonstration template — nothing entered is transmitted or stored.</p>
+    </div>
   </div>
 </footer>
 
-<!-- ─────────────────────────── FLOATING UI ─────────────────────────── -->
 <nav class="dock" id="dock" aria-label="Project sections">
   <a href="#overview" data-spy="overview">Overview</a>
   <a href="#gallery" data-spy="gallery">Gallery</a>
@@ -311,49 +445,23 @@
 </nav>
 
 <div class="quick" id="quick">
-  <a class="quick__wa" id="waLinkFloat" href="https://wa.me/971000000000" target="_blank" rel="noopener">
+  <a class="quick__wa" id="waLinkFloat" href="https://wa.me/971400000000" target="_blank" rel="noopener">
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 11.6a8.4 8.4 0 0 1-12.4 7.4L3.5 20.5l1.5-4.5a8.4 8.4 0 1 1 15.5-4.4Z" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>
     WhatsApp
   </a>
-  <button class="quick__enq" type="button" data-open="enquire">Enquire</button>
+  <a class="quick__enq" id="quickEnquire" href="contact.html">Enquire</a>
 </div>
 
-<!-- ─────────────────────────── ENQUIRE MODAL ─────────────────────────── -->
-<div class="modal" id="modalEnquire" hidden>
-  <div class="modal__backdrop" data-close-modal></div>
-  <div class="modal__panel" role="dialog" aria-modal="true" aria-labelledby="enqTitle">
-    <button class="modal__x" type="button" data-close-modal aria-label="Close">✕</button>
-    <p class="label" id="enqProject">ARBOUR TOWNHOMES</p>
-    <h2 class="modal__title" id="enqTitle">Request the details</h2>
-    <p class="modal__sub">Our team will send the full brochure, availability and payment plan, and call you at a time that suits you.</p>
-    <form id="enqForm" novalidate>
-      <div class="field"><label for="enqName">Name</label><input id="enqName" name="name" type="text" autocomplete="name" required></div>
-      <div class="field"><label for="enqEmail">Email</label><input id="enqEmail" name="email" type="email" autocomplete="email" required></div>
-      <div class="field"><label for="enqPhone">Phone</label><input id="enqPhone" name="phone" type="tel" autocomplete="tel"></div>
-      <div class="field field--full"><label for="enqMsg">Message</label><textarea id="enqMsg" name="message" rows="3"></textarea></div>
-      <button class="btn btn--dark btn--lg" type="submit">Send request <span aria-hidden="true">→</span></button>
-      <p class="form__msg" id="enqMsgOut" role="status"></p>
-    </form>
-  </div>
+<!-- click-to-zoom plan lightbox -->
+<div class="lightbox" id="planLightbox" hidden>
+  <button class="lightbox__close" type="button" id="lightboxClose" aria-label="Close plan">✕</button>
+  <figure class="lightbox__figure"><img id="lightboxImg" src="assets/img/plan-1.png" alt="Floor plan"></figure>
+  <p class="lightbox__cap" id="lightboxCap">First Floor</p>
 </div>
 
-<!-- ─────────────────────────── BROCHURE MODAL ─────────────────────────── -->
-<div class="modal" id="modalBrochure" hidden>
-  <div class="modal__backdrop" data-close-modal></div>
-  <div class="modal__panel modal__panel--brochure" role="dialog" aria-modal="true" aria-labelledby="broTitle">
-    <button class="modal__x" type="button" data-close-modal aria-label="Close">✕</button>
-    <p class="label">Project brochure · 2026</p>
-    <h2 class="modal__title" id="broTitle">Arbour Townhomes</h2>
-    <p class="modal__sub" id="broSpec">Dubai Hills, Dubai · Townhouse · Q4 2028</p>
-    <dl class="bro__spec" id="broSpecList"></dl>
-    <div class="bro__actions">
-      <button class="btn btn--dark" type="button" id="broDownload">Download brochure <span aria-hidden="true">↓</span></button>
-      <button class="btn btn--outline" type="button" data-open="enquire">Enquire</button>
-    </div>
-    <p class="bro__note">Print-ready sheet, generated from this page's live specification.</p>
-  </div>
-</div>
-
-<script src="project.js"></script>
+<script src="assets/js/projects-data.js" defer></script>
+<script src="site.js" defer></script>
+<script src="project.js" defer></script>
+<script type="module" src="walkthrough/scene.js"></script>
 </body>
 </html>

@@ -591,9 +591,6 @@
       window.ScrollTrigger.config({ ignoreMobileResize: true });
 
       initLenis();
-      initCursor();
-      initMagnetic();
-      initHeaderMotion();
       initSplits();
       initScrollMotion();
       initProgress();
@@ -898,39 +895,51 @@
 
   function initFeature() {
     var gsap = state.gsap;
-    var stage = $('[data-feature-stage]');
-    var media = $('[data-feature-media]');
-    var img = $('[data-feature-img]');
-    if (!stage || !media || !img) return;
+    var blocks = $$('[data-feature-stage]');
+    if (!blocks.length) return;
 
-    var mm = gsap.matchMedia();
+    blocks.forEach(function (stage) {
+      var block = stage.closest('[data-feature]') || stage.parentElement;
+      var media = $('[data-feature-media]', stage);
+      var img = $('[data-feature-img]', stage);
+      var caption = $('.feature__caption', stage);
+      if (!media) return;
 
-    mm.add('(prefers-reduced-motion: no-preference)', function () {
-      var tl = gsap.timeline({
-        scrollTrigger: {
-          trigger: stage,
-          start: 'top 88%',
-          end: 'top 30%',
-          scrub: 0.6,
-          invalidateOnRefresh: true
-        }
+      var mm = gsap.matchMedia();
+
+      mm.add('(prefers-reduced-motion: no-preference)', function () {
+        var tl = gsap.timeline({
+          scrollTrigger: {
+            trigger: stage,
+            start: 'top 90%',
+            end: 'top 30%',
+            scrub: 0.6,
+            invalidateOnRefresh: true
+          }
+        });
+        tl.fromTo(media,
+          { scale: 0.74, clipPath: 'inset(0% 9% 0% 9%)' },
+          { scale: 1, clipPath: 'inset(0% 0% 0% 0%)', ease: 'none', duration: 1 }, 0);
+        if (img) tl.fromTo(img, { scale: 1.32 }, { scale: 1, ease: 'none', duration: 1 }, 0);
+
+        return function () {
+          gsap.set([media, img].filter(Boolean), { clearProps: 'all' });
+        };
       });
-      tl.fromTo(media,
-        { scale: 0.72, clipPath: 'inset(0% 9% 0% 9%)' },
-        { scale: 1, clipPath: 'inset(0% 0% 0% 0%)', ease: 'none', duration: 1 }, 0)
-        .fromTo(img,
-          { scale: 1.35 },
-          { scale: 1, ease: 'none', duration: 1 }, 0);
 
-      return function () {
-        gsap.set([media, img], { clearProps: 'all' });
-      };
+      if (caption) {
+        gsap.fromTo(caption, { y: 26, autoAlpha: 0 }, {
+          y: 0, autoAlpha: 1, duration: 1, ease: 'power3.out',
+          scrollTrigger: { trigger: stage, start: 'top 48%', once: true }
+        });
+      }
+      void block;
     });
+  }
 
-    gsap.fromTo('.feature__caption', { y: 26, autoAlpha: 0 }, {
-      y: 0, autoAlpha: 1, duration: 1, ease: 'power3.out',
-      scrollTrigger: { trigger: stage, start: 'top 45%', once: true }
-    });
+  function fmtCount(v, decimals) {
+    if (decimals) return v.toFixed(decimals);
+    return Math.round(v).toLocaleString('en-US');
   }
 
   function initCounters() {
@@ -953,9 +962,9 @@
             duration: 1.6,
             ease: 'power2.out',
             onUpdate: function () {
-              el.textContent = obj.v.toFixed(decimals);
+              el.textContent = fmtCount(obj.v, decimals);
             },
-            onComplete: function () { el.textContent = target.toFixed(decimals); }
+            onComplete: function () { el.textContent = fmtCount(target, decimals); }
           });
         }
       });
@@ -1583,14 +1592,9 @@
   function initStatic() {
     var year = $('#year');
     if (year) year.textContent = String(new Date().getFullYear());
-    initClock();
-    initAnchors();
-    initMenu();
     initFilters();
-    initModal();
     initExplorer();
     initForm();
-    initHeader();
   }
 
   function start() {

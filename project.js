@@ -8,7 +8,7 @@
 
   /* ───────────────────────── data ───────────────────────── */
 
-  var IMG = 'assets/img/';
+  var IMG = '';
 
   function faqs(p) {
     return [
@@ -21,677 +21,8 @@
     ];
   }
 
-  var PROJECTS = {
-
-    'arbour-townhomes': {
-      name: 'Arbour Townhomes',
-      short: 'Arbour',
-      location: 'Dubai Hills, Dubai',
-      city: 'Dubai',
-      status: 'New launch',
-      type: 'Townhouse',
-      handover: 'Q4 2028',
-      size: '760 – 1480 sq. ft.',
-      price: 'AED 2.45M',
-      currency: 'AED',
-      overview: 'Arbour is a collection of garden townhomes set among mature ghaf trees in Dubai Hills. Limestone façades, deep loggias and shaded walkways keep the streets cool; behind them, homes open onto private courtyards and a shared spine of green.',
-      note: 'Eight townhomes in phase one · Three and four bedroom layouts · Private gardens',
-      hero: 'hero.jpg',
-      heroAlt: 'Arbour Townhomes — pale limestone façade behind a mature tree',
-      heroCap: 'Dubai Hills · Phase one',
-      masterplan: 'masterplan.jpg',
-      masterplanAlt: 'Arbour Townhomes masterplan, aerial view',
-      gallery: [
-        { img: 'hero.jpg', cap: 'Exterior', sub: 'Street elevation' },
-        { img: 'g-lounge.jpg', cap: 'Lounge', sub: 'Double height' },
-        { img: 'g-kitchen.jpg', cap: 'Kitchen', sub: 'Oak & stone' },
-        { img: 'g-bedroom.jpg', cap: 'Master bedroom', sub: 'Garden outlook' },
-        { img: 'g-pool.jpg', cap: 'Pool deck', sub: 'Shared courtyard' }
-      ],
-      amenities: ['Landscaped Gardens', "Children's Play Area", 'Tennis Court', 'Yoga Deck', 'State-of-the-Art Gymnasium', 'Covered Parking', '24/7 Security', 'Residents’ Lounge'],
-      layouts: [
-        { name: 'First Floor', plan: 'plan-1.png', type: 'Podium level', size: '18,400 sq.ft', bedrooms: '–', bathrooms: '–', balcony: 'Pool deck', pool: 'Shared' },
-        { name: 'Typical Floor', plan: 'plan-2.png', type: 'Bedroom level', size: '1,150 sq.ft', bedrooms: '3', bathrooms: '3', balcony: 'Terrace', pool: '—' },
-        { name: 'One Bedroom', plan: 'plan-4.png', type: 'Garden flat', size: '760 sq.ft', bedrooms: '1', bathrooms: '2', balcony: 'Courtyard', pool: 'Shared' },
-        { name: 'Two Bedroom', plan: 'plan-3.png', type: 'Townhome', size: '1,180 sq.ft', bedrooms: '2', bathrooms: '3', balcony: 'Garden', pool: '—' },
-        { name: 'Three Bedroom', plan: 'plan-3.png', type: 'Townhome', size: '2,100 sq.ft', bedrooms: '3', bathrooms: '4', balcony: 'Garden', pool: 'Plunge' }
-      ],
-      landmarks: [
-        { name: 'Jumeirah Beach', img: 'lm-beach.jpg', min: 11, km: '11 km' },
-        { name: 'Burj Al Arab', img: 'lm-burj-al-arab.jpg', min: 11, km: '10 km' },
-        { name: 'Burj Khalifa', img: 'lm-burj-khalifa.jpg', min: 14, km: '15 km' },
-        { name: 'Dubai Marina', img: 'lm-marina.jpg', min: 14, km: '15 km' },
-        { name: 'Al Maktoum Airport', img: 'lm-airport.jpg', min: 25, km: '29 km' }
-      ],
-      nearby: {
-        'Schools': [
-          { name: 'GEMS Wellington Academy', km: '4.3 km', min: '8 min' },
-          { name: 'Dubai Heights Academy', km: '3.6 km', min: '7 min' },
-          { name: 'Foremarke School', km: '2.5 km', min: '5 min' }
-        ],
-        'Daily needs': [
-          { name: 'Dubai Hills Mall', km: '1.2 km', min: '4 min' },
-          { name: 'City Centre Al Barsha', km: '4.0 km', min: '8 min' },
-          { name: 'Mall of the Emirates', km: '7.0 km', min: '12 min' }
-        ],
-        'Healthcare': [
-          { name: 'King’s College Hospital Dubai', km: '2.7 km', min: '6 min' },
-          { name: 'Mediclinic Parkview Hospital', km: '4.6 km', min: '8 min' }
-        ],
-        'Leisure': [
-          { name: 'Dubai Hills Park', km: '1.6 km', min: '4 min' },
-          { name: 'Al Barsha Pond Park', km: '5.9 km', min: '10 min' },
-          { name: 'Dubai Miracle Garden', km: '5.4 km', min: '10 min' }
-        ]
-      },
-      faqDiff: 'Tree-lined streets, shaded walkways and homes that open onto shared green courtyards.',
-      payment: '15% on booking, 45% during construction and 40% on handover.',
-      pets: 'Yes. The community is pet-friendly, with dog-walking trails and a fenced pet park.',
-      schools: 'Several international schools are within a 10-minute drive. Our team can share the full list on request.'
-    },
-
-    'sun-bliss-residence': {
-      name: 'Sun-Bliss Residence',
-      short: 'Sun-Bliss',
-      location: 'Al Furjan, Dubai',
-      city: 'Dubai',
-      status: 'New launch',
-      type: 'Villa',
-      handover: 'Q2 2027',
-      size: '3,200 – 3,900 sq. ft.',
-      price: 'AED 4.10M',
-      currency: 'AED',
-      overview: 'A low, horizontal house arranged around a north-facing courtyard, so every principal room takes its light from the shaded side and its view from the garden. Deep overhangs and a screen of planting keep the terrace usable through the summer.',
-      note: 'Six villas · Four and five bedrooms · Private pools',
-      hero: 'ex-1.jpg',
-      heroAlt: 'Sun-Bliss Residence — white courtyard villa under a clear sky',
-      heroCap: 'Al Furjan · Six villas',
-      masterplan: 'masterplan.jpg',
-      masterplanAlt: 'Sun-Bliss Residence masterplan aerial view',
-      gallery: [
-        { img: 'ex-1.jpg', cap: 'Exterior', sub: 'Courtyard elevation' },
-        { img: 'g-lounge.jpg', cap: 'Lounge', sub: 'North light' },
-        { img: 'g-kitchen.jpg', cap: 'Kitchen', sub: 'Stone & oak' },
-        { img: 'g-bedroom.jpg', cap: 'Master bedroom', sub: 'Garden outlook' },
-        { img: 'g-pool.jpg', cap: 'Pool deck', sub: 'Private pool' }
-      ],
-      amenities: ['Landscaped Gardens', "Children's Play Area", 'Tennis Court', 'Yoga Deck', 'State-of-the-Art Gymnasium', 'Covered Parking', '24/7 Security', 'Residents’ Lounge'],
-      layouts: [
-        { name: 'First Floor', plan: 'plan-1.png', type: 'Ground level', size: '2,400 sq.ft', bedrooms: '–', bathrooms: '1', balcony: 'Courtyard', pool: 'Private' },
-        { name: 'Typical Floor', plan: 'plan-2.png', type: 'Bedroom level', size: '1,500 sq.ft', bedrooms: '4', bathrooms: '4', balcony: 'Terrace', pool: '—' },
-        { name: 'One Bedroom', plan: 'plan-4.png', type: 'Garden suite', size: '820 sq.ft', bedrooms: '1', bathrooms: '2', balcony: 'Garden', pool: 'Shared' },
-        { name: 'Two Bedroom', plan: 'plan-3.png', type: 'Family villa', size: '3,200 sq.ft', bedrooms: '2', bathrooms: '3', balcony: 'Terrace', pool: 'Private' },
-        { name: 'Three Bedroom', plan: 'plan-3.png', type: 'Family villa', size: '3,900 sq.ft', bedrooms: '3', bathrooms: '4', balcony: 'Garden', pool: 'Private' }
-      ],
-      landmarks: [
-        { name: 'Jumeirah Beach', img: 'lm-beach.jpg', min: 16, km: '18 km' },
-        { name: 'Burj Al Arab', img: 'lm-burj-al-arab.jpg', min: 20, km: '22 km' },
-        { name: 'Burj Khalifa', img: 'lm-burj-khalifa.jpg', min: 24, km: '26 km' },
-        { name: 'Dubai Marina', img: 'lm-marina.jpg', min: 18, km: '19 km' },
-        { name: 'Al Maktoum Airport', img: 'lm-airport.jpg', min: 30, km: '34 km' }
-      ],
-      nearby: {
-        'Schools': [
-          { name: 'The Arbor School', km: '3.1 km', min: '6 min' },
-          { name: 'Jebel Ali School', km: '5.4 km', min: '9 min' },
-          { name: 'Dubai British School', km: '6.8 km', min: '11 min' }
-        ],
-        'Daily needs': [
-          { name: 'Al Furjan Pavilion', km: '1.0 km', min: '3 min' },
-          { name: 'Ibn Battuta Mall', km: '5.1 km', min: '9 min' },
-          { name: 'Festival Plaza', km: '6.4 km', min: '11 min' }
-        ],
-        'Healthcare': [
-          { name: 'Aster Clinic Al Furjan', km: '0.9 km', min: '3 min' },
-          { name: 'Mediclinic Ibn Battuta', km: '4.8 km', min: '9 min' }
-        ],
-        'Leisure': [
-          { name: 'Al Furjan Park', km: '1.3 km', min: '4 min' },
-          { name: 'JBR Beach', km: '15.2 km', min: '18 min' },
-          { name: 'The Els Club', km: '8.3 km', min: '14 min' }
-        ]
-      },
-      faqDiff: 'A courtyard plan that faces its living rooms north, away from the afternoon sun, with the garden wrapped on three sides.',
-      payment: '20% on booking, 50% during construction and 30% on handover.',
-      schools: 'The Arbor School and Jebel Ali School are both within ten minutes by car.'
-    },
-
-    'townhouse': {
-      name: 'Townhouse',
-      short: 'Townhouse',
-      location: 'JVC, Dubai',
-      city: 'Dubai',
-      status: 'Ready',
-      type: 'Townhouse',
-      handover: 'Q1 2026',
-      size: '1,450 – 1,900 sq. ft.',
-      price: 'AED 1.85M',
-      currency: 'AED',
-      overview: 'A terrace of twelve townhouses on a quiet street in JVC, planned so that every home has a double-aspect living floor, a small walled garden and parking at the door. Materials are plain and durable: fair-faced block, ash joinery, terrazzo.',
-      note: 'Twelve townhouses · Ready to move in · Three bedrooms as standard',
-      hero: 'ex-2.jpg',
-      heroAlt: 'Townhouse — a low white residence behind a gravel forecourt',
-      heroCap: 'JVC · Twelve homes',
-      masterplan: 'masterplan.jpg',
-      masterplanAlt: 'Townhouse community masterplan',
-      gallery: [
-        { img: 'ex-2.jpg', cap: 'Exterior', sub: 'Street elevation' },
-        { img: 'g-lounge.jpg', cap: 'Lounge', sub: 'Double aspect' },
-        { img: 'g-kitchen.jpg', cap: 'Kitchen', sub: 'Ash & terrazzo' },
-        { img: 'g-bedroom.jpg', cap: 'Master bedroom', sub: 'Garden outlook' },
-        { img: 'g-street.jpg', cap: 'Terrace', sub: 'Walled garden' }
-      ],
-      amenities: ['Landscaped Gardens', "Children's Play Area", 'Tennis Court', 'Yoga Deck', 'State-of-the-Art Gymnasium', 'Covered Parking', '24/7 Security', 'Residents’ Lounge'],
-      layouts: [
-        { name: 'First Floor', plan: 'plan-1.png', type: 'Ground level', size: '780 sq.ft', bedrooms: '–', bathrooms: '1', balcony: 'Garden', pool: '—' },
-        { name: 'Typical Floor', plan: 'plan-2.png', type: 'Bedroom level', size: '670 sq.ft', bedrooms: '3', bathrooms: '2', balcony: 'Balcony', pool: '—' },
-        { name: 'One Bedroom', plan: 'plan-4.png', type: 'Garden flat', size: '640 sq.ft', bedrooms: '1', bathrooms: '1', balcony: 'Garden', pool: '—' },
-        { name: 'Two Bedroom', plan: 'plan-3.png', type: 'Townhouse', size: '1,450 sq.ft', bedrooms: '2', bathrooms: '3', balcony: 'Garden', pool: '—' },
-        { name: 'Three Bedroom', plan: 'plan-3.png', type: 'Townhouse', size: '1,900 sq.ft', bedrooms: '3', bathrooms: '3', balcony: 'Roof terrace', pool: '—' }
-      ],
-      landmarks: [
-        { name: 'Jumeirah Beach', img: 'lm-beach.jpg', min: 22, km: '24 km' },
-        { name: 'Burj Al Arab', img: 'lm-burj-al-arab.jpg', min: 24, km: '25 km' },
-        { name: 'Burj Khalifa', img: 'lm-burj-khalifa.jpg', min: 25, km: '28 km' },
-        { name: 'Dubai Marina', img: 'lm-marina.jpg', min: 18, km: '20 km' },
-        { name: 'Al Maktoum Airport', img: 'lm-airport.jpg', min: 28, km: '32 km' }
-      ],
-      nearby: {
-        'Schools': [
-          { name: 'JSS International School', km: '1.8 km', min: '5 min' },
-          { name: 'Sunmarke School', km: '3.2 km', min: '7 min' },
-          { name: 'GEMS Metropole', km: '4.6 km', min: '9 min' }
-        ],
-        'Daily needs': [
-          { name: 'Circle Mall JVC', km: '1.4 km', min: '4 min' },
-          { name: 'Al Khail Gate Retail', km: '3.0 km', min: '7 min' },
-          { name: 'Mall of the Emirates', km: '10.2 km', min: '15 min' }
-        ],
-        'Healthcare': [
-          { name: 'Aster Clinic JVC', km: '0.8 km', min: '3 min' },
-          { name: 'Mediclinic Dubai Hills', km: '6.1 km', min: '11 min' }
-        ],
-        'Leisure': [
-          { name: 'JVC Community Park', km: '1.1 km', min: '4 min' },
-          { name: 'Dubai Miracle Garden', km: '5.0 km', min: '9 min' },
-          { name: 'Sports City', km: '4.2 km', min: '8 min' }
-        ]
-      },
-      faqDiff: 'Every home has a double-aspect living floor and its own front door onto the street, with parking at the threshold.',
-      payment: '10% on booking, 60% during construction and 30% on handover.',
-      schools: 'JSS International and Sunmarke are both within ten minutes.'
-    },
-
-    'luxurious-villas': {
-      name: 'Luxurious Villas',
-      short: 'Luxurious Villas',
-      location: 'Palm Jumeirah, Dubai',
-      city: 'Dubai',
-      status: 'Limited release',
-      type: 'Villa',
-      handover: 'Q4 2027',
-      size: '5,600 – 7,200 sq. ft.',
-      price: 'AED 12.50M',
-      currency: 'AED',
-      overview: 'Four beachfront villas on the outer frond, each with a private stretch of sand, a shaded majlis and a pool that runs the width of the terrace. The architecture is quiet — travertine, lime plaster, bronze — so the water does the talking.',
-      note: 'Four villas · Five bedrooms · Private beach frontage',
-      hero: 'ex-3.jpg',
-      heroAlt: 'Luxurious Villas — a white villa with arched entrance and olive trees',
-      heroCap: 'Palm Jumeirah · Outer frond',
-      masterplan: 'masterplan.jpg',
-      masterplanAlt: 'Luxurious Villas masterplan',
-      gallery: [
-        { img: 'ex-3.jpg', cap: 'Exterior', sub: 'Arrival court' },
-        { img: 'g-lounge.jpg', cap: 'Lounge', sub: 'Sea aspect' },
-        { img: 'g-kitchen.jpg', cap: 'Kitchen', sub: 'Lime plaster' },
-        { img: 'g-bedroom.jpg', cap: 'Master bedroom', sub: 'Beach frontage' },
-        { img: 'g-pool.jpg', cap: 'Pool deck', sub: 'Private pool' }
-      ],
-      amenities: ['Landscaped Gardens', "Children's Play Area", 'Tennis Court', 'Yoga Deck', 'State-of-the-Art Gymnasium', 'Covered Parking', '24/7 Security', 'Residents’ Lounge'],
-      layouts: [
-        { name: 'First Floor', plan: 'plan-1.png', type: 'Beach level', size: '3,900 sq.ft', bedrooms: '–', bathrooms: '1', balcony: 'Terrace', pool: 'Private' },
-        { name: 'Typical Floor', plan: 'plan-2.png', type: 'Bedroom level', size: '2,300 sq.ft', bedrooms: '5', bathrooms: '5', balcony: 'Sea terrace', pool: '—' },
-        { name: 'One Bedroom', plan: 'plan-4.png', type: 'Guest suite', size: '900 sq.ft', bedrooms: '1', bathrooms: '2', balcony: 'Courtyard', pool: 'Shared' },
-        { name: 'Two Bedroom', plan: 'plan-3.png', type: 'Garden villa', size: '5,600 sq.ft', bedrooms: '2', bathrooms: '4', balcony: 'Garden', pool: 'Private' },
-        { name: 'Three Bedroom', plan: 'plan-3.png', type: 'Beach villa', size: '7,200 sq.ft', bedrooms: '3', bathrooms: '5', balcony: 'Beach', pool: 'Private' }
-      ],
-      landmarks: [
-        { name: 'Jumeirah Beach', img: 'lm-beach.jpg', min: 10, km: '8 km' },
-        { name: 'Burj Al Arab', img: 'lm-burj-al-arab.jpg', min: 14, km: '12 km' },
-        { name: 'Burj Khalifa', img: 'lm-burj-khalifa.jpg', min: 24, km: '26 km' },
-        { name: 'Dubai Marina', img: 'lm-marina.jpg', min: 12, km: '10 km' },
-        { name: 'Al Maktoum Airport', img: 'lm-airport.jpg', min: 38, km: '42 km' }
-      ],
-      nearby: {
-        'Schools': [
-          { name: 'Dubai College', km: '9.2 km', min: '14 min' },
-          { name: 'GEMS Wellington International', km: '7.8 km', min: '12 min' },
-          { name: 'Jumeirah College', km: '8.4 km', min: '13 min' }
-        ],
-        'Daily needs': [
-          { name: 'Nakheel Mall', km: '3.1 km', min: '7 min' },
-          { name: 'The Pointe', km: '2.4 km', min: '6 min' },
-          { name: 'Mall of the Emirates', km: '9.6 km', min: '14 min' }
-        ],
-        'Healthcare': [
-          { name: 'Al Das Medical Clinic', km: '2.8 km', min: '7 min' },
-          { name: 'Mediclinic Al Sufouh', km: '10.1 km', min: '15 min' }
-        ],
-        'Leisure': [
-          { name: 'Aquaventure Beach', km: '1.2 km', min: '4 min' },
-          { name: 'The Palm Jogging Track', km: '1.0 km', min: '3 min' },
-          { name: 'Dubai Marina Walk', km: '9.8 km', min: '14 min' }
-        ]
-      },
-      faqDiff: 'Direct beach frontage on the outer frond, with the pool and majlis set on the water side and full privacy from the street.',
-      payment: '25% on booking, 45% during construction and 30% on handover.',
-      schools: 'Dubai College and GEMS Wellington International are within fifteen minutes.'
-    },
-
-    'casa-da-luz': {
-      name: 'Casa da Luz',
-      short: 'Casa da Luz',
-      location: 'Comporta, Portugal',
-      city: 'Comporta',
-      status: 'Available',
-      type: 'Villa',
-      handover: 'Q3 2026',
-      size: '412 – 486 m²',
-      price: '€3.85M',
-      currency: 'EUR',
-      overview: 'Eight houses set back from the dunes in Comporta, built from lime mortar, chestnut and local stone. Each has a courtyard that holds the afternoon light and a covered terrace that faces the pine belt, so the house stays cool without shutting the air out.',
-      note: 'Eight residences · Four and five bedrooms · Private pools',
-      hero: 'ex-2.jpg',
-      heroAlt: 'Casa da Luz — a white villa behind a gravel court, late afternoon',
-      heroCap: 'Comporta · Eight houses',
-      masterplan: 'masterplan.jpg',
-      masterplanAlt: 'Casa da Luz masterplan',
-      gallery: [
-        { img: 'ex-2.jpg', cap: 'Exterior', sub: 'Courtyard' },
-        { img: 'g-lounge.jpg', cap: 'Lounge', sub: 'Afternoon light' },
-        { img: 'g-kitchen.jpg', cap: 'Kitchen', sub: 'Stone & chestnut' },
-        { img: 'g-bedroom.jpg', cap: 'Master bedroom', sub: 'Pine outlook' },
-        { img: 'g-pool.jpg', cap: 'Pool deck', sub: 'Dune garden' }
-      ],
-      amenities: ['Landscaped Gardens', "Children's Play Area", 'Tennis Court', 'Yoga Deck', 'State-of-the-Art Gymnasium', 'Covered Parking', '24/7 Security', 'Residents’ Lounge'],
-      layouts: [
-        { name: 'First Floor', plan: 'plan-1.png', type: 'Ground level', size: '248 m²', bedrooms: '–', bathrooms: '1', balcony: 'Courtyard', pool: 'Private' },
-        { name: 'Typical Floor', plan: 'plan-2.png', type: 'Bedroom level', size: '164 m²', bedrooms: '4', bathrooms: '3', balcony: 'Terrace', pool: '—' },
-        { name: 'One Bedroom', plan: 'plan-4.png', type: 'Garden suite', size: '68 m²', bedrooms: '1', bathrooms: '1', balcony: 'Garden', pool: 'Shared' },
-        { name: 'Two Bedroom', plan: 'plan-3.png', type: 'House', size: '412 m²', bedrooms: '4', bathrooms: '4', balcony: 'Terrace', pool: 'Private' },
-        { name: 'Three Bedroom', plan: 'plan-3.png', type: 'House', size: '486 m²', bedrooms: '5', bathrooms: '4', balcony: 'Pine terrace', pool: 'Private' }
-      ],
-      landmarks: [
-        { name: 'Praia da Comporta', img: 'lm-beach.jpg', min: 12, km: '9 km' },
-        { name: 'Carvalhal', img: 'lm-marina.jpg', min: 9, km: '7 km' },
-        { name: 'Alcácer do Sal', img: 'lm-burj-khalifa.jpg', min: 30, km: '32 km' },
-        { name: 'Troia Peninsula', img: 'lm-burj-al-arab.jpg', min: 26, km: '24 km' },
-        { name: 'Lisbon Airport', img: 'lm-airport.jpg', min: 74, km: '118 km' }
-      ],
-      nearby: {
-        'Schools': [
-          { name: 'Escola de Comporta', km: '3.4 km', min: '7 min' },
-          { name: 'Colégio de Alcácer', km: '24 km', min: '26 min' },
-          { name: 'International School of Lisbon', km: '96 km', min: '70 min' }
-        ],
-        'Daily needs': [
-          { name: 'Mercearia da Comporta', km: '2.8 km', min: '6 min' },
-          { name: 'Carvalhal Market', km: '6.1 km', min: '9 min' },
-          { name: 'Alcácer do Sal Shopping', km: '25 km', min: '28 min' }
-        ],
-        'Healthcare': [
-          { name: 'Centro de Saúde de Alcácer', km: '26 km', min: '28 min' },
-          { name: 'Hospital de Setúbal', km: '56 km', min: '48 min' }
-        ],
-        'Leisure': [
-          { name: 'Praia da Comporta', km: '9.0 km', min: '12 min' },
-          { name: 'Herdade da Comporta', km: '11 km', min: '15 min' },
-          { name: 'Troia Golf', km: '24 km', min: '26 min' }
-        ]
-      },
-      faqDiff: 'A courtyard plan in lime mortar and chestnut, set back from the dunes so the house holds the afternoon light without the wind.',
-      payment: '30% on reservation, 30% during construction and 40% on deed.',
-      pets: 'Yes. The houses have walled courtyards and there is direct access to the pine belt for walks.',
-      schools: 'The village school is seven minutes away; Lisbon international schools are within an hour and a quarter.'
-    },
-
-    'alto-principe': {
-      name: 'Alto Príncipe',
-      short: 'Alto Príncipe',
-      location: 'Príncipe Real, Lisbon',
-      city: 'Lisbon',
-      status: 'Upcoming',
-      type: 'Apartment',
-      handover: 'Q1 2027',
-      size: '212 – 342 m²',
-      price: '€2.95M',
-      currency: 'EUR',
-      overview: 'Six apartments behind a restored nineteenth-century façade on the high side of Príncipe Real. The original stone stair is kept; behind it, rooms are opened to the garden and the river light, with kitchens in oak and Estremoz marble.',
-      note: 'Six apartments · Three and four bedrooms · Garden and river views',
-      hero: 'ex-3.jpg',
-      heroAlt: 'Alto Príncipe — restored stone façade with arched entrance',
-      heroCap: 'Príncipe Real · Six apartments',
-      masterplan: 'masterplan.jpg',
-      masterplanAlt: 'Alto Príncipe masterplan',
-      gallery: [
-        { img: 'ex-3.jpg', cap: 'Exterior', sub: 'Restored façade' },
-        { img: 'g-lounge.jpg', cap: 'Lounge', sub: 'Double height' },
-        { img: 'g-kitchen.jpg', cap: 'Kitchen', sub: 'Oak & marble' },
-        { img: 'g-bedroom.jpg', cap: 'Master bedroom', sub: 'River light' },
-        { img: 'g-street.jpg', cap: 'Terrace', sub: 'Roof garden' }
-      ],
-      amenities: ['Landscaped Gardens', "Children's Play Area", 'Tennis Court', 'Yoga Deck', 'State-of-the-Art Gymnasium', 'Covered Parking', '24/7 Security', 'Residents’ Lounge'],
-      layouts: [
-        { name: 'First Floor', plan: 'plan-1.png', type: 'Piano nobile', size: '186 m²', bedrooms: '–', bathrooms: '1', balcony: 'Balcony', pool: '—' },
-        { name: 'Typical Floor', plan: 'plan-2.png', type: 'Apartment', size: '212 m²', bedrooms: '3', bathrooms: '3', balcony: 'Balcony', pool: '—' },
-        { name: 'One Bedroom', plan: 'plan-4.png', type: 'Apartment', size: '96 m²', bedrooms: '1', bathrooms: '2', balcony: 'Courtyard', pool: '—' },
-        { name: 'Two Bedroom', plan: 'plan-3.png', type: 'Apartment', size: '248 m²', bedrooms: '2', bathrooms: '3', balcony: 'Terrace', pool: '—' },
-        { name: 'Three Bedroom', plan: 'plan-3.png', type: 'Garden duplex', size: '342 m²', bedrooms: '3', bathrooms: '4', balcony: 'Garden', pool: 'Plunge' }
-      ],
-      landmarks: [
-        { name: 'Praça do Príncipe Real', img: 'lm-burj-khalifa.jpg', min: 4, km: '0.6 km' },
-        { name: 'Chiado', img: 'g-street.jpg', min: 9, km: '1.8 km' },
-        { name: 'Lisbon Airport', img: 'lm-airport.jpg', min: 22, km: '9 km' },
-        { name: 'Cascais', img: 'lm-marina.jpg', min: 34, km: '30 km' },
-        { name: 'Sintra', img: 'lm-beach.jpg', min: 38, km: '32 km' }
-      ],
-      nearby: {
-        'Schools': [
-          { name: 'Colégio Pedro Nunes', km: '1.2 km', min: '6 min' },
-          { name: 'Escola Francesa de Lisboa', km: '3.4 km', min: '12 min' },
-          { name: 'St Julian’s School', km: '12 km', min: '24 min' }
-        ],
-        'Daily needs': [
-          { name: 'Mercado de Príncipe Real', km: '0.4 km', min: '2 min' },
-          { name: 'El Corte Inglés', km: '2.1 km', min: '9 min' },
-          { name: 'Chiado shops', km: '1.6 km', min: '8 min' }
-        ],
-        'Healthcare': [
-          { name: 'Hospital da Cuf', km: '2.8 km', min: '10 min' },
-          { name: 'Hospital de São José', km: '2.2 km', min: '9 min' }
-        ],
-        'Leisure': [
-          { name: 'Jardim do Príncipe Real', km: '0.5 km', min: '3 min' },
-          { name: 'Miradouro de São Pedro', km: '0.9 km', min: '5 min' },
-          { name: 'Teatro Nacional', km: '1.4 km', min: '7 min' }
-        ]
-      },
-      faqDiff: 'A restored nineteenth-century shell with the original stone stair kept intact and the living rooms opened to the garden and the river.',
-      payment: '20% on reservation, 40% during works and 40% on deed.',
-      pets: 'Yes. Apartments have direct lift access and the garden is shared but enclosed.',
-      schools: 'Colégio Pedro Nunes is six minutes away and the French school twelve.'
-    },
-
-    'mare-residences': {
-      name: 'Maré Residences',
-      short: 'Maré',
-      location: 'Cascais, Portugal',
-      city: 'Cascais',
-      status: 'Upcoming',
-      type: 'Apartment',
-      handover: 'Q2 2028',
-      size: '128 – 186 m²',
-      price: '€1.45M',
-      currency: 'EUR',
-      overview: 'A stepped building above the sea at Cascais, with fourteen apartments and planted terraces that step back as the building rises. Every home has an outdoor room facing the water, and the shared garden runs down to the coastal path.',
-      note: 'Fourteen apartments · Two and three bedrooms · Sea-facing terraces',
-      hero: 'ex-2.jpg',
-      heroAlt: 'Maré Residences — a stepped stone building above the sea at dusk',
-      heroCap: 'Cascais · Fourteen apartments',
-      masterplan: 'masterplan.jpg',
-      masterplanAlt: 'Maré Residences masterplan',
-      gallery: [
-        { img: 'ex-2.jpg', cap: 'Exterior', sub: 'Sea elevation' },
-        { img: 'g-lounge.jpg', cap: 'Lounge', sub: 'Sea light' },
-        { img: 'g-kitchen.jpg', cap: 'Kitchen', sub: 'Stone & oak' },
-        { img: 'g-bedroom.jpg', cap: 'Master bedroom', sub: 'Terrace' },
-        { img: 'g-pool.jpg', cap: 'Pool deck', sub: 'Shared garden' }
-      ],
-      amenities: ['Landscaped Gardens', "Children's Play Area", 'Tennis Court', 'Yoga Deck', 'State-of-the-Art Gymnasium', 'Covered Parking', '24/7 Security', 'Residents’ Lounge'],
-      layouts: [
-        { name: 'First Floor', plan: 'plan-1.png', type: 'Ground level', size: '142 m²', bedrooms: '–', bathrooms: '1', balcony: 'Garden', pool: 'Shared' },
-        { name: 'Typical Floor', plan: 'plan-2.png', type: 'Apartment', size: '128 m²', bedrooms: '2', bathrooms: '2', balcony: 'Sea terrace', pool: '—' },
-        { name: 'One Bedroom', plan: 'plan-4.png', type: 'Apartment', size: '74 m²', bedrooms: '1', bathrooms: '1', balcony: 'Balcony', pool: '—' },
-        { name: 'Two Bedroom', plan: 'plan-3.png', type: 'Apartment', size: '158 m²', bedrooms: '2', bathrooms: '2', balcony: 'Terrace', pool: 'Shared' },
-        { name: 'Three Bedroom', plan: 'plan-3.png', type: 'Penthouse', size: '186 m²', bedrooms: '3', bathrooms: '3', balcony: 'Roof terrace', pool: 'Plunge' }
-      ],
-      landmarks: [
-        { name: 'Praia da Rainha', img: 'lm-beach.jpg', min: 6, km: '1.6 km' },
-        { name: 'Cascais Marina', img: 'lm-marina.jpg', min: 8, km: '2.8 km' },
-        { name: 'Lisbon Airport', img: 'lm-airport.jpg', min: 30, km: '34 km' },
-        { name: 'Sintra', img: 'lm-burj-khalifa.jpg', min: 26, km: '22 km' },
-        { name: 'Cabo da Roca', img: 'lm-burj-al-arab.jpg', min: 24, km: '18 km' }
-      ],
-      nearby: {
-        'Schools': [
-          { name: 'Escola de Cascais', km: '1.1 km', min: '5 min' },
-          { name: 'St Julian’s School', km: '4.6 km', min: '10 min' },
-          { name: 'Escola Alemã de Lisboa', km: '18 km', min: '22 min' }
-        ],
-        'Daily needs': [
-          { name: 'Mercado de Cascais', km: '0.9 km', min: '4 min' },
-          { name: 'Cascais Shopping', km: '3.2 km', min: '8 min' },
-          { name: 'InterContinental shops', km: '1.4 km', min: '6 min' }
-        ],
-        'Healthcare': [
-          { name: 'Hospital de Cascais', km: '4.8 km', min: '10 min' },
-          { name: 'Cuf Cascais', km: '2.6 km', min: '7 min' }
-        ],
-        'Leisure': [
-          { name: 'Praia da Conceição', km: '1.2 km', min: '5 min' },
-          { name: 'Cascais Marina', km: '2.8 km', min: '8 min' },
-          { name: 'Boca do Inferno', km: '3.4 km', min: '9 min' }
-        ]
-      },
-      faqDiff: 'Every apartment has an outdoor room facing the water, and the building steps back as it rises so the terraces are never overlooked.',
-      payment: '25% on reservation, 35% during works and 40% on deed.',
-      pets: 'Yes. The shared garden is enclosed and the coastal path starts at the gate.',
-      schools: 'St Julian’s School is ten minutes away; central Lisbon schools are within half an hour.'
-    },
-
-    'quinta-do-vale': {
-      name: 'Quinta do Vale',
-      short: 'Quinta do Vale',
-      location: 'Alentejo, Portugal',
-      city: 'Alentejo',
-      status: 'Completed',
-      type: 'Villa',
-      handover: '2023',
-      size: '364 m²',
-      price: 'Sold out',
-      currency: 'EUR',
-      overview: 'Five houses on a working olive quinta in the Alentejo, built from rammed earth and local stone, with deep verandas on the shaded side. The estate retains its original well, outbuildings and a stand of centenarian olive trees.',
-      note: 'Five residences · Four bedrooms · Completed 2023',
-      hero: 'ex-1.jpg',
-      heroAlt: 'Quinta do Vale — stone and timber house at blue hour behind lavender',
-      heroCap: 'Alentejo · Five houses',
-      masterplan: 'masterplan.jpg',
-      masterplanAlt: 'Quinta do Vale masterplan',
-      gallery: [
-        { img: 'ex-1.jpg', cap: 'Exterior', sub: 'Olive quinta' },
-        { img: 'g-lounge.jpg', cap: 'Lounge', sub: 'Rammed earth' },
-        { img: 'g-kitchen.jpg', cap: 'Kitchen', sub: 'Oak & stone' },
-        { img: 'g-bedroom.jpg', cap: 'Master bedroom', sub: 'Veranda' },
-        { img: 'g-pool.jpg', cap: 'Pool deck', sub: 'Original well' }
-      ],
-      amenities: ['Landscaped Gardens', "Children's Play Area", 'Tennis Court', 'Yoga Deck', 'State-of-the-Art Gymnasium', 'Covered Parking', '24/7 Security', 'Residents’ Lounge'],
-      layouts: [
-        { name: 'First Floor', plan: 'plan-1.png', type: 'Ground level', size: '214 m²', bedrooms: '–', bathrooms: '1', balcony: 'Veranda', pool: 'Private' },
-        { name: 'Typical Floor', plan: 'plan-2.png', type: 'Bedroom level', size: '150 m²', bedrooms: '4', bathrooms: '3', balcony: 'Veranda', pool: '—' },
-        { name: 'One Bedroom', plan: 'plan-4.png', type: 'Guest house', size: '64 m²', bedrooms: '1', bathrooms: '1', balcony: 'Courtyard', pool: 'Shared' },
-        { name: 'Two Bedroom', plan: 'plan-3.png', type: 'House', size: '298 m²', bedrooms: '4', bathrooms: '4', balcony: 'Veranda', pool: 'Private' },
-        { name: 'Three Bedroom', plan: 'plan-3.png', type: 'House', size: '364 m²', bedrooms: '4', bathrooms: '4', balcony: 'Veranda', pool: 'Private' }
-      ],
-      landmarks: [
-        { name: 'Évora', img: 'lm-burj-khalifa.jpg', min: 34, km: '38 km' },
-        { name: 'Lisbon Airport', img: 'lm-airport.jpg', min: 78, km: '112 km' },
-        { name: 'Comporta', img: 'lm-beach.jpg', min: 62, km: '84 km' },
-        { name: 'Estremoz', img: 'lm-burj-al-arab.jpg', min: 28, km: '32 km' },
-        { name: 'Montemor-o-Novo', img: 'lm-marina.jpg', min: 22, km: '24 km' }
-      ],
-      nearby: {
-        'Schools': [
-          { name: 'Escola de Montemor', km: '24 km', min: '22 min' },
-          { name: 'Colégio de Évora', km: '38 km', min: '34 min' },
-          { name: 'International School of Lisbon', km: '110 km', min: '75 min' }
-        ],
-        'Daily needs': [
-          { name: 'Mercado de Montemor', km: '24 km', min: '22 min' },
-          { name: 'Évora Retail Park', km: '38 km', min: '34 min' },
-          { name: 'Vendas Novas market', km: '18 km', min: '18 min' }
-        ],
-        'Healthcare': [
-          { name: 'Hospital de Évora', km: '38 km', min: '34 min' },
-          { name: 'Centro de Saúde de Montemor', km: '24 km', min: '22 min' }
-        ],
-        'Leisure': [
-          { name: 'Quinta olive walks', km: '0 km', min: '1 min' },
-          { name: 'Évora old town', km: '38 km', min: '34 min' },
-          { name: 'Comporta beaches', km: '84 km', min: '62 min' }
-        ]
-      },
-      faqDiff: 'Five houses on a working olive quinta, built from rammed earth and stone, with the estate’s original well and outbuildings kept.',
-      payment: 'Reservations for the completed estate are handled by the studio on request.',
-      pets: 'Yes. Houses have enclosed gardens and the quinta is fenced.',
-      schools: 'The village school is twenty minutes away; Évora schools are thirty-five.'
-    },
-
-    'miradouro-terrace': {
-      name: 'Miradouro Terrace',
-      short: 'Miradouro',
-      location: 'Graça, Lisbon',
-      city: 'Lisbon',
-      status: 'Available',
-      type: 'Penthouse',
-      handover: '2025',
-      size: '248 m² + 96 m² terrace',
-      price: '€5.60M',
-      currency: 'EUR',
-      overview: 'Three penthouses above Graça, each with a roof terrace set back from the parapet so the view over the castle and the river stays uninterrupted. Interiors are pale oak, linen and Estremoz stone; the terraces have a kitchen, an outdoor room and a deep planter.',
-      note: 'Three penthouses · Three bedrooms · Private roof terraces',
-      hero: 'g-street.jpg',
-      heroAlt: 'Miradouro Terrace — travertine terrace above the Lisbon skyline',
-      heroCap: 'Graça · Three penthouses',
-      masterplan: 'masterplan.jpg',
-      masterplanAlt: 'Miradouro Terrace masterplan',
-      gallery: [
-        { img: 'g-street.jpg', cap: 'Exterior', sub: 'Roof terrace' },
-        { img: 'g-lounge.jpg', cap: 'Lounge', sub: 'River view' },
-        { img: 'g-kitchen.jpg', cap: 'Kitchen', sub: 'Oak & stone' },
-        { img: 'g-bedroom.jpg', cap: 'Master bedroom', sub: 'Castle view' },
-        { img: 'g-reading.jpg', cap: 'Terrace', sub: 'Outdoor room' }
-      ],
-      amenities: ['Landscaped Gardens', "Children's Play Area", 'Tennis Court', 'Yoga Deck', 'State-of-the-Art Gymnasium', 'Covered Parking', '24/7 Security', 'Residents’ Lounge'],
-      layouts: [
-        { name: 'First Floor', plan: 'plan-1.png', type: 'Terrace level', size: '96 m²', bedrooms: '–', bathrooms: '1', balcony: 'Roof terrace', pool: 'Plunge' },
-        { name: 'Typical Floor', plan: 'plan-2.png', type: 'Penthouse', size: '248 m²', bedrooms: '3', bathrooms: '3', balcony: 'Terrace', pool: '—' },
-        { name: 'One Bedroom', plan: 'plan-4.png', type: 'Penthouse suite', size: '112 m²', bedrooms: '1', bathrooms: '2', balcony: 'Balcony', pool: '—' },
-        { name: 'Two Bedroom', plan: 'plan-3.png', type: 'Penthouse', size: '196 m²', bedrooms: '2', bathrooms: '2', balcony: 'Terrace', pool: '—' },
-        { name: 'Three Bedroom', plan: 'plan-3.png', type: 'Penthouse', size: '248 m²', bedrooms: '3', bathrooms: '3', balcony: 'Roof terrace', pool: 'Plunge' }
-      ],
-      landmarks: [
-        { name: 'Miradouro da Graça', img: 'lm-burj-khalifa.jpg', min: 4, km: '0.5 km' },
-        { name: 'Castelo de São Jorge', img: 'lm-burj-al-arab.jpg', min: 8, km: '1.4 km' },
-        { name: 'Lisbon Airport', img: 'lm-airport.jpg', min: 20, km: '8 km' },
-        { name: 'Cais do Sodré', img: 'lm-marina.jpg', min: 12, km: '2.6 km' },
-        { name: 'Cascais', img: 'lm-beach.jpg', min: 32, km: '28 km' }
-      ],
-      nearby: {
-        'Schools': [
-          { name: 'Escola Gil Vicente', km: '0.8 km', min: '4 min' },
-          { name: 'Colégio Pedro Nunes', km: '2.6 km', min: '9 min' },
-          { name: 'St Julian’s School', km: '14 km', min: '26 min' }
-        ],
-        'Daily needs': [
-          { name: 'Mercado de Graça', km: '0.3 km', min: '2 min' },
-          { name: 'El Corte Inglés', km: '4.2 km', min: '13 min' },
-          { name: 'Baixa shops', km: '1.9 km', min: '9 min' }
-        ],
-        'Healthcare': [
-          { name: 'Hospital de São José', km: '1.6 km', min: '7 min' },
-          { name: 'Cuf Descobertas', km: '5.8 km', min: '15 min' }
-        ],
-        'Leisure': [
-          { name: 'Miradouro da Graça', km: '0.5 km', min: '4 min' },
-          { name: 'Feira da Ladra', km: '0.9 km', min: '5 min' },
-          { name: 'Jardim da Cerca da Graça', km: '0.4 km', min: '3 min' }
-        ]
-      },
-      faqDiff: 'The roof terraces are set back from the parapet, so the view over the castle and the river is uninterrupted and the terrace is never overlooked.',
-      payment: '30% on reservation, 40% during works and 30% on deed.',
-      pets: 'Yes. The private roof terrace gives each penthouse its own outdoor space.',
-      schools: 'Escola Gil Vicente is four minutes away and Pedro Nunes nine.'
-    },
-
-    'shadestate-house': {
-      name: 'Shadestate House',
-      short: 'Shadestate House',
-      location: 'Comporta, Portugal',
-      city: 'Comporta',
-      status: 'Completed',
-      type: 'Villa',
-      handover: '2019',
-      size: '612 m²',
-      price: 'Sold',
-      currency: 'EUR',
-      overview: 'The studio’s own house in Comporta, completed in 2019 and the reference for everything since: lime-rendered walls, a deep loggia, and a reflecting pool that holds the sky at the end of the courtyard.',
-      note: 'One residence · Six bedrooms · Sold in 2021',
-      hero: 'ex-1.jpg',
-      heroAlt: 'Shadestate House — limestone villa with reflecting pool and olive trees',
-      heroCap: 'Comporta · The studio house',
-      masterplan: 'masterplan.jpg',
-      masterplanAlt: 'Shadestate House masterplan',
-      gallery: [
-        { img: 'ex-1.jpg', cap: 'Exterior', sub: 'Reflecting pool' },
-        { img: 'g-lounge.jpg', cap: 'Lounge', sub: 'Loggia light' },
-        { img: 'g-kitchen.jpg', cap: 'Kitchen', sub: 'Lime & oak' },
-        { img: 'g-bedroom.jpg', cap: 'Master bedroom', sub: 'Courtyard' },
-        { img: 'g-reading.jpg', cap: 'Terrace', sub: 'Reading loggia' }
-      ],
-      amenities: ['Landscaped Gardens', "Children's Play Area", 'Tennis Court', 'Yoga Deck', 'State-of-the-Art Gymnasium', 'Covered Parking', '24/7 Security', 'Residents’ Lounge'],
-      layouts: [
-        { name: 'First Floor', plan: 'plan-1.png', type: 'Ground level', size: '360 m²', bedrooms: '–', bathrooms: '2', balcony: 'Loggia', pool: 'Private' },
-        { name: 'Typical Floor', plan: 'plan-2.png', type: 'Bedroom level', size: '252 m²', bedrooms: '6', bathrooms: '5', balcony: 'Terrace', pool: '—' },
-        { name: 'One Bedroom', plan: 'plan-4.png', type: 'Guest wing', size: '86 m²', bedrooms: '1', bathrooms: '1', balcony: 'Courtyard', pool: '—' },
-        { name: 'Two Bedroom', plan: 'plan-3.png', type: 'House', size: '512 m²', bedrooms: '5', bathrooms: '5', balcony: 'Loggia', pool: 'Private' },
-        { name: 'Three Bedroom', plan: 'plan-3.png', type: 'House', size: '612 m²', bedrooms: '6', bathrooms: '6', balcony: 'Loggia', pool: 'Private' }
-      ],
-      landmarks: [
-        { name: 'Praia da Comporta', img: 'lm-beach.jpg', min: 10, km: '8 km' },
-        { name: 'Carvalhal', img: 'lm-marina.jpg', min: 8, km: '6 km' },
-        { name: 'Alcácer do Sal', img: 'lm-burj-khalifa.jpg', min: 30, km: '32 km' },
-        { name: 'Troia', img: 'lm-burj-al-arab.jpg', min: 25, km: '23 km' },
-        { name: 'Lisbon Airport', img: 'lm-airport.jpg', min: 72, km: '116 km' }
-      ],
-      nearby: {
-        'Schools': [
-          { name: 'Escola de Comporta', km: '3.0 km', min: '7 min' },
-          { name: 'Colégio de Alcácer', km: '25 km', min: '27 min' },
-          { name: 'International School of Lisbon', km: '94 km', min: '69 min' }
-        ],
-        'Daily needs': [
-          { name: 'Mercearia da Comporta', km: '2.6 km', min: '6 min' },
-          { name: 'Carvalhal Market', km: '5.8 km', min: '9 min' },
-          { name: 'Alcácer do Sal Shopping', km: '25 km', min: '28 min' }
-        ],
-        'Healthcare': [
-          { name: 'Centro de Saúde de Alcácer', km: '26 km', min: '28 min' },
-          { name: 'Hospital de Setúbal', km: '55 km', min: '47 min' }
-        ],
-        'Leisure': [
-          { name: 'Praia da Comporta', km: '8.0 km', min: '10 min' },
-          { name: 'Herdade da Comporta', km: '10 km', min: '14 min' },
-          { name: 'Troia Golf', km: '23 km', min: '25 min' }
-        ]
-      },
-      faqDiff: 'It is the studio’s own house and the reference for every Shadestate project since — one courtyard, one loggia, one pool holding the sky.',
-      payment: 'Sold. Resale enquires are handled by the studio by appointment.',
-      pets: 'Yes. The garden is walled and opens onto the pine belt.',
-      schools: 'The village school is seven minutes away; Lisbon international schools are within an hour and a quarter.'
-    }
-  };
-
-  var ORDER = ['arbour-townhomes', 'sun-bliss-residence', 'townhouse', 'luxurious-villas', 'casa-da-luz', 'alto-principe', 'mare-residences', 'quinta-do-vale', 'miradouro-terrace', 'shadestate-house'];
+  var PROJECTS = window.SHADE_PROJECTS || {};
+  var ORDER = window.SHADE_ORDER || Object.keys(PROJECTS);
 
   /* ───────────────────────── helpers ───────────────────────── */
 
@@ -881,54 +212,120 @@
 
   /* ───────────────────────── render: hero ───────────────────────── */
 
+  var displayCurrency = null;
+
+  function moneyFor(cur) {
+    return window.shadeMoney ? window.shadeMoney(p, cur) : p.price + ' ' + (cur || p.currency);
+  }
+
+  function setCurrency(cur) {
+    displayCurrency = cur;
+    var el = $('#projectPrice');
+    if (el) {
+      if (window.gsap && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        window.gsap.fromTo(el, { yPercent: 30, autoAlpha: 0 }, { yPercent: 0, autoAlpha: 1, duration: .5, ease: 'power2.out' });
+      }
+      el.textContent = moneyFor(cur);
+    }
+    $$('.currency__btn').forEach(function (b) {
+      var on = b.getAttribute('data-cur') === cur;
+      b.classList.toggle('is-active', on);
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+  }
+
+  function initCurrency() {
+    $$('.currency__btn').forEach(function (b) {
+      b.addEventListener('click', function () { setCurrency(b.getAttribute('data-cur')); });
+    });
+    setCurrency(p.currency);
+  }
+
+  function renderPayplan() {
+    var cells = $('#payplanCells');
+    var pctEl = $('#payplanPct');
+    var bar = $('#payplanBar');
+    var note = $('#payplanNote');
+    var label = $('#payplanLabel');
+    var stage = $('#payplanStage');
+    if (!cells) return;
+    var done = p.status === 'Completed';
+    var pct = done ? 100 : (p.progress || 0);
+
+    if (done) {
+      if (label) label.textContent = 'Ownership';
+      cells.innerHTML = '<div class="payplan__cell"><b>Ready to move</b><span>Delivered and handed over</span></div>' +
+        '<div class="payplan__cell"><b>Title deed</b><span>Issued on transfer</span></div>' +
+        '<div class="payplan__cell"><b>Tenure</b><span>Freehold · managed by Shadestate</span></div>';
+      if (note) note.textContent = 'Residences are complete. A private viewing can be arranged within the week.';
+      if (stage) stage.textContent = 'complete';
+    } else {
+      if (label) label.textContent = 'Payment plan & construction';
+      cells.innerHTML = (p.plan || [['10%', 'Booking'], ['50%', 'Construction'], ['40%', 'Handover']]).map(function (c) {
+        return '<div class="payplan__cell"><b>' + esc(c[0]) + '</b><span>' + esc(c[1]) + '</span></div>';
+      }).join('');
+      if (note) note.textContent = p.payment || '10% on booking, 50% during construction and 40% on handover.';
+      if (stage) stage.textContent = 'built';
+    }
+    if (bar) bar.style.width = Math.max(2, pct) + '%';
+    if (pctEl) {
+      var obj = { v: 0 };
+      var set = function (v) { pctEl.textContent = Math.round(v); };
+      if (window.gsap) window.gsap.to(obj, { v: pct, duration: 1.4, ease: 'power2.out', onUpdate: function () { set(obj.v); } });
+      else set(pct);
+    }
+  }
+
   function renderHero() {
     document.title = p.name + ' — Shadestate';
     var md = document.querySelector('meta[name="description"]');
     if (md) md.setAttribute('content', p.name + ' by Shadestate — ' + p.type + ' in ' + p.location + '. Specifications, residences, floor plans and everything close by.');
 
     $('#projectTitle').textContent = p.name;
-    $('#projectPrice').textContent = p.price;
+    var eyebrow = $('#projectEyebrow');
+    if (eyebrow) eyebrow.textContent = p.location + ' · ' + p.status;
     $('#overviewText').textContent = p.overview;
     $('#overviewNote').textContent = p.note;
 
     var spec = [
-      ['STATUS', p.status],
-      ['LOCATION', p.location],
-      ['PROPERTY TYPE', p.type],
-      ['HANDOVER', p.handover],
-      ['UNIT SIZE', p.size]
+      ['Status', p.status],
+      ['Location', p.location],
+      ['Property type', p.type],
+      ['Handover', p.handover],
+      ['Unit size', p.size]
     ];
     $('#specList').innerHTML = spec.map(function (r) {
       return '<div class="spec__row"><dt>' + esc(r[0]) + '</dt><dd>' + esc(r[1]) + '</dd></div>';
     }).join('');
 
     var hero = $('#heroImage');
-    hero.src = IMG + p.hero;
+    hero.src = p.hero;
     hero.alt = p.heroAlt;
-    var cap = $('#heroCap');
+    var cap = $('#heroCaption');
     if (cap) cap.textContent = p.heroCap;
-
-    var bro = $('#broSpecList');
-    if (bro) {
-      bro.innerHTML = '<div><dt>Status</dt><dd>' + esc(p.status) + '</dd></div>' +
-        '<div><dt>Location</dt><dd>' + esc(p.location) + '</dd></div>' +
-        '<div><dt>Type</dt><dd>' + esc(p.type) + '</dd></div>' +
-        '<div><dt>Handover</dt><dd>' + esc(p.handover) + '</dd></div>' +
-        '<div><dt>Starting from</dt><dd>' + esc(p.price) + '</dd></div>' +
-        '<div><dt>Unit size</dt><dd>' + esc(p.size) + '</dd></div>';
-      $('#broTitle').textContent = p.name;
-      $('#broSpec').textContent = p.location + ' · ' + p.type + ' · ' + p.handover;
-    }
 
     $('#landmarksSub').textContent = 'Drive times from ' + p.name + ', measured at off-peak hours.';
 
-    var telHref = 'tel:+97140000000';
-    var waHref = 'https://wa.me/971000000000?text=' + encodeURIComponent('Hello Shadestate — I would like to know more about ' + p.name + '.');
-    $('#callLink').href = telHref;
-    $('#waLink').href = waHref;
-    $('#waLinkFloat').href = waHref;
-    $('#enqProject').textContent = p.name.toUpperCase();
-    $('#mapProjectName').textContent = p.name;
+    var tel = p.country === 'Saudi Arabia' ? '+966110000000' : '+97140000000';
+    var wa = 'https://wa.me/' + tel.replace(/\D/g, '') + '?text=' + encodeURIComponent('Hello Shadestate — I would like to know more about ' + p.name + '.');
+    var call = $('#callLink'); if (call) call.href = 'tel:' + tel;
+    var wa1 = $('#waLink'); if (wa1) wa1.href = wa;
+    var wa2 = $('#waLinkFloat'); if (wa2) wa2.href = wa;
+    var mapName = $('#mapProjectName'); if (mapName) mapName.textContent = p.name;
+
+    var contact = 'contact.html?project=' + encodeURIComponent(slug);
+    ['enquireLink', 'enquiryAction', 'brochureLink', 'planEnquire', 'viewingEnquire', 'quickEnquire', 'orbitEnquire'].forEach(function (id) {
+      var a = document.getElementById(id);
+      if (a) a.href = contact;
+    });
+    var oc = $('#enquireCopy');
+    if (oc) oc.textContent = 'Walk ' + p.name + ' with the people who planned and built it, in ' + (p.country === 'Saudi Arabia' ? 'Riyadh' : 'Dubai') + '. By appointment, at a time that suits you.';
+    var op = $('#orbitProject'); if (op) op.textContent = p.name;
+    var opc = $('#orbitProjectCopy'); if (opc) opc.textContent = p.name;
+    var we = $('#walkEyebrow'); if (we) we.textContent = p.name + ' · ' + p.location;
+
+    initCurrency();
+    renderPayplan();
   }
 
   /* ───────────────────────── landmarks ───────────────────────── */
@@ -1102,6 +499,13 @@
     $('#planSpec').innerHTML = rows.map(function (r) {
       return '<div><dt>' + esc(r[0]) + '</dt><dd>' + esc(r[1]) + '</dd></div>';
     }).join('');
+
+    var avail = $('#planAvail');
+    if (avail) {
+      var state = l.availability || 'Available';
+      avail.innerHTML = '<i class="dot" aria-hidden="true"></i>' + esc(state);
+      avail.className = 'plan__avail plan__avail--' + state.toLowerCase().replace(/\s+/g, '-');
+    }
 
     var dl = $('#planDownload');
     dl.href = IMG + l.plan;
@@ -1313,6 +717,7 @@
 
   function renderExplore() {
     var grid = $('#exploreGrid');
+    if (!grid) return;
     grid.innerHTML = '';
     var others = ORDER.filter(function (s) { return s !== slug; });
     others.sort(function (a, b) {
@@ -1320,16 +725,52 @@
       var cb = PROJECTS[b].city === p.city ? 0 : 1;
       return ca - cb;
     });
-    others.slice(0, 3).forEach(function (s) {
+    others.slice(0, 3).forEach(function (s, i) {
       var o = PROJECTS[s];
-      var a = el('a', 'ecard reveal');
-      a.href = 'project.html?project=' + encodeURIComponent(s);
-      a.innerHTML =
-        '<div class="ecard__fig"><img src="' + IMG + o.hero + '" alt="' + esc(o.name + ' — ' + o.location) + '" loading="lazy" decoding="async" width="800" height="600"></div>' +
-        '<p class="ecard__loc"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s7-6.1 7-11a7 7 0 1 0-14 0c0 4.9 7 11 7 11Z" fill="none" stroke="currentColor" stroke-width="1.3"/><circle cx="12" cy="10" r="2.4" fill="none" stroke="currentColor" stroke-width="1.3"/></svg>' + esc(o.location) + '</p>' +
-        '<p class="ecard__name">' + esc(o.name) + '</p>' +
-        '<p class="ecard__meta">' + esc(o.type + ' · ' + o.price) + '</p>';
-      grid.appendChild(a);
+      var li = el('li', 'crow');
+      li.setAttribute('data-status', o.status);
+      li.innerHTML = '<a class="crow__link" href="project.html?project=' + encodeURIComponent(s) + '" data-preview="' + o.hero + '" data-cursor="Open project">' +
+        '<span class="crow__num">' + ('0' + (i + 1)).slice(-2) + '</span>' +
+        '<span class="crow__name">' + esc(o.name) + '</span>' +
+        '<span class="crow__loc">' + esc(o.location) + '</span>' +
+        '<span class="crow__type">' + esc(o.type) + '</span>' +
+        '<span class="crow__price">From ' + esc(window.shadeMoney ? window.shadeMoney(o, o.currency) : o.price) + '</span>' +
+        '<span class="crow__state"><i class="dot" aria-hidden="true"></i>' + esc(o.status) + '</span>' +
+        '<svg class="crow__arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h14M12.5 6.5 18 12l-5.5 5.5"/></svg></a>';
+      grid.appendChild(li);
+    });
+    initExplorePreview(grid);
+  }
+
+  function initExplorePreview(grid) {
+    if (!window.matchMedia('(hover: hover)').matches) return;
+    var box = el('div', 'preview');
+    box.setAttribute('aria-hidden', 'true');
+    box.innerHTML = '<img alt="" src="' + (p.hero || 'assets/ksa/arbour-townhomes.jpg') + '">';
+    grid.parentElement.appendChild(box);
+    var img = box.querySelector('img');
+    var xTo = null, yTo = null;
+    if (window.gsap) {
+      xTo = window.gsap.quickTo(box, 'x', { duration: .5, ease: 'power3.out' });
+      yTo = window.gsap.quickTo(box, 'y', { duration: .5, ease: 'power3.out' });
+    }
+    $$('.crow__link', grid).forEach(function (a) {
+      a.addEventListener('mouseenter', function () {
+        img.src = a.getAttribute('data-preview');
+        if (window.gsap) {
+          window.gsap.fromTo(img, { scale: 1.08 }, { scale: 1, duration: .6, ease: 'power2.out' });
+          window.gsap.to(box, { opacity: 1, duration: .35 });
+        } else box.style.opacity = '1';
+      });
+      a.addEventListener('mouseleave', function () {
+        if (window.gsap) window.gsap.to(box, { opacity: 0, duration: .3 });
+        else box.style.opacity = '0';
+      });
+      a.addEventListener('mousemove', function (e) {
+        var x = e.clientX + 28, y = e.clientY - box.offsetHeight * .5;
+        if (xTo) { xTo(x); yTo(y); }
+        else box.style.transform = 'translate3d(' + x + 'px,' + y + 'px,0)';
+      });
     });
   }
 
@@ -1337,6 +778,7 @@
 
   function renderMenu() {
     var ul = $('#menuProjects');
+    if (!ul) return;
     ul.innerHTML = '';
     ORDER.forEach(function (s) {
       var o = PROJECTS[s];
@@ -1409,9 +851,9 @@
       $$('.modal').forEach(function (m) { if (!m.hidden) closeModal(m); });
     });
 
-    // enquire form
+    // enquire form (only present on legacy markup)
     var form = $('#enqForm');
-    form.addEventListener('submit', function (e) {
+    if (form) form.addEventListener('submit', function (e) {
       e.preventDefault();
       var name = $('#enqName'), email = $('#enqEmail'), out = $('#enqMsgOut');
       if (!name.value.trim() || !email.value.trim() || email.value.indexOf('@') < 1) {
@@ -1423,12 +865,12 @@
       form.reset();
     });
 
-    // brochure
-    var bro = $('#modalBrochure');
-    $('#broDownload').addEventListener('click', function () {
+    // brochure (legacy modal)
+    var broDownload = $('#broDownload');
+    if (broDownload) broDownload.addEventListener('click', function () {
       var rows = [
         ['Project', p.name], ['Location', p.location], ['Status', p.status], ['Property type', p.type],
-        ['Starting from', p.price], ['Handover', p.handover], ['Unit size', p.size]
+        ['Starting from', moneyFor(p.currency)], ['Handover', p.handover], ['Unit size', p.size]
       ];
       var html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>' + esc(p.name) + ' — Brochure</title>' +
         '<style>body{font-family:Helvetica,Arial,sans-serif;max-width:720px;margin:64px auto;padding:0 32px;color:#111}h1{font-weight:300;letter-spacing:-.02em;font-size:44px;text-transform:uppercase;margin:0 0 8px}h2{font-size:15px;letter-spacing:.1em;text-transform:uppercase;font-weight:500;margin:32px 0 10px}p{line-height:1.6;font-size:15px}table{width:100%;border-collapse:collapse;margin-top:12px}td{padding:10px 0;border-bottom:1px solid #ddd;font-size:14px}td:first-child{color:#666;text-transform:uppercase;letter-spacing:.08em;font-size:11px;width:40%}li{font-size:14px;line-height:1.7}</style></head><body>' +
@@ -1450,9 +892,9 @@
       setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
     });
 
-    // newsletter
+    // newsletter (legacy form)
     var news = $('#newsForm'), msg = $('#newsMsg');
-    news.addEventListener('submit', function (e) {
+    if (news) news.addEventListener('submit', function (e) {
       e.preventDefault();
       var v = $('#newsEmail').value.trim();
       if (v.indexOf('@') < 1) { msg.textContent = 'Please enter a valid email.'; return; }
@@ -1479,8 +921,7 @@
         var r = s.getBoundingClientRect();
         if (r.top <= 60 && r.bottom >= 60) dark = true;
       });
-      document.body.classList.toggle('theme-dark', dark);
-      top.classList.toggle('is-solid', y > 48 && !dark);
+      if (top) top.classList.toggle('is-scrolled', y > 30);
 
       var heroBottom = hero.getBoundingClientRect().bottom;
       var foot = document.querySelector('.footer');
@@ -1586,6 +1027,7 @@
   }
 
   function ctaArt() {
+    if (!$('#ctaArt')) return;
     // Exploded axonometric tower: stacked floor plates, corner columns, label leaders.
     var W = 520, H = 420;
     var cx = 190, cy = 315, k = 0.86;
@@ -1644,6 +1086,32 @@
     $('#ctaArt').innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" aria-hidden="true">' + out + '</svg>';
   }
 
+  function initPlanZoom() {
+    var zoom = $('#planZoom');
+    var box = $('#planLightbox');
+    if (!zoom || !box) return;
+    var img = $('#lightboxImg');
+    var cap = $('#lightboxCap');
+    function open() {
+      var plan = $('#planImage');
+      if (img) { img.src = plan.src; img.alt = plan.alt; }
+      if (cap) cap.textContent = $('#planTitle') ? $('#planTitle').textContent : '';
+      box.hidden = false;
+      document.body.classList.add('is-locked');
+      requestAnimationFrame(function () { box.classList.add('is-open'); });
+      var btn = $('#lightboxClose'); if (btn) setTimeout(function () { btn.focus(); }, 60);
+    }
+    function close() {
+      box.classList.remove('is-open');
+      document.body.classList.remove('is-locked');
+      setTimeout(function () { box.hidden = true; }, 300);
+    }
+    zoom.addEventListener('click', open);
+    var c = $('#lightboxClose'); if (c) c.addEventListener('click', close);
+    box.addEventListener('click', function (e) { if (e.target === box) close(); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !box.hidden) close(); });
+  }
+
   /* ───────────────────────── boot ───────────────────────── */
 
   function init() {
@@ -1657,12 +1125,11 @@
     renderFaq();
     renderExplore();
     renderMenu();
-    initMenu();
     initModals();
     initScrollUI();
     initGalleryWheel();
+    initPlanZoom();
     ctaArt();
-    skyline();
     initReveal();
 
     // mark current menu link
