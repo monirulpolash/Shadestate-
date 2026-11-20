@@ -868,7 +868,7 @@
       );
     });
 
-    /* Featured project: scale-on-scroll (Hale Arden pattern) */
+    /* Selected work: contained photographs grow into place */
     initFeature();
 
     /* Counters */
@@ -892,47 +892,34 @@
     window.addEventListener('load', function () { ST.refresh(); });
   }
 
+  /* Selected work: the contained photograph grows from .7 into place as it
+     enters, its own crops settling at the same time (Hale Arden pattern). */
   function initFeature() {
     var gsap = state.gsap;
-    var blocks = $$('[data-feature-stage]');
-    if (!blocks.length) return;
+    var frames = $$('[data-work-media]');
+    if (!frames.length) return;
 
-    blocks.forEach(function (stage) {
-      var block = stage.closest('[data-feature]') || stage.parentElement;
-      var media = $('[data-feature-media]', stage);
-      var img = $('[data-feature-img]', stage);
-      var caption = $('.feature__caption', stage);
-      if (!media) return;
-
+    frames.forEach(function (frame) {
+      var img = $('[data-work-img]', frame);
       var mm = gsap.matchMedia();
 
       mm.add('(prefers-reduced-motion: no-preference)', function () {
         var tl = gsap.timeline({
           scrollTrigger: {
-            trigger: stage,
-            start: 'top 90%',
+            trigger: frame,
+            start: 'top bottom',
             end: 'top 30%',
-            scrub: 0.6,
+            scrub: 0.4,
             invalidateOnRefresh: true
           }
         });
-        tl.fromTo(media,
-          { scale: 0.74, clipPath: 'inset(0% 9% 0% 9%)' },
-          { scale: 1, clipPath: 'inset(0% 0% 0% 0%)', ease: 'none', duration: 1 }, 0);
-        if (img) tl.fromTo(img, { scale: 1.32 }, { scale: 1, ease: 'none', duration: 1 }, 0);
+        tl.fromTo(frame, { scale: 0.7 }, { scale: 1, ease: 'none', duration: 1 }, 0);
+        if (img) tl.fromTo(img, { scale: 1.5 }, { scale: 1, ease: 'none', duration: 1 }, 0);
 
         return function () {
-          gsap.set([media, img].filter(Boolean), { clearProps: 'all' });
+          gsap.set([frame, img].filter(Boolean), { clearProps: 'transform' });
         };
       });
-
-      if (caption) {
-        gsap.fromTo(caption, { y: 26, autoAlpha: 0 }, {
-          y: 0, autoAlpha: 1, duration: 1, ease: 'power3.out',
-          scrollTrigger: { trigger: stage, start: 'top 48%', once: true }
-        });
-      }
-      void block;
     });
   }
 
