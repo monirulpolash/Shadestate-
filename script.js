@@ -597,11 +597,11 @@
       intro();
 
       /* Split text bakes its line breaks from measured metrics, so wait for the
-         two faces it actually sets before measuring again. */
+         one face the site actually sets before measuring again. */
       if (document.fonts && document.fonts.load) {
         Promise.all([
-          document.fonts.load('600 1em "Timeless Serif"'),
-          document.fonts.load('500 1em "Timeless Serif"'),
+          document.fonts.load('600 1em "Timeless Sans"'),
+          document.fonts.load('500 1em "Timeless Sans"'),
           document.fonts.load('400 1em "Timeless Sans"')
         ]).then(function () { return document.fonts.ready; }).then(function () {
           resplitAll();

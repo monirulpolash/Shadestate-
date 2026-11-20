@@ -18,7 +18,7 @@
   --sand:#F5F5F5;
   --ink-soft:rgba(17,17,17,.62);
   --ink-faint:rgba(17,17,17,.34);
-  --serif:"Timeless Serif","Timeless Sans",-apple-system,BlinkMacSystemFont,"SF Pro Display",system-ui,"Segoe UI",Helvetica,Arial,sans-serif;
+  --serif:"Timeless Sans",-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Inter",system-ui,sans-serif;
   --sans:"Timeless Sans",-apple-system,BlinkMacSystemFont,"SF Pro Text","Inter",system-ui,"Segoe UI",Helvetica,Arial,sans-serif;
   --w-pad:clamp(20px,4.2vw,64px);
   --w-ease:cubic-bezier(.22,.61,.24,1);

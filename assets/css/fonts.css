@@ -2,20 +2,29 @@
    SHADESTATE · Timeless
    The whole site is set in the Timeless type family (1.094), self-hosted.
 
-   · Timeless Sans  — Grotesk cut, wght 300–800. UI, body, labels, numerals.
-   · Timeless Serif — display cut, wght 200–700. Headlines and editorial voice.
+   · Timeless Sans  — wght 300–800, Grotesk cut by default (STYL 0), upright.
+                      UI, body, labels, numerals.
+   · Timeless Serif — wght 200–700, display cut by default (STYL 0).
+                      Headlines and editorial voice.
    · Timeless Serif Italic — wght 300–700, declared so a genuine italic is
-     available if one is ever set; it is only fetched when italic text appears.
+                      available if one is ever set; fetched only when used.
 
-   Files are instanced (oblique/alternate axes pinned) and subset to Latin +
-   punctuation, then WOFF2: 78 KB / 57 KB / 43 KB. Loaded before every other
-   stylesheet, and the two upright cuts are preloaded in each page <head>.
-   Licensed under the Timeless Free Font License 1.2 (timeless.co).
+   The files are the publisher's variable WOFF2s, subset to Latin and
+   punctuation so they travel light (184 KB / 95 KB / 43 KB). Every axis is
+   kept, so the Sans cut and the Serif Text cut can be reached from CSS with
+   font-variation-settings ('STYL' 100) without another file.
+
+   Licensed under the Timeless Free Font License 1.2 — see LICENSE.pdf beside
+   these files. Free for commercial use; the fonts may not be resold, renamed
+   or passed around, and new copies should come from timeless.co.
+
+   Loaded before every other stylesheet; the two upright cuts are preloaded in
+   each page <head>.
    ========================================================================== */
 
 @font-face {
   font-family: "Timeless Sans";
-  src: url("../fonts/TimelessSans-VF.woff2") format("woff2");
+  src: url("../fonts/TimelessSansVF.woff2") format("woff2");
   font-weight: 300 800;
   font-style: normal;
   font-display: swap;
@@ -23,7 +32,7 @@
 
 @font-face {
   font-family: "Timeless Serif";
-  src: url("../fonts/TimelessSerif-VF.woff2") format("woff2");
+  src: url("../fonts/TimelessSerifVF.woff2") format("woff2");
   font-weight: 200 700;
   font-style: normal;
   font-display: swap;
@@ -31,7 +40,7 @@
 
 @font-face {
   font-family: "Timeless Serif";
-  src: url("../fonts/TimelessSerif-Italic-VF.woff2") format("woff2");
+  src: url("../fonts/TimelessSerifItalicVF.woff2") format("woff2");
   font-weight: 300 700;
   font-style: italic;
   font-display: swap;
