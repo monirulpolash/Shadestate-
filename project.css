@@ -33,7 +33,8 @@
   --pad:40px;
   --display:clamp(34px, 4.1vw, 56px);
   --ease:cubic-bezier(.25,.1,.25,1);
-  --sans:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Inter",system-ui,"Helvetica Neue",Arial,sans-serif;
+  --sans:"Timeless Sans",-apple-system,BlinkMacSystemFont,"SF Pro Text","Inter",system-ui,"Helvetica Neue",Arial,sans-serif;
+  --serif:"Timeless Serif","Timeless Sans",-apple-system,BlinkMacSystemFont,"SF Pro Display",system-ui,"Helvetica Neue",Arial,sans-serif;
 }
 
 *,*::before,*::after{box-sizing:border-box}

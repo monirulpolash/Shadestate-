@@ -58,8 +58,8 @@
   --bronze: var(--gold);
 
   /* type */
-  --serif: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", system-ui, "Helvetica Neue", Arial, sans-serif;
-  --sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Inter", system-ui, "Helvetica Neue", Arial, sans-serif;
+  --serif: "Timeless Serif", "Timeless Sans", -apple-system, BlinkMacSystemFont, "SF Pro Display", system-ui, "Helvetica Neue", Arial, sans-serif;
+  --sans: "Timeless Sans", -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", system-ui, "Helvetica Neue", Arial, sans-serif;
   --fs-display-xl: clamp(3rem, 7.4vw, 7.4rem);
   --fs-display-l: clamp(2.2rem, 4.6vw, 4.2rem);
   --fs-display-m: clamp(1.7rem, 2.6vw, 2.6rem);
