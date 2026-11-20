@@ -23,12 +23,12 @@ if (stage && canvas && window.SHADE_PROJECTS) {
   const proj = (lon, lat) => [(lon - LON0) * SX - CX, (lat - LAT0) * SY - CY];
 
   const COL = {
-    completed: 0xF7F4EF,
+    completed: 0xFFFFFF,
     ongoing: 0xC9A55A,
-    upcoming: 0xF7F4EF,
-    sea: 0x080F12,
-    landTop: 0xD9CBB0,
-    landSide: 0x8E7C61
+    upcoming: 0xFFFFFF,
+    sea: 0x0A0A0A,
+    landTop: 0xDEDEDE,
+    landSide: 0x8A8A8A
   };
 
   /* ── renderer / scene ──────────────────────────────────────────────── */
@@ -47,18 +47,18 @@ if (stage && canvas && window.SHADE_PROJECTS) {
     renderer.toneMappingExposure = 1.0;
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x0B1114);
-    scene.fog = new THREE.Fog(0x0B1114, 4.6, 8.2);
+    scene.background = new THREE.Color(0x111111);
+    scene.fog = new THREE.Fog(0x111111, 4.6, 8.2);
 
     const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 30);
 
     /* lights: a warm low sun from the west, a cool sky fill */
-    const hemi = new THREE.HemisphereLight(0xBFD4D8, 0x2A2118, 0.95);
+    const hemi = new THREE.HemisphereLight(0xF2F2F2, 0x1C1C1C, 0.95);
     scene.add(hemi);
-    const sun = new THREE.DirectionalLight(0xFFE4BE, 2.1);
+    const sun = new THREE.DirectionalLight(0xFFFFFF, 2.1);
     sun.position.set(-3.2, 4.6, 2.8);
     scene.add(sun);
-    const rim = new THREE.DirectionalLight(0x8FB6C4, 0.7);
+    const rim = new THREE.DirectionalLight(0xD8D8D8, 0.7);
     rim.position.set(3.4, 2.4, -3.2);
     scene.add(rim);
 
@@ -79,7 +79,7 @@ if (stage && canvas && window.SHADE_PROJECTS) {
       gridPts.push(new THREE.Vector3(-3.5, -0.028, gz), new THREE.Vector3(3.5, -0.028, gz));
     }
     const gridGeo = new THREE.BufferGeometry().setFromPoints(gridPts);
-    const grid = new THREE.LineSegments(gridGeo, new THREE.LineBasicMaterial({ color: 0x2B3A3E, transparent: true, opacity: 0.5 }));
+    const grid = new THREE.LineSegments(gridGeo, new THREE.LineBasicMaterial({ color: 0x3A3A3A, transparent: true, opacity: 0.5 }));
     scene.add(grid);
 
     /* ── land ────────────────────────────────────────────────────────── */
@@ -88,7 +88,7 @@ if (stage && canvas && window.SHADE_PROJECTS) {
 
     const topMat = new THREE.MeshStandardMaterial({ color: COL.landTop, roughness: 0.94, metalness: 0.02 });
     const sideMat = new THREE.MeshStandardMaterial({ color: COL.landSide, roughness: 1, metalness: 0 });
-    const borderMat = new THREE.LineBasicMaterial({ color: 0xF0E5D0, transparent: true, opacity: 0.18 });
+    const borderMat = new THREE.LineBasicMaterial({ color: 0xF5F5F5, transparent: true, opacity: 0.16 });
 
     function addCountry(rings) {
       rings.forEach((ring) => {

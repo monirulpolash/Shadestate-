@@ -600,9 +600,9 @@
          two faces it actually sets before measuring again. */
       if (document.fonts && document.fonts.load) {
         Promise.all([
-          document.fonts.load('700 1em "Plus Jakarta Sans"'),
-          document.fonts.load('italic 400 1em "Cormorant Garamond"'),
-          document.fonts.load('400 1em "Cormorant Garamond"')
+          document.fonts.load('600 1em "Inter"'),
+          document.fonts.load('500 1em "Inter"'),
+          document.fonts.load('400 1em "Inter"')
         ]).then(function () { return document.fonts.ready; }).then(function () {
           resplitAll();
           window.ScrollTrigger.refresh();

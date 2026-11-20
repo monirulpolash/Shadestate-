@@ -7,25 +7,25 @@
    the template's own styles can only reach the walkthrough via element
    selectors, which the class rules below always out-specify.
 
-   Palette: alabaster #F7F4EF · espresso #1C1A17 · bronze #9A7B56 · sand #E6DFD3
+   Palette: paper #FFFFFF · ink #111111 · brass #C9A55A · stone #F5F5F5
    ════════════════════════════════════════════════════════════════════ */
 
 /* local tokens, scoped, so the template's --espresso / --bronze stay untouched */
 #walk{
-  --alabaster:#F7F4EF;
-  --espresso:#1C1A17;
-  --bronze:#9A7B56;
-  --sand:#E6DFD3;
-  --ink-soft:rgba(28,26,23,.62);
-  --ink-faint:rgba(28,26,23,.34);
-  --serif:"Cormorant Garamond",Cormorant,Georgia,"Times New Roman",serif;
-  --sans:"Plus Jakarta Sans",Inter,system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;
+  --alabaster:#FFFFFF;
+  --espresso:#111111;
+  --bronze:#C9A55A;
+  --sand:#F5F5F5;
+  --ink-soft:rgba(17,17,17,.62);
+  --ink-faint:rgba(17,17,17,.34);
+  --serif:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Inter",system-ui,"Segoe UI",Helvetica,Arial,sans-serif;
+  --sans:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Inter",system-ui,"Segoe UI",Helvetica,Arial,sans-serif;
   --w-pad:clamp(20px,4.2vw,64px);
   --w-ease:cubic-bezier(.22,.61,.24,1);
 
   position:relative;
   height:600vh;
-  background:#0f0e0c;
+  background:#111111;
   color:var(--alabaster);
   font-family:var(--sans);
   font-weight:400;
@@ -54,7 +54,7 @@
   height:100vh;height:100svh;
   width:100%;
   overflow:hidden;
-  background:#0f0e0c;
+  background:#111111;
 }
 
 #walk .walk__canvas{
@@ -87,8 +87,8 @@
 }
 #walk .walk__veil{
   position:absolute;inset:0;pointer-events:none;
-  background:#0b0907;
-  opacity:.55;
+  background:#000000;
+  opacity:.5;
 }
 
 /* HUD */
@@ -99,24 +99,32 @@
   grid-template-columns:1fr auto;
   grid-template-rows:auto 1fr auto;
   gap:12px;
-  color:rgba(247,244,239,.82);
+  color:rgba(245,245,245,.82);
 }
 #walk .hud__brand{
-  grid-column:1;grid-row:1;
+  grid-column:1;grid-row:1;justify-self:start;
   display:flex;align-items:baseline;gap:8px;
-  font-family:var(--serif);font-size:15px;letter-spacing:.03em;
+  padding:9px 16px;border-radius:980px;
+  background:rgba(18,18,20,.48);border:1px solid rgba(255,255,255,.18);
+  -webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 10px 26px rgba(0,0,0,.22);
+  font-family:var(--serif);font-size:15px;font-weight:500;letter-spacing:.02em;
   text-shadow:0 1px 12px rgba(0,0,0,.45);
 }
-#walk .hud__brand i{font-family:var(--sans);font-style:normal;font-size:8.5px;letter-spacing:.26em;text-transform:uppercase;color:rgba(247,244,239,.62)}
+#walk .hud__brand i{font-family:var(--sans);font-style:normal;font-size:8.5px;letter-spacing:.26em;text-transform:uppercase;color:rgba(245,245,245,.62)}
 #walk .hud__stages{
-  grid-column:2;grid-row:1;
-  display:flex;gap:clamp(10px,1.5vw,20px);
-  font-size:8.5px;letter-spacing:.2em;text-transform:uppercase;
+  grid-column:2;grid-row:1;justify-self:end;
+  display:flex;gap:clamp(10px,1.5vw,18px);
+  padding:9px 16px;border-radius:980px;
+  background:rgba(18,18,20,.48);border:1px solid rgba(255,255,255,.18);
+  -webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 10px 26px rgba(0,0,0,.22);
+  font-size:9px;letter-spacing:.16em;text-transform:uppercase;
   text-shadow:0 1px 10px rgba(0,0,0,.5);
 }
 #walk .hud__stages li{
   display:flex;align-items:center;gap:6px;
-  color:rgba(247,244,239,.38);
+  color:rgba(245,245,245,.38);
   transition:color .5s var(--w-ease);
 }
 #walk .hud__stages li span{font-size:7.5px;letter-spacing:.1em;opacity:.7}
@@ -124,14 +132,19 @@
 #walk .hud__stages li.is-active span{color:var(--bronze);opacity:1}
 #walk .hud__bar{
   grid-column:1;grid-row:3;align-self:end;
-  width:min(280px,42vw);height:1px;background:rgba(247,244,239,.18);
-  position:relative;
+  width:min(280px,42vw);height:3px;border-radius:2px;background:rgba(255,255,255,.24);
+  position:relative;overflow:hidden;
+  box-shadow:0 1px 8px rgba(0,0,0,.3);
 }
-#walk .hud__bar i{position:absolute;left:0;top:0;height:100%;width:0;background:var(--bronze);display:block}
+#walk .hud__bar i{position:absolute;left:0;top:0;height:100%;width:0;border-radius:2px;background:var(--bronze);display:block}
 #walk .hud__num{
   grid-column:2;grid-row:3;align-self:end;justify-self:end;
-  font-size:9px;letter-spacing:.18em;color:rgba(247,244,239,.5);
-  display:flex;align-items:baseline;gap:2px;
+  padding:7px 13px;border-radius:980px;
+  background:rgba(18,18,20,.48);border:1px solid rgba(255,255,255,.18);
+  -webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.18);
+  font-size:10px;font-weight:500;letter-spacing:.12em;color:rgba(255,255,255,.82);
+  display:flex;align-items:baseline;gap:2px;font-variant-numeric:tabular-nums;
 }
 #walk .hud__num i{font-style:normal;font-size:7.5px;opacity:.7}
 
@@ -160,7 +173,7 @@
 }
 #walk .copy__eyebrow{
   display:flex;align-items:center;gap:12px;
-  font-size:9px;letter-spacing:.28em;text-transform:uppercase;
+  font-size:10px;letter-spacing:.2em;text-transform:uppercase;font-weight:500;
   color:var(--bronze);
   margin-bottom:clamp(10px,1.6vh,18px);
   text-shadow:0 1px 14px rgba(0,0,0,.6);
@@ -168,19 +181,19 @@
 #walk .copy__eyebrow::before{content:"";display:block;width:26px;height:1px;background:currentColor;opacity:.6}
 #walk .copy__item--center .copy__eyebrow::before{display:none}
 #walk .copy__line{
-  font-family:var(--serif);font-weight:300;
+  font-family:var(--serif);font-weight:600;
   font-size:clamp(34px,5.4vw,76px);
-  line-height:.98;letter-spacing:-.018em;
+  line-height:1.02;letter-spacing:-.035em;
   color:var(--alabaster);
   text-wrap:balance;
   text-shadow:0 2px 34px rgba(0,0,0,.42);
 }
-#walk .copy__line--xl{font-size:clamp(52px,11vw,148px);font-style:italic;letter-spacing:-.03em}
+#walk .copy__line--xl{font-size:clamp(52px,11vw,148px);font-style:normal;letter-spacing:-.045em}
 #walk .copy__note{
   margin-top:clamp(12px,1.8vh,20px);
   max-width:38ch;
   font-size:clamp(12px,1.15vw,14px);font-weight:300;line-height:1.7;
-  color:rgba(247,244,239,.72);
+  color:rgba(245,245,245,.72);
   text-shadow:0 1px 18px rgba(0,0,0,.55);
 }
 #walk .copy__item--center .copy__note{margin-left:auto;margin-right:auto}
@@ -189,17 +202,19 @@
 #walk .btn{
   display:inline-flex;align-items:center;gap:14px;
   margin-top:clamp(18px,2.4vw,30px);
-  padding:14px 22px;
-  border:1px solid rgba(247,244,239,.45);
-  border-radius:999px;
+  padding:15px 24px;
+  border:1px solid rgba(255,255,255,.24);
+  border-radius:980px;
+  background:rgba(18,18,20,.48);
+  -webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 12px 30px rgba(0,0,0,.25);
   font-family:var(--sans);
-  font-size:11px;letter-spacing:.2em;text-transform:uppercase;font-weight:500;
+  font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:500;
   color:var(--alabaster);
-  background:transparent;
-  transition:background .45s var(--w-ease),color .45s var(--w-ease),border-color .45s var(--w-ease);
+  transition:background .3s var(--w-ease),color .3s var(--w-ease),border-color .3s var(--w-ease),transform .3s var(--w-ease);
 }
 #walk .btn span{transition:transform .45s var(--w-ease);font-size:13px;letter-spacing:0}
-#walk .btn:hover{background:var(--alabaster);color:var(--espresso);border-color:var(--alabaster)}
+#walk .btn:hover{background:var(--alabaster);color:var(--espresso);border-color:var(--alabaster);transform:translateY(-1px)}
 #walk .btn:hover span{transform:translateX(4px)}
 
 #walk .walk__scrollhint{
@@ -207,11 +222,11 @@
   transform:translateX(-50%);
   display:flex;align-items:center;gap:10px;
   font-size:8.5px;letter-spacing:.3em;text-transform:uppercase;
-  color:rgba(247,244,239,.5);
+  color:rgba(245,245,245,.5);
   pointer-events:none;
   transition:opacity .6s var(--w-ease);
 }
-#walk .walk__scrollhint i{display:block;width:1px;height:26px;background:linear-gradient(to bottom,rgba(247,244,239,.5),transparent)}
+#walk .walk__scrollhint i{display:block;width:1px;height:26px;background:linear-gradient(to bottom,rgba(245,245,245,.5),transparent)}
 #walk .walk__scrollhint.is-hidden{opacity:0}
 
 /* fallback poster: no WebGL, or the module failed to load */
@@ -247,10 +262,10 @@
 #walk .fallback__wing{position:absolute;right:-22%;top:44%;width:24%;height:56%;background:linear-gradient(180deg,#b9865a,#8a5f3c)}
 #walk .fallback__field{position:absolute;left:0;right:0;bottom:0;height:38%;background:linear-gradient(180deg,#8d8567,#6d674e 60%,#5b5741)}
 #walk .fallback__pool{position:absolute;left:18%;right:14%;bottom:8%;height:16%;background:linear-gradient(180deg,#7e928c,#47594f 65%,#2f3d36);box-shadow:0 0 60px rgba(255,230,190,.25) inset}
-#walk .fallback__copy{position:absolute;left:var(--w-pad);bottom:clamp(30px,8vh,80px);max-width:min(560px,84vw);color:#1C1A17}
-#walk .fallback__copy .copy__line{color:#1C1A17;text-shadow:none;font-size:clamp(30px,5vw,64px)}
-#walk .fallback__copy .copy__note{color:rgba(28,26,23,.7);text-shadow:none}
-#walk .fallback__copy .copy__eyebrow{color:#7d6446;text-shadow:none}
+#walk .fallback__copy{position:absolute;left:var(--w-pad);bottom:clamp(30px,8vh,80px);max-width:min(560px,84vw);color:#111111}
+#walk .fallback__copy .copy__line{color:#111111;text-shadow:none;font-size:clamp(30px,5vw,64px)}
+#walk .fallback__copy .copy__note{color:rgba(17,17,17,.7);text-shadow:none}
+#walk .fallback__copy .copy__eyebrow{color:#8A6A1F;text-shadow:none}
 
 /* ════════════════════ RESPONSIVE ════════════════════ */
 @media (max-width:860px){

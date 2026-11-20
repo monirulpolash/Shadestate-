@@ -276,7 +276,7 @@
       function rnd() { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; }
       var parts = [];
       parts.push('<svg viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="none" aria-hidden="true">');
-      parts.push('<defs><linearGradient id="skyfade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F7F4EF" stop-opacity=".13"/><stop offset="1" stop-color="#F7F4EF" stop-opacity=".02"/></linearGradient></defs>');
+      parts.push('<defs><linearGradient id="skyfade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFFFF" stop-opacity=".13"/><stop offset="1" stop-color="#FFFFFF" stop-opacity=".02"/></linearGradient></defs>');
       var x = 0;
       while (x < w) {
         var bw = 12 + rnd() * 26;
