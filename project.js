@@ -299,7 +299,7 @@
     }).join('');
 
     var hero = $('#heroImage');
-    hero.src = p.hero;
+    window.shadePhoto(hero, p.hero, '100vw');
     hero.alt = p.heroAlt;
     var cap = $('#heroCaption');
     if (cap) cap.textContent = p.heroCap;
@@ -347,12 +347,13 @@
         '<circle class="track" cx="50" cy="50" r="' + r + '"/>' +
         '<circle class="prog" cx="50" cy="50" r="' + r + '" stroke-dasharray="' + c.toFixed(1) + '" stroke-dashoffset="' + c.toFixed(1) + '" data-dash="' + (c * (1 - pct)).toFixed(1) + '"/>' +
         '</svg>' +
-        '<div class="landmark__img"><img src="' + IMG + l.img + '" alt="' + esc(l.name) + '" loading="lazy" decoding="async" width="600" height="600"></div>';
+        '<div class="landmark__img"><img alt="' + esc(l.name) + '" loading="lazy" decoding="async" width="600" height="600" data-photo="' + esc(l.img) + '"></div>';
 
       var time = el('p', 'landmark__time', '<span class="num" data-min="' + l.min + '">0</span><small>min</small>');
       var name = el('p', 'landmark__name', esc(l.name));
       var dist = el('p', 'landmark__dist', esc(l.km));
 
+      window.shadePhoto(ring.querySelector('img'), IMG + l.img, '190px');
       li.appendChild(ring);
       li.appendChild(time);
       li.appendChild(name);
@@ -400,9 +401,10 @@
       var a = el('article', 'gitem reveal' + (i === 0 ? ' gitem--lead' : ''));
       a.innerHTML =
         '<p class="gitem__num">' + pad2(i + 1) + '</p>' +
-        '<figure class="gitem__fig"><img src="' + IMG + g.img + '" alt="' + esc(p.name + ': ' + g.cap) + '" loading="' + (i > 1 ? 'lazy' : 'eager') + '" decoding="async" width="900" height="1125"></figure>' +
+        '<figure class="gitem__fig"><img src="' + IMG + g.img + '" alt="' + esc(p.name + ': ' + g.cap) + '" loading="lazy" decoding="async" width="900" height="1125"></figure>' +
         '<p class="gitem__cap"><span>' + esc(g.cap) + '</span><span>' + esc(g.sub) + '</span></p>';
       track.appendChild(a);
+      window.shadePhoto(a.querySelector('img'), IMG + g.img, '(max-width: 900px) 78vw, 32vw');
     });
 
     track.scrollLeft = 0;
@@ -690,7 +692,7 @@
 
   function renderMasterplan() {
     var img = $('#masterplanImage');
-    img.src = IMG + p.masterplan;
+    window.shadePhoto(img, IMG + p.masterplan, '(max-width: 900px) 100vw, 70vw');
     img.alt = p.masterplanAlt;
   }
 
@@ -746,9 +748,12 @@
     if (!window.matchMedia('(hover: hover)').matches) return;
     var box = el('div', 'preview');
     box.setAttribute('aria-hidden', 'true');
-    box.innerHTML = '<img alt="" src="' + (p.hero || 'assets/ksa/arbour-townhomes.jpg') + '">';
+    box.innerHTML = '<img alt="" loading="lazy" decoding="async">';
     grid.parentElement.appendChild(box);
     var img = box.querySelector('img');
+    /* the preview only shows on hover: start with the smallest frame, never
+       the multi-megabyte original */
+    window.shadePhoto(img, p.hero || 'assets/ksa/arbour-townhomes.jpg', '420px');
     var xTo = null, yTo = null;
     if (window.gsap) {
       xTo = window.gsap.quickTo(box, 'x', { duration: .5, ease: 'power3.out' });
@@ -756,7 +761,7 @@
     }
     $$('.crow__link', grid).forEach(function (a) {
       a.addEventListener('mouseenter', function () {
-        img.src = a.getAttribute('data-preview');
+        window.shadePhoto(img, a.getAttribute('data-preview'), '420px');
         if (window.gsap) {
           window.gsap.fromTo(img, { scale: 1.08 }, { scale: 1, duration: .6, ease: 'power2.out' });
           window.gsap.to(box, { opacity: 1, duration: .35 });

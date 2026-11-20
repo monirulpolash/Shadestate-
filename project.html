@@ -116,7 +116,7 @@
       </dl>
 
       <figure class="hero__media">
-        <img id="heroImage" src="assets/ksa/arbour-townhomes.jpg" alt="Arbour Townhomes: limestone townhouses beneath ghaf trees in Dubai Hills" width="1586" height="992" fetchpriority="high" decoding="async">
+        <img srcset="assets/ksa/arbour-townhomes-640.webp 640w, assets/ksa/arbour-townhomes-1000.webp 1000w, assets/ksa/arbour-townhomes-1586.webp 1586w" sizes="(max-width: 900px) 100vw, 50vw" id="heroImage" src="assets/ksa/arbour-townhomes-1000.webp" alt="Arbour Townhomes: limestone townhouses beneath ghaf trees in Dubai Hills" width="1586" height="992" fetchpriority="high" decoding="async">
         <figcaption id="heroCaption">Dubai Hills · Phase one</figcaption>
       </figure>
 
@@ -211,7 +211,7 @@
           <p class="plan__count" id="planCount">01 <span>/ 05</span></p>
           <p class="plan__stage-name" id="planStageName">First Floor</p>
           <p class="plan__avail" id="planAvail"><i class="dot" aria-hidden="true"></i>Available</p>
-          <button class="plan__zoom" id="planZoom" type="button" aria-label="Open plan full size"><img id="planImage" src="assets/img/plan-1.png" alt="First Floor floor plan" width="1344" height="732" decoding="async"></button>
+          <button class="plan__zoom" id="planZoom" type="button" aria-label="Open plan full size"><img id="planImage" loading="lazy" src="assets/img/plan-1.png" alt="First Floor floor plan" width="1344" height="732" decoding="async"></button>
         </div>
         <div class="plan__body">
           <h3 class="plan__title" id="planTitle">First Floor</h3>
@@ -250,7 +250,7 @@
   </section>
 
   <section class="masterplan" data-theme="dark" data-navbar-dark id="masterplan">
-    <img id="masterplanImage" src="assets/img/masterplan.jpg" alt="Arbour Townhomes masterplan, aerial view" loading="lazy" decoding="async" width="2000" height="1121">
+    <img srcset="assets/img/masterplan-640.webp 640w, assets/img/masterplan-1000.webp 1000w, assets/img/masterplan-2000.webp 2000w" sizes="(max-width: 900px) 100vw, 70vw" id="masterplanImage" src="assets/img/masterplan-1000.webp" alt="Arbour Townhomes masterplan, aerial view" loading="lazy" decoding="async" width="2000" height="1121">
     <h2 class="masterplan__title">The masterplan<br>from above</h2>
   </section>
 
@@ -455,10 +455,11 @@
 <!-- click-to-zoom plan lightbox -->
 <div class="lightbox" id="planLightbox" hidden>
   <button class="lightbox__close" type="button" id="lightboxClose" aria-label="Close plan">✕</button>
-  <figure class="lightbox__figure"><img id="lightboxImg" src="assets/img/plan-1.png" alt="Floor plan"></figure>
+  <figure class="lightbox__figure"><img id="lightboxImg" loading="lazy" src="assets/img/plan-1.png" alt="Floor plan"></figure>
   <p class="lightbox__cap" id="lightboxCap">First Floor</p>
 </div>
 
+<script src="assets/js/img-manifest.js" defer></script>
 <script src="assets/js/projects-data.js" defer></script>
 <script src="site.js" defer></script>
 <script src="project.js" defer></script>

@@ -1134,7 +1134,7 @@
       currentDev = id;
       lastFocused = document.activeElement;
 
-      $('#modalImage', modal).src = dev.image;
+      window.shadePhoto($('#modalImage', modal), dev.image, '(max-width: 900px) 100vw, 62vw');
       $('#modalImage', modal).alt = dev.alt;
       $('#modalCaption', modal).textContent = dev.caption;
       $('#modalTitle', modal).textContent = dev.name;

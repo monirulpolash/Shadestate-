@@ -386,7 +386,7 @@
         $('#readerCat').textContent = post.cat + ' · ' + post.date;
         $('#readerTitle').textContent = post.title;
         $('#readerMeta').textContent = 'By the Shadestate studio · ' + post.read + ' read';
-        $('#readerImg').src = post.img;
+        window.shadePhoto($('#readerImg'), post.img, '(max-width: 900px) 100vw, 62vw');
         $('#readerImg').alt = post.title;
         $('#readerBody').innerHTML = post.body.map(function (b) {
           if (typeof b === 'string') return '<p>' + b + '</p>';

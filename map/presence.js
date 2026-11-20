@@ -5,15 +5,24 @@
    scroll to zoom, select a pin for its card.
    Three.js is the copy already vendored for the walkthrough.
    ========================================================================== */
-import * as THREE from '../walkthrough/vendor/three.module.js';
-
+/* three.js is imported inside boot() so the home page never downloads or
+   parses it until the map is 800px from the viewport. */
 const stage = document.getElementById('presenceStage');
 const canvas = document.getElementById('presenceCanvas');
 const pinLayer = document.getElementById('mapPins');
 const card = document.getElementById('mapCard');
 
+let THREE = null;
+let booted = false;
+
+async function boot() {
+if (booted) return;
+booted = true;
+THREE = await import('../walkthrough/vendor/three.module.js');
+
 if (stage && canvas && window.SHADE_PROJECTS) {
   const REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const NARROW = window.matchMedia('(max-width: 760px)').matches;
   const PROJECTS = window.SHADE_PROJECTS;
   const ORDER = window.SHADE_ORDER || Object.keys(PROJECTS);
 
@@ -41,7 +50,7 @@ if (stage && canvas && window.SHADE_PROJECTS) {
   }
 
   if (renderer) {
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, NARROW ? 1.25 : 1.5));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.0;
@@ -140,7 +149,6 @@ if (stage && canvas && window.SHADE_PROJECTS) {
       'wadi-alula-residences': [-138, -20]
     };
 
-    const NARROW = window.matchMedia('(max-width: 760px)').matches;
     const OFFSETS_M = {
       'palm-crest-villas': [-98, -66],
       'sun-bliss-residence': [-98, -46],
@@ -238,7 +246,7 @@ if (stage && canvas && window.SHADE_PROJECTS) {
         const loc = document.getElementById('mapCardLoc');
         const price = document.getElementById('mapCardPrice');
         const link = document.getElementById('mapCardLink');
-        if (img) { img.src = p.hero; img.alt = p.heroAlt || p.name; }
+        if (img) { window.shadePhoto(img, p.hero, '(max-width: 900px) 62vw, 330px'); img.alt = p.heroAlt || p.name; }
         if (name) name.textContent = p.name;
         if (status) status.textContent = p.status;
         if (city) city.textContent = p.city;
@@ -332,11 +340,14 @@ if (stage && canvas && window.SHADE_PROJECTS) {
     window.addEventListener('resize', resize);
     resize();
 
-    let visible = true;
+    /* start from a real measurement: an off-screen map must not draw at boot */
+    const rect0 = stage.getBoundingClientRect();
+    let visible = rect0.top < window.innerHeight + 240 && rect0.bottom > -240;
     if ('IntersectionObserver' in window) {
       new IntersectionObserver((entries) => {
         entries.forEach((en) => { visible = en.isIntersecting; });
-      }, { rootMargin: '120px' }).observe(stage);
+        if (visible) { t0 = performance.now(); schedule(); }
+      }, { rootMargin: '200px' }).observe(stage);
     }
 
     const tmp = new THREE.Vector3();
@@ -383,8 +394,16 @@ if (stage && canvas && window.SHADE_PROJECTS) {
     }
 
     let paused = false;
+    let rafId = 0;
+
+    /* one frame at a time, parked whenever the map leaves the viewport */
+    function schedule() {
+      if (rafId || paused || !visible) return;
+      rafId = requestAnimationFrame(frame);
+    }
+
     function frame(now) {
-      requestAnimationFrame(frame);
+      rafId = 0;
       if (!visible || paused) return;
       const dt = Math.min(0.05, (now - t0) / 1000); t0 = now;
 
@@ -407,11 +426,27 @@ if (stage && canvas && window.SHADE_PROJECTS) {
 
       syncLabels();
       renderer.render(scene, camera);
+      schedule();
     }
-    requestAnimationFrame(frame);
+    schedule();
 
     /* expose for the screenshot harness */
     window.__presence = { camera, scene, renderer, rig, select, clearSelection, build: 'shadestate-map/1.0',
-      pause() { paused = true; }, resume() { paused = false; } };
+      pause() { paused = true; if (rafId) { cancelAnimationFrame(rafId); rafId = 0; } },
+      resume() { paused = false; t0 = performance.now(); schedule(); } };
   }
 }
+}   /* end boot() */
+
+/* ── the trigger: build the map only when it is 800px from the viewport ───── */
+(function defer() {
+  if (!stage || !canvas) return;
+  let armed = false;
+  const go = () => { if (armed) return; armed = true; boot(); };
+  if ('IntersectionObserver' in window) {
+    const io = new IntersectionObserver((entries) => {
+      for (const e of entries) if (e.isIntersecting) { io.disconnect(); go(); }
+    }, { rootMargin: '800px 0px' });
+    io.observe(stage);
+  } else go();
+})();

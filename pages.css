@@ -358,7 +358,7 @@ html.js-ready .pcard:not(.is-in) .pcard__media { clip-path: inset(0 0 100% 0); }
 .plan__zoom { display: block; width: 100%; height: 100%; padding: 0; cursor: zoom-in; }
 .plan__zoom img { max-width: 100%; max-height: 100%; object-fit: contain; margin: 0 auto; }
 .lightbox[hidden] { display: none; }
-.lightbox { position: fixed; inset: 0; z-index: 210; background: rgba(10, 10, 12, .82); -webkit-backdrop-filter: saturate(180%) blur(28px); backdrop-filter: saturate(180%) blur(28px); display: grid; place-items: center; padding: clamp(16px, 4vw, 56px); opacity: 0; transition: opacity .3s var(--ease); }
+.lightbox { position: fixed; inset: 0; z-index: 210; background: rgba(10, 10, 12, .82); -webkit-backdrop-filter: saturate(150%) blur(16px); backdrop-filter: saturate(150%) blur(16px); display: grid; place-items: center; padding: clamp(16px, 4vw, 56px); opacity: 0; transition: opacity .3s var(--ease); }
 .lightbox.is-open { opacity: 1; }
 .lightbox__figure { max-width: 1200px; width: 100%; max-height: 82vh; display: grid; place-items: center; }
 .lightbox__figure img { max-width: 100%; max-height: 82vh; width: auto; background: #fff; border-radius: var(--r-card); }
@@ -369,3 +369,17 @@ html.js-ready .pcard:not(.is-in) .pcard__media { clip-path: inset(0 0 100% 0); }
 .project-page .overview__text { font-size: var(--fs-lede); line-height: 1.55; letter-spacing: 0; }
 .project-page .plan__title { font-family: var(--serif); font-weight: 500; font-size: var(--fs-display-s); letter-spacing: -.02em; line-height: 1.15; }
 .project-page .cta__title { font-family: var(--serif); font-weight: 600; text-transform: none; letter-spacing: var(--ls-display-l); }
+
+/* ── glass on phones ───────────────────────────────────────────────────────
+   Backdrop blur is a per-frame composite. Keep it on floating chrome (header,
+   menu, dock, lightbox) and let in-flow cards, chips and the action bar carry
+   their own almost-opaque tint instead — visually the same, far cheaper. */
+@media (max-width: 768px) {
+  .pcard__badge, .pcard__cta, .viewtoggle, .inquiry, .currency,
+  .plan__avail, .actionbar, .filter, .viewing__cta {
+    -webkit-backdrop-filter: none; backdrop-filter: none;
+  }
+  .pcard__badge, .viewtoggle, .currency, .plan__avail, .filter { background: rgba(255, 255, 255, .93); }
+  .pcard__cta { background: rgba(255, 255, 255, .96); }
+  .inquiry, .actionbar { background: rgba(255, 255, 255, .94); }
+}

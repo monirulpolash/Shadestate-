@@ -40,8 +40,10 @@
   --glass-dark-strong: rgba(18, 18, 20, .72);
   --glass-rim-light: rgba(255, 255, 255, .55);
   --glass-rim-dark: rgba(255, 255, 255, .18);
-  --glass-blur: saturate(180%) blur(24px);
-  --glass-blur-soft: saturate(180%) blur(20px);
+  /* Glass is crisp, not milky: 12–16px of blur on floating chrome is enough
+     to read as glass, and every extra pixel costs the compositor on scroll. */
+  --glass-blur: saturate(160%) blur(16px);
+  --glass-blur-soft: saturate(150%) blur(12px);
   --glass-specular: inset 0 1px 0 rgba(255, 255, 255, .7);
   --glass-shadow: 0 8px 30px rgba(0, 0, 0, .08);
   --r-media: 14px;
@@ -306,7 +308,7 @@ html.is-arriving body { overflow: hidden; }
 .menu {
   position: fixed; inset: 0; z-index: 130;
   background: rgba(8, 8, 10, .78); color: var(--bone);
-  -webkit-backdrop-filter: saturate(180%) blur(30px); backdrop-filter: saturate(180%) blur(30px);
+  -webkit-backdrop-filter: saturate(150%) blur(16px); backdrop-filter: saturate(150%) blur(16px);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, .14);
   clip-path: inset(0 0 100% 0);
   transition: clip-path .82s var(--ease-menu);
@@ -317,7 +319,7 @@ html.is-arriving body { overflow: hidden; }
 .menu__inner { height: 100%; display: flex; flex-direction: column; padding: 0 var(--pad); max-width: calc(var(--wrap) + var(--pad) * 2); margin: 0 auto; }
 .menu__head { height: var(--header-h); flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between; border-bottom: var(--hair) solid var(--bone-line); }
 .menu__head .wordmark__sub { color: var(--bone-45); }
-.menu__close { display: inline-flex; align-items: center; gap: .7rem; height: 42px; padding: 0 20px; border-radius: var(--r-pill); border: var(--hair) solid var(--glass-rim-dark); background: rgba(255, 255, 255, .08); -webkit-backdrop-filter: var(--glass-blur-soft); backdrop-filter: var(--glass-blur-soft); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .16); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--bone); transition: background .4s, color .4s, border-color .4s; }
+.menu__close { display: inline-flex; align-items: center; gap: .7rem; height: 42px; padding: 0 20px; border-radius: var(--r-pill); border: var(--hair) solid var(--glass-rim-dark); background: rgba(255, 255, 255, .08); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .16); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--bone); transition: background .4s, color .4s, border-color .4s; }
 .menu__close:hover { background: var(--bone); color: var(--ink); border-color: var(--bone); }
 .menu__body { flex: 1 1 auto; min-height: 0; display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, .65fr); gap: clamp(28px, 6vw, 96px); align-content: center; padding: clamp(28px, 5vh, 64px) 0; overflow-y: auto; }
 .menu__nav { display: flex; flex-direction: column; }
@@ -539,7 +541,7 @@ body.project-page { background: var(--paper); color: var(--ink); font-family: va
 .orbit-cta.is-visible { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
 .orbit-cta__card {
   background: var(--glass-dark-strong); color: var(--bone);
-  -webkit-backdrop-filter: saturate(180%) blur(24px); backdrop-filter: saturate(180%) blur(24px);
+  -webkit-backdrop-filter: saturate(150%) blur(14px); backdrop-filter: saturate(150%) blur(14px);
   border: var(--hair) solid var(--glass-rim-dark); border-radius: var(--r-panel);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, .18), 0 20px 50px rgba(0, 0, 0, .35);
   padding: clamp(22px, 3.2vw, 34px);
@@ -556,3 +558,9 @@ body.project-page { background: var(--paper); color: var(--ink); font-family: va
   .orbit-cta__card { padding: 16px; }
 }
 
+
+/* ── glass on phones: in-flow chrome keeps its tint, loses the filter ─────── */
+@media (max-width: 768px) {
+  .viewing__cta { -webkit-backdrop-filter: none; backdrop-filter: none; background: rgba(255, 255, 255, .07); }
+  .btn-pill { -webkit-backdrop-filter: none; backdrop-filter: none; }
+}

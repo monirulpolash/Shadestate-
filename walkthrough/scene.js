@@ -19,7 +19,8 @@
    · DPR, shadow size, particle counts and the leaf budget are tiered by device
    ═══════════════════════════════════════════════════════════════════════════ */
 
-import * as THREE from './vendor/three.module.js';
+/* three.js is imported inside boot() so a page view above the fold never
+   downloads or parses it. */
 
 const BUILD = 'shadestate-3d/1.0';
 
@@ -29,6 +30,12 @@ const BUILD = 'shadestate-3d/1.0';
 const REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const NARROW = window.matchMedia('(max-width: 820px)').matches;
 const MOBILE = NARROW || (navigator.maxTouchPoints > 1 && window.innerWidth < 1100);
+/* tablet sits between the phone tier and the full desktop tier */
+const TABLET = !MOBILE && window.innerWidth <= 1024;
+/* the drawing buffer is never larger than this, whatever the device reports:
+   1.25× is already retina-crisp for this soft, painterly render and costs a
+   quarter of the fragments of a 2× buffer. */
+const DPR_MAX = MOBILE ? 1.25 : (TABLET ? 1.35 : 1.5);
 
 const section = document.getElementById('walk');
 const canvas = document.getElementById('scene');
@@ -814,6 +821,21 @@ function makeGlowTexture() {
    3 · renderer
    ───────────────────────────────────────────────────────────────────────────── */
 let renderer = null;
+let THREE = null;   /* the namespace, filled by boot() */
+let booted = false;
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   boot — everything below runs only when #walk approaches the viewport
+   (IntersectionObserver, 800px of runway). Until then this module has done
+   nothing but read a few matchMedia results: no three.js download, no shader
+   compile, no procedural texture, no render loop.
+   ───────────────────────────────────────────────────────────────────────────── */
+async function boot() {
+if (booted) return;
+booted = true;
+
+THREE = await import('./vendor/three.module.js');
+
 try {
   renderer = new THREE.WebGLRenderer({
     canvas, antialias: !MOBILE && !/[?&]aa=0/.test(location.search), powerPreference: 'high-performance', alpha: false, stencil: false,
@@ -824,7 +846,7 @@ try {
 
 if (renderer) {
   try {
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, MOBILE ? 1.5 : 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, DPR_MAX));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 0.82;
@@ -845,7 +867,7 @@ if (renderer) {
        bottom 20 degrees: the azure has to hold all the way down to a thin
        warm glow at the ridge, which is what reads as a deep sky.            */
     function makeSky() {
-      const W = 2048, H = 1024;
+      const W = MOBILE ? 1024 : (TABLET ? 1536 : 2048), H = W / 2;
       const c = cv(W, H), g = c.getContext('2d');
       const deg = (d) => 0.5 - d / 180;
 
@@ -950,7 +972,7 @@ if (renderer) {
     sun.position.copy(SUN_DIR).multiplyScalar(120);
     sun.target.position.set(-1, 0, -1);
     sun.castShadow = true;
-    const SM = MOBILE ? 1024 : 1536;
+    const SM = MOBILE ? 1024 : (TABLET ? 1280 : 1536);
     sun.shadow.mapSize.set(SM, SM);
     sun.shadow.camera.left = -33;
     sun.shadow.camera.right = 33;
@@ -2645,7 +2667,7 @@ if (renderer) {
         return g;
       })();
 
-      const N = MOBILE ? 12000 : 62000;
+      const N = MOBILE ? 12000 : (TABLET ? 34000 : 62000);
       const aRoot = new Float32Array(N * 3);
       const aParam = new Float32Array(N * 4);
       const aTint = new Float32Array(N);
@@ -3682,7 +3704,9 @@ if (renderer) {
     /* ─────────────────────────────────────────────────────────────────────
        11 · scroll, overlays, loop
        ───────────────────────────────────────────────────────────────────── */
-    let pTarget = 0, pSmooth = 0, lastApplied = -1, visible = true, started = false;
+    const rect0 = section.getBoundingClientRect();
+    const visible0 = rect0.top < window.innerHeight + 240 && rect0.bottom > -240;
+    let pTarget = 0, pSmooth = 0, lastApplied = -1, visible = visible0, started = false;
     let lookYaw = 0, lookPitch = 0, lookYawTarget = 0, lookPitchTarget = 0;
     let dragging = false, lastX = 0, lastY = 0, pointerX = 0, pointerY = 0;
 
@@ -3793,15 +3817,28 @@ if (renderer) {
     window.addEventListener('resize', () => { resize(); readProgress(); }, { passive: true });
     if ('ResizeObserver' in window) new ResizeObserver(resize).observe(section);
     if ('IntersectionObserver' in window) {
-      new IntersectionObserver((es) => { visible = es[0].isIntersecting; }, { rootMargin: '160px' }).observe(section);
+      new IntersectionObserver((es) => {
+        visible = es[0].isIntersecting;
+        // out of view: the loop is stopped below, so nothing renders; back in
+        // view: pick the clock up again without a jump and restart the loop.
+        if (visible) { clock.getDelta(); schedule(); }
+      }, { rootMargin: '200px 0px' }).observe(section);
     }
 
     const clock = new THREE.Clock();
     let elapsed = 0;
     let paused = false;
+    let rafId = 0;
+
+    /* One frame at a time: the loop parks itself the moment #walk leaves the
+       viewport, so scrolling never competes with a second live WebGL loop. */
+    function schedule() {
+      if (rafId || paused || !visible) return;
+      rafId = requestAnimationFrame(tick);
+    }
 
     function tick() {
-      requestAnimationFrame(tick);
+      rafId = 0;
       const dt = Math.min(0.1, clock.getDelta());
       if (paused || !visible) return;
       elapsed += dt;
@@ -3841,6 +3878,8 @@ if (renderer) {
         renderer.shadowMap.autoUpdate = false;
         canvas.classList.add('is-ready');
       }
+
+      schedule();
     }
 
     resize();
@@ -3849,7 +3888,7 @@ if (renderer) {
     applyCamera(pSmooth, 1);
     paintOverlays(pSmooth);
     clock.start();
-    tick();
+    schedule();
 
     window.__shade = {
       get progress() { return pSmooth; },
@@ -3858,8 +3897,8 @@ if (renderer) {
         applyCamera(pSmooth, 1); paintOverlays(pSmooth); lastApplied = pSmooth;
         if (paused) drawFrame();
       },
-      pause() { paused = true; },
-      resume() { paused = false; clock.getDelta(); },
+      pause() { paused = true; if (rafId) { cancelAnimationFrame(rafId); rafId = 0; } },
+      resume() { paused = false; clock.getDelta(); schedule(); },
       render() { drawFrame(); },
       camera, scene, renderer, section, sun, waterMat, dust, THREE, materials: M, build: BUILD,
       get stats() {
@@ -3878,3 +3917,25 @@ if (renderer) {
     fail(err);
   }
 }
+}   /* end boot() */
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   The trigger: nothing above runs until #walk is 800px from the viewport.
+   ───────────────────────────────────────────────────────────────────────────── */
+(function defer() {
+  if (!section || !canvas) return;
+  let armed = false;
+  const go = () => {
+    if (armed) return;
+    armed = true;
+    boot().catch(fail);
+  };
+  if ('IntersectionObserver' in window) {
+    const io = new IntersectionObserver((entries) => {
+      for (const e of entries) if (e.isIntersecting) { io.disconnect(); go(); }
+    }, { rootMargin: '800px 0px' });
+    io.observe(section);
+  } else {
+    go();
+  }
+})();

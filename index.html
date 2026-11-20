@@ -13,8 +13,11 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%23111111'/%3E%3Ctext x='32' y='45' font-family='Inter,Helvetica,Arial,sans-serif' font-weight='500' font-size='34' fill='%23FFFFFF' text-anchor='middle'%3ES%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="preload" as="image" href="assets/hero-find/house.webp" fetchpriority="high">
-<link rel="preload" as="image" href="assets/hero-find/back.jpg" fetchpriority="high">
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="preload" as="image" fetchpriority="high" sizes="100vw"
+      imagesrcset="assets/hero-find/house-640.webp 640w, assets/hero-find/house-1080.webp 1080w, assets/hero-find/house-1440.webp 1440w, assets/hero-find/house-1920.webp 1920w">
+<link rel="preload" as="image" fetchpriority="high" sizes="100vw"
+      imagesrcset="assets/hero-find/back-640.webp 640w, assets/hero-find/back-1080.webp 1080w, assets/hero-find/back-1440.webp 1440w, assets/hero-find/back-1920.webp 1920w">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 <link rel="stylesheet" href="site.css">
@@ -112,19 +115,19 @@
     <div class="hero__stage">
       <div class="hero__bg" aria-hidden="true">
         <div class="hero__back">
-          <img src="assets/hero-find/back.jpg" alt="" width="1920" height="1306" fetchpriority="high" decoding="async">
+          <img srcset="assets/hero-find/back-640.webp 640w, assets/hero-find/back-1080.webp 1080w, assets/hero-find/back-1440.webp 1440w, assets/hero-find/back-1920.webp 1920w" sizes="100vw" src="assets/hero-find/back-1080.webp" alt="" width="1920" height="1306" fetchpriority="high" decoding="async">
         </div>
         <div class="hero__house">
-          <img src="assets/hero-find/house.webp" alt="A modern residence of pale brick and floor-to-ceiling glass, its planted terraces catching the first warm light of the day." width="1920" height="1708" fetchpriority="high" decoding="async">
+          <img srcset="assets/hero-find/house-640.webp 640w, assets/hero-find/house-1080.webp 1080w, assets/hero-find/house-1440.webp 1440w, assets/hero-find/house-1920.webp 1920w" sizes="100vw" src="assets/hero-find/house-1080.webp" alt="A modern residence of pale brick and floor-to-ceiling glass, its planted terraces catching the first warm light of the day." width="1920" height="1708" fetchpriority="high" decoding="async">
         </div>
         <div class="hero__composite">
           <div class="hero__house">
-            <img src="assets/hero-find/house.webp" alt="" width="1920" height="1708" loading="eager" decoding="async">
+            <img srcset="assets/hero-find/house-640.webp 640w, assets/hero-find/house-1080.webp 1080w, assets/hero-find/house-1440.webp 1440w, assets/hero-find/house-1920.webp 1920w" sizes="100vw" src="assets/hero-find/house-1080.webp" alt="" width="1920" height="1708" loading="eager" decoding="async">
           </div>
         </div>
         <div class="hero__clouds">
-          <div class="hero__cloud hero__cloud--l"><img src="assets/hero-find/cloud.webp" alt="" width="1600" height="679" decoding="async"></div>
-          <div class="hero__cloud hero__cloud--r"><img src="assets/hero-find/cloud.webp" alt="" width="1600" height="679" decoding="async"></div>
+          <div class="hero__cloud hero__cloud--l"><img srcset="assets/hero-find/cloud-640.webp 640w, assets/hero-find/cloud-1024.webp 1024w, assets/hero-find/cloud-1600.webp 1600w" sizes="100vw" src="assets/hero-find/cloud-1024.webp" alt="" width="1600" height="679" decoding="async"></div>
+          <div class="hero__cloud hero__cloud--r"><img srcset="assets/hero-find/cloud-640.webp 640w, assets/hero-find/cloud-1024.webp 1024w, assets/hero-find/cloud-1600.webp 1600w" sizes="100vw" src="assets/hero-find/cloud-1024.webp" alt="" width="1600" height="679" decoding="async"></div>
         </div>
         <div class="hero__logo"><svg viewBox="0 -10 1830.1 360" aria-hidden="true" focusable="false">
           <g fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" >
@@ -153,7 +156,7 @@
           </g>
           </svg></div>
         <div class="hero__smoke">
-          <img src="assets/hero-find/smoke.webp" alt="" width="1920" height="620" decoding="async">
+          <img srcset="assets/hero-find/smoke-640.webp 640w, assets/hero-find/smoke-1024.webp 1024w, assets/hero-find/smoke-1920.webp 1920w" sizes="100vw" src="assets/hero-find/smoke-1024.webp" alt="" width="1920" height="620" decoding="async">
         </div>
         <div class="hero__overlay"></div>
       </div>
@@ -193,7 +196,7 @@
 
         <figure class="studio__figure">
           <div class="studio__frame" data-curtain>
-            <img src="assets/ksa/diriyah-courtyard-villas.jpg" alt="A shaded courtyard in a Diriyah villa: rammed-earth walls, triangular openings, date palms and a stone floor in late light." width="1586" height="992" loading="lazy" decoding="async">
+            <img srcset="assets/ksa/diriyah-courtyard-villas-640.webp 640w, assets/ksa/diriyah-courtyard-villas-1000.webp 1000w, assets/ksa/diriyah-courtyard-villas-1586.webp 1586w" sizes="(max-width: 900px) 100vw, 50vw" src="assets/ksa/diriyah-courtyard-villas-1000.webp" alt="A shaded courtyard in a Diriyah villa: rammed-earth walls, triangular openings, date palms and a stone floor in late light." width="1586" height="992" loading="lazy" decoding="async">
           </div>
           <figcaption class="studio__cap">
             <span class="studio__cap-l"><span>Diriyah Courtyard Villas</span> · the inner court, 2027</span>
@@ -251,7 +254,7 @@
         <div class="work__body">
           <div class="work__col">
             <div class="work__media" data-work-media>
-              <img src="assets/ksa/arbour-townhomes.jpg" alt="Arbour Townhomes: pale limestone townhouses with deep loggias beneath mature ghaf trees in Dubai Hills." width="1586" height="992" loading="lazy" decoding="async" data-work-img>
+              <img srcset="assets/ksa/arbour-townhomes-640.webp 640w, assets/ksa/arbour-townhomes-1000.webp 1000w, assets/ksa/arbour-townhomes-1586.webp 1586w" sizes="(max-width: 900px) 100vw, 50vw" src="assets/ksa/arbour-townhomes-1000.webp" alt="Arbour Townhomes: pale limestone townhouses with deep loggias beneath mature ghaf trees in Dubai Hills." width="1586" height="992" loading="lazy" decoding="async" data-work-img>
             </div>
             <p class="work__meta">
               <span class="work__loc">Dubai Hills, Dubai</span>
@@ -272,7 +275,7 @@
         <div class="work__body">
           <div class="work__col">
             <div class="work__media" data-work-media>
-              <img src="assets/ksa/diriyah-courtyard-villas.jpg" alt="Diriyah Courtyard Villas: rammed-earth walls, triangular openings and date palms around a stone courtyard." width="1586" height="992" loading="lazy" decoding="async" data-work-img>
+              <img srcset="assets/ksa/diriyah-courtyard-villas-640.webp 640w, assets/ksa/diriyah-courtyard-villas-1000.webp 1000w, assets/ksa/diriyah-courtyard-villas-1586.webp 1586w" sizes="(max-width: 900px) 100vw, 50vw" src="assets/ksa/diriyah-courtyard-villas-1000.webp" alt="Diriyah Courtyard Villas: rammed-earth walls, triangular openings and date palms around a stone courtyard." width="1586" height="992" loading="lazy" decoding="async" data-work-img>
             </div>
             <p class="work__meta">
               <span class="work__loc">Diriyah, Riyadh</span>
@@ -293,7 +296,7 @@
         <div class="work__body">
           <div class="work__col">
             <div class="work__media" data-work-media>
-              <img src="assets/ksa/sun-bliss-residence.jpg" alt="Sun-Bliss Residence: a limestone beach villa with an infinity pool and the Dubai skyline across the water." width="1586" height="992" loading="lazy" decoding="async" data-work-img>
+              <img srcset="assets/ksa/sun-bliss-residence-640.webp 640w, assets/ksa/sun-bliss-residence-1000.webp 1000w, assets/ksa/sun-bliss-residence-1586.webp 1586w" sizes="(max-width: 900px) 100vw, 50vw" src="assets/ksa/sun-bliss-residence-1000.webp" alt="Sun-Bliss Residence: a limestone beach villa with an infinity pool and the Dubai skyline across the water." width="1586" height="992" loading="lazy" decoding="async" data-work-img>
             </div>
             <p class="work__meta">
               <span class="work__loc">Palm Jumeirah, Dubai</span>
@@ -314,7 +317,7 @@
         <div class="work__body">
           <div class="work__col">
             <div class="work__media" data-work-media>
-              <img src="assets/ksa/red-sea-horizon.jpg" alt="Red Sea Horizon: coral-stone waterfront residences with an infinity pool meeting the Red Sea at dusk." width="1586" height="992" loading="lazy" decoding="async" data-work-img>
+              <img srcset="assets/ksa/red-sea-horizon-640.webp 640w, assets/ksa/red-sea-horizon-1000.webp 1000w, assets/ksa/red-sea-horizon-1586.webp 1586w" sizes="(max-width: 900px) 100vw, 50vw" src="assets/ksa/red-sea-horizon-1000.webp" alt="Red Sea Horizon: coral-stone waterfront residences with an infinity pool meeting the Red Sea at dusk." width="1586" height="992" loading="lazy" decoding="async" data-work-img>
             </div>
             <p class="work__meta">
               <span class="work__loc">Jeddah, Saudi Arabia</span>
@@ -422,7 +425,7 @@
           <p class="presence__hint">Drag to orbit · Scroll to zoom</p>
           <div class="mapcard" id="mapCard" aria-live="polite">
             <button class="mapcard__close" type="button" id="mapCardClose" aria-label="Close project card">✕</button>
-            <div class="mapcard__img"><img id="mapCardImg" src="assets/ksa/arbour-townhomes.jpg" alt="" width="1586" height="992"></div>
+            <div class="mapcard__img"><img srcset="assets/ksa/arbour-townhomes-640.webp 640w, assets/ksa/arbour-townhomes-1000.webp 1000w, assets/ksa/arbour-townhomes-1586.webp 1586w" sizes="(max-width: 900px) 100vw, 50vw" id="mapCardImg" loading="lazy" src="assets/ksa/arbour-townhomes-1000.webp" alt="" width="1586" height="992" decoding="async"></div>
             <div class="mapcard__status"><span id="mapCardStatus">Ongoing</span><span id="mapCardCity">Dubai</span></div>
             <h3 class="mapcard__name" id="mapCardName">Arbour Townhomes</h3>
             <p class="mapcard__loc" id="mapCardLoc">Dubai Hills, Dubai</p>
@@ -622,6 +625,7 @@
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/ScrollTrigger.min.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/lenis@1.3.11/dist/lenis.min.js" defer></script>
+<script src="assets/js/img-manifest.js" defer></script>
 <script src="assets/js/projects-data.js" defer></script>
 <script src="site.js" defer></script>
 <script src="script.js" defer></script>
