@@ -9,7 +9,7 @@
       date: '12 November 2026',
       read: '6 min',
       img: 'assets/ksa/arbour-townhomes.jpg',
-      excerpt: 'The most important measurement on a Gulf site is not the plot area. It is how far a shadow reaches at four in the afternoon in August.',
+      excerpt: 'The most important measurement on a Gulf site is how far a shadow reaches at four in August.',
       body: [
         'The first drawing we make for any new community is not a plan. It is a shadow study: a single section through the street, repeated at four in the afternoon on 15 August, then again in December. The difference between the two tells you more about how the place will be lived in than any accommodation schedule.',
         'In Dubai Hills we set the Arbour townhouses back from the road by 4.2 metres and planted ghaf trees at 5.5-metre centres. By the time the canopy closes in year six, the pavement is shaded for most of the working day. The trees cost roughly the same as the decorative paving we removed to pay for them. The street is ten degrees cooler.',
@@ -28,7 +28,7 @@
       date: '04 November 2026',
       img: 'assets/ksa/diriyah-courtyard-villas.jpg',
       read: '7 min',
-      excerpt: 'The Najdi courtyard is not nostalgia. It is the most efficient private outdoor room in this climate, and buyers are beginning to price it that way.',
+      excerpt: 'The Najdi courtyard is the most efficient private outdoor room in this climate.',
       body: [
         'When we first tested a walled courtyard villa in Diriyah, the sales team worried the walls would read as enclosure. The opposite happened. Buyers walked in, stood in the shade of the north wall, and asked how many months of the year they could use the court without air conditioning. The answer, eight with planting and a water line, sold the house.',
         'A courtyard is a simple instrument. It gives every principal room a second aspect, it stacks cool night air in the bottom of the house, and it makes a private outdoor room that is not overlooked. In a market where the alternative is a villa with a garden behind a 2.4-metre boundary wall, the courtyard gives more usable outdoor space on a smaller plot.',
@@ -47,7 +47,7 @@
       date: '28 October 2026',
       img: 'assets/ksa/sun-bliss-residence.jpg',
       read: '8 min',
-      excerpt: 'Supply is arriving, but not where people want to live. The gap between well-located completed stock and generic off-plan is widening.',
+      excerpt: 'Supply is arriving, but not where people want to live.',
       body: [
         'Dubai has absorbed an extraordinary amount of new supply over the past four years. The headline number, tens of thousands of units a year, hides a simpler truth: most of it is arriving in places where buyers did not particularly want to be, in configurations they did not particularly want.',
         'The strongest segment of the market remains completed, well-located, low-density housing: townhouses and villas within a short drive of a school, a park and a supermarket, with a private outdoor room. That segment is structurally short of supply because it requires land that is increasingly scarce inside the city.',
@@ -66,7 +66,7 @@
       date: '19 October 2026',
       img: 'assets/ksa/red-sea-horizon.jpg',
       read: '5 min',
-      excerpt: 'Building on the Red Sea shore means designing for salt, glare and a material that is beautiful precisely because it is not uniform.',
+      excerpt: 'Designing for salt, glare and a stone that is beautiful because it is not uniform.',
       body: [
         'Coral stone is a sedimentary rock formed from the skeletons of marine organisms. It is soft enough to cut with hand tools, porous enough to breathe, and full of fossil detail that no factory can reproduce. On the Red Sea coast it has been used for centuries, and it is the only material that looks correct in that particular light.',
         'It is also difficult. Coral stone varies from block to block, so a facade has to be designed around its variation rather than against it. It stains if water sits on it, so every ledge needs a drip and every parapet needs a proper cope. And it is not a structural material in the way that concrete is; the walls have to be built around a frame.',
@@ -84,7 +84,7 @@
       date: '08 October 2026',
       img: 'assets/ksa/lm-riyadh.jpg',
       read: '6 min',
-      excerpt: 'Rents in Riyadh have moved faster than prices. For the first time in a decade, the yield argument for buying is as strong as the lifestyle one.',
+      excerpt: 'Rents have moved faster than prices. The yield case is now real.',
       body: [
         'The Riyadh rental market has repriced. Across the northern districts, rents for a four-bedroom villa have risen by roughly a third in three years, and in the best compounds by more. Salaries have risen too, but not by the same amount, and the result is a city where the rent-to-price ratio finally makes sense.',
         'For a buyer who intends to hold, that changes the arithmetic. A villa in Al Nakheel or a courtyard house in Diriyah can be underwritten on rental yield rather than only on capital appreciation, which makes the decision less dependent on the direction of the market.',
@@ -103,7 +103,7 @@
       date: '01 October 2026',
       img: 'assets/ksa/lm-diriyah.jpg',
       read: '7 min',
-      excerpt: 'The Saudi off-plan regime is more regulated than most buyers expect. Here is the sequence, and the four documents that matter.',
+      excerpt: 'Four documents to see before you pay a reservation deposit.',
       body: [
         'Saudi Arabia regulates off-plan sales more tightly than many international buyers assume. A project must be registered with the relevant authority, the escrow account must be project-specific, and payments must be released against verified construction milestones. That is good news for buyers, but it means the paperwork takes longer than in some neighbouring markets.',
         'The four documents that matter are the off-plan project licence, the escrow account agreement, the standard reservation form and the sale and purchase agreement. Ask for all four before paying a reservation deposit. If a developer cannot produce the licence and the escrow details, stop.',

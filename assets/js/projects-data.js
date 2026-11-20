@@ -27,7 +27,7 @@
       lat: 25.1005, lon: 55.2410,
       progress: 42,
       plan: [['10%', 'Booking'], ['50%', 'Construction'], ['40%', 'Handover']],
-      overview: 'Arbour is a collection of garden townhomes set among mature ghaf trees in Dubai Hills. Limestone façades, deep loggias and shaded walkways keep the streets cool; behind them, homes open onto private courtyards and a shared spine of green.',
+      overview: 'Garden townhomes among mature ghaf trees in Dubai Hills, with limestone façades, deep loggias and shaded walkways that keep the street cool.',
       note: 'Forty-two townhomes · Three and four bedroom layouts · Private gardens',
       hero: KSA + 'arbour-townhomes.jpg',
       heroAlt: 'Arbour Townhomes: pale limestone townhouses beneath mature ghaf trees in Dubai Hills',
@@ -80,7 +80,7 @@
       faqDiff: 'Tree-lined streets, shaded walkways and homes that open onto shared green courtyards.',
       payment: '10% on booking, 50% during construction and 40% on handover.',
       pets: 'Yes. The community is pet-friendly, with dog-walking trails and a fenced pet park.',
-      schools: 'Several international schools are within a 10-minute drive. Our team can share the full list on request.'
+      schools: 'Several international schools are within a 10-minute drive.'
     },
 
     'diriyah-courtyard-villas': {
@@ -99,7 +99,7 @@
       lat: 24.7340, lon: 46.5740,
       progress: 55,
       plan: [['10%', 'Booking'], ['50%', 'Construction'], ['40%', 'Handover']],
-      overview: 'A walled collection of twenty-four villas on the western edge of Diriyah, drawn from the Najdi courtyard house: thick earth walls, triangular openings, timber screens and a shaded inner court with a single palm. The houses sit low against the wadi and take their colour from the ground they stand on.',
+      overview: 'Twenty-four walled villas on the western edge of Diriyah, drawn from the Najdi courtyard house: earth walls, timber screens and a shaded inner court.',
       note: 'Twenty-four villas · Four and five bedroom layouts · Walled courtyards',
       hero: KSA + 'diriyah-courtyard-villas.jpg',
       heroAlt: 'Diriyah Courtyard Villas: rammed-earth walls, triangular openings and date palms in a shaded courtyard',
@@ -151,7 +151,7 @@
       faqDiff: 'A walled Najdi courtyard, earth walls that stay cool through summer, and a house that reads as part of Diriyah.',
       payment: '10% on booking, 50% during construction and 40% on handover.',
       pets: 'Yes. Each villa has a walled garden, and the wadi edge is a short walk from the gate.',
-      schools: 'Several international schools are within a 20-minute drive; our Riyadh team can share the full list.'
+      schools: 'Several international schools are within a 20-minute drive.'
     },
 
     'sun-bliss-residence': {
@@ -170,7 +170,7 @@
       lat: 25.1124, lon: 55.1390,
       progress: 100,
       plan: [['100%', 'Delivered'], ['100%', 'Title deed issued']],
-      overview: 'A low beach house on the western frond of Palm Jumeirah, arranged so that every principal room looks north across the pool to the Dubai skyline. Deep limestone loggias shade the glass, and the roof is planted to keep the house cool from above as well as from the side.',
+      overview: 'A low beach house on the western frond, every principal room looking north across the pool to the Dubai skyline.',
       note: 'Six beach villas · Five and six bedroom layouts · Private beach and pool',
       hero: KSA + 'sun-bliss-residence.jpg',
       heroAlt: 'Sun-Bliss Residence: a limestone beach villa with an infinity pool and the Dubai skyline across the water',
@@ -221,7 +221,7 @@
       faqDiff: 'A private beach, a north-facing pool deck and the skyline held in one line across the water.',
       payment: 'Residences are complete; title deed issued on transfer.',
       pets: 'Yes. The villa gardens are walled and the beach is private.',
-      schools: 'Several international schools are within a 20-minute drive. Our team can share the full list on request.'
+      schools: 'Several international schools are within a 20-minute drive.'
     },
 
     'red-sea-horizon': {
@@ -240,7 +240,7 @@
       lat: 21.5600, lon: 39.1500,
       progress: 12,
       plan: [['10%', 'Booking'], ['50%', 'Construction'], ['40%', 'Handover']],
-      overview: 'A terraced waterfront settlement north of the Jeddah Corniche, cut into the coral shelf so that each residence has an uninterrupted line to the sea. Coral-stone walls, deep shaded terraces and a long shared pool keep the public edge of the building cool and open.',
+      overview: 'Terraced waterfront residences cut into the coral shelf north of the Corniche, each with an uninterrupted line to the sea.',
       note: 'Thirty residences · Three and four bedroom layouts · Direct sea access',
       hero: KSA + 'red-sea-horizon.jpg',
       heroAlt: 'Red Sea Horizon: coral-stone waterfront residences with an infinity pool at dusk',
@@ -291,7 +291,7 @@
       faqDiff: 'Every residence looks straight at the sea, with a long shared pool between the house and the water.',
       payment: '10% on booking, 50% during construction and 40% on handover.',
       pets: 'Yes. The terraces are private and the beach frontage is shared and pet-friendly.',
-      schools: 'Several international schools are within a 20-minute drive. Our Jeddah team can share the full list.'
+      schools: 'Several international schools are within a 20-minute drive.'
     },
 
     'luxurious-villas': {
@@ -310,7 +310,7 @@
       lat: 25.0650, lon: 55.1700,
       progress: 100,
       plan: [['100%', 'Delivered'], ['100%', 'Title deed issued']],
-      overview: 'Four houses on the lake side of Emirates Hills, each built around a shaded inner court with the golf course and the Dubai skyline beyond. Solid stone walls, deep reveals and a long axis from the gate to the water make the houses feel older than they are.',
+      overview: 'Four houses on the lake side of Emirates Hills, each built around a shaded inner court, with the golf course and the skyline beyond.',
       note: 'Four villas · Five and six bedroom layouts · Golf-course frontage',
       hero: IMG + 'hero.jpg',
       heroAlt: 'Luxurious Villas: a limestone villa with deep loggias above the Emirates Hills golf course',
@@ -360,7 +360,7 @@
       faqDiff: 'A walled lake-side garden, a long stone axis through the house and the golf course at the end of it.',
       payment: 'Residences are complete; title deed issued on transfer.',
       pets: 'Yes. Every villa has a walled garden and direct access to the lake walk.',
-      schools: 'Several international schools are within a 10-minute drive. Our team can share the full list on request.'
+      schools: 'Several international schools are within a 10-minute drive.'
     },
 
     'skyline-towers': {
@@ -379,7 +379,7 @@
       lat: 25.1850, lon: 55.2650,
       progress: 68,
       plan: [['10%', 'Booking'], ['50%', 'Construction'], ['40%', 'Handover']],
-      overview: 'Two slender towers on the canal in Business Bay, set back behind a shaded public colonnade. Apartments are planned from the corner inward, so every living room has two aspects and a balcony deep enough to sit out in. The towers share a garden podium and a residents’ club on the eighth floor.',
+      overview: 'Two slender towers on the canal, every living room with two aspects and a loggia deep enough to sit out in.',
       note: 'Two towers · 214 apartments · One to three bedroom layouts',
       hero: 'assets/project-3.jpg',
       heroAlt: 'Skyline Towers: stepped pale stone and bronze towers above the Business Bay canal',
@@ -431,7 +431,7 @@
       faqDiff: 'Two aspects and a deep loggia in every apartment, on a quiet stretch of the canal walk.',
       payment: '10% on booking, 50% during construction and 40% on handover.',
       pets: 'Yes. The podium garden includes a fenced pet run and washing point.',
-      schools: 'Several international schools are within a 15-minute drive. Our team can share the full list on request.'
+      schools: 'Several international schools are within a 15-minute drive.'
     },
 
     'palm-crest-villas': {
@@ -450,7 +450,7 @@
       lat: 25.1250, lon: 55.1250,
       progress: 8,
       plan: [['10%', 'Booking'], ['50%', 'Construction'], ['40%', 'Handover']],
-      overview: 'A last row of eight beach villas on the outer frond, planned around a double-height sea room and a walled garden that holds the pool. The architecture is quiet (limestone, bronze and a deep roof), so the water does the talking.',
+      overview: 'Eight beach villas on the outer frond, planned around a double-height sea room and a walled garden. Limestone, bronze and a deep roof.',
       note: 'Eight villas · Four and five bedroom layouts · 24 m of private beach each',
       hero: 'assets/project-4.jpg',
       heroAlt: 'Palm Crest Villas: a stone and timber beach house glowing at blue hour behind planting',
@@ -498,7 +498,7 @@
       faqDiff: 'A last-row beach villa with a walled garden, a double-height sea room and 24 metres of private sand.',
       payment: '10% on booking, 50% during construction and 40% on handover.',
       pets: 'Yes. The garden is walled and the beach frontage is private.',
-      schools: 'Several international schools are within a 20-minute drive. Our team can share the full list on request.'
+      schools: 'Several international schools are within a 20-minute drive.'
     },
 
     'wadi-alula-residences': {
@@ -517,7 +517,7 @@
       lat: 26.6100, lon: 37.9200,
       progress: 5,
       plan: [['10%', 'Booking'], ['50%', 'Construction'], ['40%', 'Handover']],
-      overview: 'A low settlement of stone lodges in the sandstone wadi north of AlUla, planned so that no roof rises above the rock line. Walls are built from stone taken within the site, and each lodge opens onto a shaded terrace with a plunge pool and a view of the escarpment.',
+      overview: 'Stone lodges in the sandstone wadi, set so that no roof rises above the rock line.',
       note: 'Twenty-two lodges · Two to four bedroom layouts · Wadi and escarpment views',
       hero: IMG + 'ex-2.jpg',
       heroAlt: 'Wadi AlUla Residences: a low white-stone house on a desert site with cactus planting',
@@ -564,7 +564,7 @@
       faqDiff: 'No roof above the rock line, stone from the site, and a plunge pool facing the escarpment.',
       payment: '10% on booking, 50% during construction and 40% on handover.',
       pets: 'Yes. Each lodge has a walled desert garden.',
-      schools: 'AlUla International School is within a 20-minute drive; our team can share the full list.'
+      schools: 'AlUla International School is within a 20-minute drive.'
     },
 
     'al-nakheel-house': {
@@ -583,7 +583,7 @@
       lat: 24.7700, lon: 46.6400,
       progress: 100,
       plan: [['100%', 'Delivered'], ['100%', 'Title deed issued']],
-      overview: 'A cluster of six courtyard houses in the palm country of north Riyadh, built for a family that wanted the old house back: thick walls, a deep shaded court, a majlis that opens to the garden and a roof terrace for the cool months. Stone, lime and palm timber, nothing else.',
+      overview: 'Six courtyard houses in the palm country of north Riyadh: thick walls, a deep shaded court, stone and palm timber.',
       note: 'Six courtyard houses · Four and five bedroom layouts · Mature palm gardens',
       hero: 'assets/project-1.jpg',
       heroAlt: 'Al Nakheel House: a travertine courtyard with a still pool and a single palm in warm light',
@@ -630,7 +630,7 @@
       faqDiff: 'A deep shaded courtyard, a majlis that opens to the garden and a roof terrace for Riyadh’s cool months.',
       payment: 'Residences are complete; title deed issued on transfer.',
       pets: 'Yes. Each house has a walled palm garden.',
-      schools: 'Several international schools are within a 15-minute drive. Our Riyadh team can share the full list.'
+      schools: 'Several international schools are within a 15-minute drive.'
     }
   };
 

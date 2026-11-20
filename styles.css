@@ -153,35 +153,92 @@ html.is-locked, body.is-locked { overflow: hidden; }
 .js [data-reveal] { opacity: 0; }
 .no-js [data-reveal] { opacity: 1; }
 
-/* ---------- philosophy / studio thesis ---------- */
-.philosophy { background: var(--bone); }
-.philosophy__grid { display: grid; grid-template-columns: minmax(0, 1.02fr) minmax(0, .98fr); gap: clamp(32px, 6vw, 88px); align-items: start; }
-.philosophy__copy > .display { font-size: var(--fs-display-l); margin-bottom: clamp(24px, 3vw, 40px); }
-.philosophy__body { display: grid; gap: 18px; max-width: 46ch; }
-.philosophy__body p { color: var(--ink-70); }
-.philosophy__body .lede { color: var(--ink); }
-.philosophy__sign { margin-top: 10px; display: grid; gap: 2px; }
-.signature { font-family: var(--serif); font-style: italic; font-size: 1.45rem; color: var(--ink); }
-.sign-role { font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-45); }
-.philosophy__figure { display: grid; gap: 10px; }
-.ph__frame { position: relative; overflow: hidden; aspect-ratio: 4 / 5; background: var(--bone-2); }
-.ph__img { width: 100%; height: 100%; object-fit: cover; }
-.ph__cap { font-size: 10px; letter-spacing: .06em; color: var(--ink-45); display: flex; gap: .4em; }
-.ph__cap span { color: var(--ink-70); }
-.ph__index { font-size: 10px; letter-spacing: .14em; color: var(--ink-40); }
-.philosophy__link { margin-top: 26px; }
-.figures { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: clamp(16px, 2.4vw, 32px); margin-top: clamp(48px, 6vw, 84px); border-top: var(--hair) solid var(--line); }
-.figure { padding-top: 22px; display: grid; gap: 6px; }
-.figure dt { font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-55); }
-.figure dd { font-family: var(--serif); font-weight: 300; font-size: clamp(2rem, 3.4vw, 3.1rem); line-height: 1; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
-.figure p { font-size: 11px; line-height: 1.45; color: var(--ink-45); }
-.fig-currency, .fig-unit { font-size: .62em; color: var(--gold-deep); }
-@media (max-width: 900px) {
-  .philosophy__grid { grid-template-columns: 1fr; }
-  .philosophy__figure { order: -1; max-width: 520px; }
-  .figures { grid-template-columns: 1fr 1fr; }
+/* ---------- philosophy / studio thesis (rebuilt) ----------
+   An asymmetric editorial opening: a hairline head row, one statement set
+   large across the columns, a landscape photograph (Fig. 01) offset beneath
+   it, and a four-cell hairline metric strip. Nothing else. */
+.studio { background: var(--bone); }
+.studio__head {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 16px;
+  padding-bottom: clamp(20px, 2.6vw, 32px);
+  border-bottom: var(--hair) solid var(--line);
 }
-@media (max-width: 520px) { .figures { grid-template-columns: 1fr 1fr; gap: 12px; } .figure p { display: none; } }
+.studio__meta {
+  font-size: var(--fs-label); letter-spacing: var(--ls-label); text-transform: uppercase;
+  color: var(--ink-45); font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.studio__head .eyebrow { white-space: nowrap; }
+
+.studio__grid {
+  display: grid; grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: var(--gap); row-gap: 0;
+  padding-top: clamp(34px, 5vw, 76px);
+}
+.studio__title {
+  grid-column: 1 / 10; grid-row: 1;
+  font-size: clamp(2.3rem, 4.7vw, 4.15rem);
+  line-height: .94; letter-spacing: -.03em;
+  max-width: 19ch; text-wrap: balance;
+}
+.studio__note {
+  grid-column: 1 / 5; grid-row: 2; align-self: start;
+  display: grid; gap: clamp(20px, 2.4vw, 30px);
+  margin-top: clamp(26px, 4vw, 62px);
+  padding-bottom: 4px;
+}
+.studio__line { font-size: var(--fs-lede); line-height: 1.5; color: var(--ink-70); max-width: 32ch; }
+
+.studio__figure { grid-column: 6 / 13; grid-row: 2; margin-top: clamp(26px, 4vw, 62px); display: grid; gap: 12px; }
+.studio__frame { position: relative; overflow: hidden; aspect-ratio: 16 / 10; background: var(--bone-2); }
+.studio__frame img { width: 100%; height: 100%; object-fit: cover; }
+.studio__cap {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 14px;
+  font-size: 10px; letter-spacing: .06em; color: var(--ink-45);
+}
+.studio__cap-l { display: flex; align-items: baseline; gap: .45em; min-width: 0; }
+.studio__cap-l > span { color: var(--ink-70); }
+.studio__cap em {
+  font-style: normal; font-size: 10px; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--ink-40); font-variant-numeric: tabular-nums;
+  margin-left: auto;
+}
+
+.studio__metrics {
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0; margin-top: clamp(48px, 6.4vw, 96px);
+  border-top: var(--hair) solid var(--line);
+}
+.metric { display: grid; gap: 8px; align-content: start; padding: clamp(18px, 2.2vw, 28px) clamp(14px, 2vw, 28px) 0 0; }
+.metric + .metric { border-left: var(--hair) solid var(--line); padding-left: clamp(14px, 2vw, 28px); }
+.metric dt { font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-55); }
+.metric dd {
+  font-family: var(--serif); font-weight: 300;
+  font-size: clamp(1.9rem, 3.3vw, 3.05rem); line-height: .95;
+  letter-spacing: -.03em; font-variant-numeric: tabular-nums;
+}
+.metric p { font-size: 11px; line-height: 1.4; color: var(--ink-45); letter-spacing: .01em; }
+.fig-currency, .fig-unit { font-size: .62em; color: var(--gold-deep); }
+
+@media (max-width: 900px) {
+  .studio__grid { grid-template-columns: minmax(0, 1fr); }
+  .studio__title { grid-column: 1 / -1; }
+  .studio__note { grid-column: 1 / -1; grid-row: 2; margin-top: clamp(22px, 5vw, 34px); padding-bottom: 0; }
+  .studio__figure { grid-column: 1 / -1; grid-row: 3; margin-top: clamp(22px, 5vw, 34px); }
+  .studio__title { max-width: 22ch; }
+  .studio__metrics { grid-template-columns: 1fr 1fr; }
+  .metric + .metric { padding-left: clamp(10px, 3vw, 20px); }
+  .metric:nth-child(3), .metric:nth-child(4) { border-top: var(--hair) solid var(--line); margin-top: clamp(14px, 3vw, 22px); }
+  .metric:nth-child(3) { border-left: 0; padding-left: 0; }
+}
+@media (max-width: 640px) {
+  .studio__head { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .studio__head .eyebrow { white-space: normal; }
+}
+@media (max-width: 520px) {
+  .metric p { font-size: 10px; }
+  .studio__cap { flex-wrap: wrap; }
+  .studio__frame { aspect-ratio: 4 / 3; }
+}
 
 /* ---------- selected work · Hale Arden selected-works geometry ----------
    A quiet uppercase head row, then one line per project: the name set huge and

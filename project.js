@@ -16,8 +16,8 @@
       { q: 'What is the payment plan?', a: p.payment },
       { q: 'Are pets allowed?', a: p.pets || 'Yes. The community is pet-friendly, with planted verges and shaded walking routes.' },
       { q: 'Which schools are nearby?', a: p.schools || 'Several international schools are within a short drive. Our team can share the full list and catchment details on request.' },
-      { q: 'When is handover?', a: 'Handover is planned for ' + p.handover + ', with phased completion by cluster. A written schedule is issued with the reservation form.' },
-      { q: 'How do I book a site visit?', a: 'Use the enquiry form on this page and our team will call you to arrange a visit at a time that suits you.' }
+      { q: 'When is handover?', a: 'Handover is planned for ' + p.handover + '.' },
+      { q: 'How do I book a site visit?', a: 'Use the enquiry form on this page.' }
     ];
   }
 
@@ -304,7 +304,7 @@
     var cap = $('#heroCaption');
     if (cap) cap.textContent = p.heroCap;
 
-    $('#landmarksSub').textContent = 'Drive times from ' + p.name + ', measured at off-peak hours.';
+    $('#landmarksSub').textContent = 'Off-peak drive times.';
 
     var tel = p.country === 'Saudi Arabia' ? '+966110000000' : '+97140000000';
     var wa = 'https://wa.me/' + tel.replace(/\D/g, '') + '?text=' + encodeURIComponent('Hello Shadestate. I would like to know more about ' + p.name + '.');
@@ -319,7 +319,7 @@
       if (a) a.href = contact;
     });
     var oc = $('#enquireCopy');
-    if (oc) oc.textContent = 'Walk ' + p.name + ' with the people who planned and built it, in ' + (p.country === 'Saudi Arabia' ? 'Riyadh' : 'Dubai') + '. By appointment, at a time that suits you.';
+    if (oc) oc.textContent = 'Walk ' + p.name + ' with the people who built it, in ' + (p.country === 'Saudi Arabia' ? 'Riyadh' : 'Dubai') + '. By appointment.';
     var op = $('#orbitProject'); if (op) op.textContent = p.name;
     var opc = $('#orbitProjectCopy'); if (opc) opc.textContent = p.name;
     var we = $('#walkEyebrow'); if (we) we.textContent = p.name + ' · ' + p.location;
