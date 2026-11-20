@@ -1527,7 +1527,8 @@ if (renderer) {
         const tan = drive.getTangent(t);
         const nrm = new THREE.Vector3(-tan.z, 0, tan.x).normalize();
         const side = rnd() > 0.5 ? 1 : -1;
-        const off = lerp(1.28, 2.1, rnd()) * side;
+        // the shoulder only: start clear of the gravel ribbon itself
+        const off = (lerp(1.65, 1.25, t) + lerp(0.06, 0.55, rnd())) * side;
         d.position.set(p.x + nrm.x * off, 0.02, p.z + nrm.z * off);
         const s = rr(0.045, 0.11);
         d.scale.set(s * rr(1, 2.0), s * rr(0.45, 0.8), s * rr(1, 2.0));
@@ -3255,12 +3256,13 @@ if (renderer) {
 
     const treeSpots = [
       [-7.5, 9.2, 1.05], [6.4, 10.5, 0.95], [-10.5, 16, 1.1], [11.5, 19, 1.0],
-      [-14, 26, 1.15], [6.0, 34, 0.9], [-7, 44, 1.1], [20.5, 50, 1.0],
+      [-14, 26, 1.15], [1.2, 35.5, 0.9], [-7, 44, 1.1], [20.5, 50, 1.0],
       [-18, 62, 1.2], [7.5, 68, 1.05], [-9.5, 88, 1.15], [26, 96, 1.1],
       [-11.5, -13.5, 1.05], [12.5, -16, 1.0], [-13, -2.5, 0.95], [15.5, 6.5, 0.95],
       [-16, -24, 1.1], [11, -26, 1.05], [-6, -30, 1.0], [2, -36, 1.1],
-      // a closer rank so the drive has parallax and bark you can read
-      [-5.2, 13.5, 0.62], [4.6, 17.5, 0.58], [-3.4, 27, 0.66], [8.6, 41, 0.62],
+      // a closer rank so the drive has parallax and bark you can read — kept
+      // off the gravel itself so the approach stays an open corridor
+      [-5.2, 13.5, 0.62], [-1.4, 18.6, 0.58], [-3.4, 27, 0.66], [4.6, 43.0, 0.62],
       [-11.0, 52, 0.72], [3.6, 60, 0.66], [-2.2, 74, 0.78], [13.0, 82, 0.78]
     ];
     treeSpots.forEach(([x, z, s]) => addOlive(x, z, s));
