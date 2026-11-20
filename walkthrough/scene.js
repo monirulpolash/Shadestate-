@@ -834,26 +834,40 @@ if (renderer) {
     renderer.autoClear = true;
 
     const scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0xe2dac9, 0.0032);
+    scene.fog = new THREE.FogExp2(0xd9d0bd, 0.0024);
     const camera = new THREE.PerspectiveCamera(35, 1, 0.1, 900);
 
     /* ── sky + environment ─────────────────────────────────────────────── */
     const SUN_DIR = new THREE.Vector3(-0.86, 0.30, 0.41).normalize();
 
+    /* One equirect canvas: v 0 is the zenith, v 0.5 the horizon. Stops are
+       authored in degrees of elevation, because the camera only ever sees the
+       bottom 20 degrees: the azure has to hold all the way down to a thin
+       warm glow at the ridge, which is what reads as a deep sky.            */
     function makeSky() {
       const W = 2048, H = 1024;
       const c = cv(W, H), g = c.getContext('2d');
+      const deg = (d) => 0.5 - d / 180;
 
       const grad = g.createLinearGradient(0, 0, 0, H);
-      grad.addColorStop(0.00, '#3d5c82');
-      grad.addColorStop(0.18, '#5c7b9c');
-      grad.addColorStop(0.30, '#8ea2b4');
-      grad.addColorStop(0.375, '#c2c2b7');
-      grad.addColorStop(0.435, '#e9d8c0');
-      grad.addColorStop(0.480, '#f7e6c9');
-      grad.addColorStop(0.500, '#fbeed6');
-      grad.addColorStop(0.520, '#e0c9a5');
-      grad.addColorStop(0.620, '#9d9078');
+      grad.addColorStop(0.000, '#3f74ad');        // zenith, rich azure
+      grad.addColorStop(deg(78), '#4378b2');
+      grad.addColorStop(deg(58), '#487eb8');
+      grad.addColorStop(deg(38), '#4f88c2');
+      grad.addColorStop(deg(24), '#5b95cb');      // cerulean behind the house
+      grad.addColorStop(deg(15), '#6ba5d5');
+      grad.addColorStop(deg(10), '#7aaed9');
+      grad.addColorStop(deg(6.5), '#90bddc');
+      grad.addColorStop(deg(5.0), '#a3c8dc');
+      grad.addColorStop(deg(3.8), '#bcd2d6');
+      grad.addColorStop(deg(2.8), '#d3d6c8');
+      grad.addColorStop(deg(2.0), '#e4dcc4');
+      grad.addColorStop(deg(1.2), '#f1e4c8');
+      grad.addColorStop(deg(0.5), '#f9edd3');
+      grad.addColorStop(0.500, '#fdf1da');        // golden alabaster horizon
+      grad.addColorStop(0.512, '#e6d3ae');
+      grad.addColorStop(0.545, '#b3a689');
+      grad.addColorStop(0.640, '#8b8270');
       grad.addColorStop(1.000, '#4b4538');
       g.fillStyle = grad; g.fillRect(0, 0, W, H);
 
@@ -861,11 +875,11 @@ if (renderer) {
       const v = 1 - (Math.asin(SUN_DIR.y) / Math.PI + 0.5);
       const sx = u * W, sy = v * H;
 
-      const glow = g.createRadialGradient(sx, sy, 0, sx, sy, W * 0.30);
-      glow.addColorStop(0.00, 'rgba(255,240,208,.95)');
-      glow.addColorStop(0.09, 'rgba(255,224,175,.52)');
-      glow.addColorStop(0.32, 'rgba(255,208,152,.17)');
-      glow.addColorStop(1.00, 'rgba(255,200,150,0)');
+      const glow = g.createRadialGradient(sx, sy, 0, sx, sy, W * 0.16);
+      glow.addColorStop(0.00, 'rgba(255,247,224,.88)');
+      glow.addColorStop(0.10, 'rgba(255,232,192,.34)');
+      glow.addColorStop(0.32, 'rgba(255,216,168,.10)');
+      glow.addColorStop(1.00, 'rgba(255,206,158,0)');
       g.fillStyle = glow; g.fillRect(0, 0, W, H);
 
       const disc = g.createRadialGradient(sx, sy, 0, sx, sy, 44);
@@ -875,25 +889,46 @@ if (renderer) {
       disc.addColorStop(1.00, 'rgba(255,218,170,0)');
       g.fillStyle = disc; g.beginPath(); g.arc(sx, sy, 44, 0, 7); g.fill();
 
-      for (let i = 0; i < 170; i++) {
-        const cy = H * rr(0.28, 0.50);
-        const cw = rr(70, 460), ch = rr(1.2, 8);
+      /* High cirrus: thin, feathered, and wrap-drawn so the u = 0 seam never
+         shows a cut. Kept between 11 and 56 degrees, where the equirect
+         stretch is still gentle, and warm-tinted near the sun.             */
+      const wisps = MOBILE ? 22 : 42;
+      for (let i = 0; i < wisps; i++) {
+        const elev = rr(11, 56);
+        const cy = deg(elev) * H;
+        const cw = rr(150, 640) * (1 + (56 - elev) / 90);
+        const ch = rr(7, 26) * (0.55 + elev / 110);
         const cx = rnd() * W;
-        const near = 1 - Math.min(1, Math.abs(cx - sx) / (W * 0.55));
-        const a = rr(0.02, 0.09) * (0.3 + near * 0.9);
-        const grd = g.createLinearGradient(cx - cw / 2, cy, cx + cw / 2, cy);
-        grd.addColorStop(0, 'rgba(255,245,228,0)');
-        grd.addColorStop(0.5, `rgba(${near > 0.4 ? '255,240,216' : '250,248,242'},${a.toFixed(3)})`);
-        grd.addColorStop(1, 'rgba(255,245,228,0)');
-        g.fillStyle = grd;
-        g.beginPath(); g.ellipse(cx, cy, cw / 2, ch, rr(-0.04, 0.04), 0, 7); g.fill();
+        const rot = rr(-0.05, 0.05);
+        const near = 1 - Math.min(1, Math.abs(cx - sx) / (W * 0.42));
+        const a = rr(0.012, 0.040) + near * 0.036;
+        const tint = near > 0.35 ? '255,241,219' : '250,250,247';
+        const draw = (x) => {
+          g.save();
+          g.translate(x, cy);
+          g.rotate(rot);
+          g.scale(cw / 2, ch / 2);
+          const rg = g.createRadialGradient(0, 0, 0, 0, 0, 1);
+          rg.addColorStop(0.0, `rgba(${tint},${a.toFixed(3)})`);
+          rg.addColorStop(0.5, `rgba(${tint},${(a * 0.46).toFixed(3)})`);
+          rg.addColorStop(1.0, `rgba(${tint},0)`);
+          g.fillStyle = rg;
+          g.beginPath(); g.arc(0, 0, 1, 0, 7); g.fill();
+          g.restore();
+        };
+        draw(cx);
+        if (cx - cw / 2 < 0) draw(cx + W);
+        if (cx + cw / 2 > W) draw(cx - W);
       }
 
-      const haze = g.createLinearGradient(0, H * 0.43, 0, H * 0.57);
-      haze.addColorStop(0, 'rgba(255,238,212,0)');
-      haze.addColorStop(0.5, 'rgba(255,236,206,.30)');
-      haze.addColorStop(1, 'rgba(240,220,190,0)');
-      g.fillStyle = haze; g.fillRect(0, H * 0.43, W, H * 0.14);
+      /* A hair of haze right on the horizon, so the far ridge melts into the
+         glow instead of sitting on a hard line.                            */
+      const haze = g.createLinearGradient(0, deg(7), 0, deg(-4));
+      haze.addColorStop(0.00, 'rgba(255,242,220,0)');
+      haze.addColorStop(0.52, 'rgba(255,240,212,.12)');
+      haze.addColorStop(0.78, 'rgba(255,242,216,.20)');
+      haze.addColorStop(1.00, 'rgba(244,226,196,0)');
+      g.fillStyle = haze; g.fillRect(0, deg(7) * H, W, (deg(-4) - deg(7)) * H);
 
       const t = new THREE.CanvasTexture(c);
       t.colorSpace = THREE.SRGBColorSpace;
@@ -1573,9 +1608,9 @@ if (renderer) {
       uSunCol: { value: new THREE.Color(1.7, 1.12, 0.72) },
       uDeep: { value: new THREE.Color(0.005, 0.026, 0.030) },
       uShallow: { value: new THREE.Color(0.030, 0.110, 0.112) },
-      uSkyCol: { value: new THREE.Color(0.42, 0.52, 0.66) },
-      uFogCol: { value: new THREE.Color(0.72, 0.66, 0.55) },
-      uFogDensity: { value: 0.0032 }
+      uSkyCol: { value: new THREE.Color(0.22, 0.40, 0.66) },
+      uFogCol: { value: new THREE.Color(0.69, 0.63, 0.51) },
+      uFogDensity: { value: 0.0024 }
     };
 
     const waterMat = new THREE.ShaderMaterial({
@@ -1632,7 +1667,7 @@ if (renderer) {
             refl = texture2D(tReflect, clamp(ruv, vec2(0.002), vec2(0.998))).rgb;
           } else {
             vec3 R = reflect(-V, N);
-            refl = mix(uSkyCol, uFogCol, smoothstep(-0.1, 0.55, R.y));
+            refl = mix(uSkyCol, uFogCol, smoothstep(0.05, 0.62, R.y));
           }
 
           // body: deep teal, lighter where the sun rakes through
@@ -2678,9 +2713,9 @@ if (renderer) {
           uTime: { value: 0 },
           uSunDir: { value: sunDir },
           uSunCol: { value: new THREE.Color(1.55, 1.02, 0.64) },
-          uSkyCol: { value: new THREE.Color(0.30, 0.38, 0.52) },
-          uFogCol: { value: new THREE.Color(0.72, 0.66, 0.55) },
-          uFogDensity: { value: 0.0032 }
+          uSkyCol: { value: new THREE.Color(0.26, 0.35, 0.52) },
+          uFogCol: { value: new THREE.Color(0.69, 0.63, 0.51) },
+          uFogDensity: { value: 0.0024 }
         },
         side: THREE.DoubleSide,
         vertexShader: /* glsl */`
