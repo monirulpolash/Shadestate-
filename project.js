@@ -6,6 +6,9 @@
 (function () {
   'use strict';
 
+  /* responsive-photo helper (assets/js/img-manifest.js), with a plain fallback */
+  var photo = window.shadePhoto || function (img, src) { if (img && src) img.src = src; };
+
   /* ───────────────────────── data ───────────────────────── */
 
   var IMG = '';
@@ -299,7 +302,7 @@
     }).join('');
 
     var hero = $('#heroImage');
-    window.shadePhoto(hero, p.hero, '100vw');
+    photo(hero, p.hero, '100vw');
     hero.alt = p.heroAlt;
     var cap = $('#heroCaption');
     if (cap) cap.textContent = p.heroCap;
@@ -353,7 +356,7 @@
       var name = el('p', 'landmark__name', esc(l.name));
       var dist = el('p', 'landmark__dist', esc(l.km));
 
-      window.shadePhoto(ring.querySelector('img'), IMG + l.img, '190px');
+      photo(ring.querySelector('img'), IMG + l.img, '190px');
       li.appendChild(ring);
       li.appendChild(time);
       li.appendChild(name);
@@ -401,10 +404,10 @@
       var a = el('article', 'gitem reveal' + (i === 0 ? ' gitem--lead' : ''));
       a.innerHTML =
         '<p class="gitem__num">' + pad2(i + 1) + '</p>' +
-        '<figure class="gitem__fig"><img src="' + IMG + g.img + '" alt="' + esc(p.name + ': ' + g.cap) + '" loading="lazy" decoding="async" width="900" height="1125"></figure>' +
+        '<figure class="gitem__fig"><img data-photo="' + IMG + g.img + '" alt="' + esc(p.name + ': ' + g.cap) + '" loading="lazy" decoding="async" width="900" height="1125"></figure>' +
         '<p class="gitem__cap"><span>' + esc(g.cap) + '</span><span>' + esc(g.sub) + '</span></p>';
       track.appendChild(a);
-      window.shadePhoto(a.querySelector('img'), IMG + g.img, '(max-width: 900px) 78vw, 32vw');
+      photo(a.querySelector('img'), IMG + g.img, '(max-width: 900px) 78vw, 32vw');
     });
 
     track.scrollLeft = 0;
@@ -692,7 +695,7 @@
 
   function renderMasterplan() {
     var img = $('#masterplanImage');
-    window.shadePhoto(img, IMG + p.masterplan, '(max-width: 900px) 100vw, 70vw');
+    photo(img, IMG + p.masterplan, '(max-width: 900px) 100vw, 70vw');
     img.alt = p.masterplanAlt;
   }
 
@@ -753,7 +756,7 @@
     var img = box.querySelector('img');
     /* the preview only shows on hover: start with the smallest frame, never
        the multi-megabyte original */
-    window.shadePhoto(img, p.hero || 'assets/ksa/arbour-townhomes.jpg', '420px');
+    photo(img, p.hero || 'assets/ksa/arbour-townhomes.jpg', '420px');
     var xTo = null, yTo = null;
     if (window.gsap) {
       xTo = window.gsap.quickTo(box, 'x', { duration: .5, ease: 'power3.out' });
@@ -761,7 +764,7 @@
     }
     $$('.crow__link', grid).forEach(function (a) {
       a.addEventListener('mouseenter', function () {
-        window.shadePhoto(img, a.getAttribute('data-preview'), '420px');
+        photo(img, a.getAttribute('data-preview'), '420px');
         if (window.gsap) {
           window.gsap.fromTo(img, { scale: 1.08 }, { scale: 1, duration: .6, ease: 'power2.out' });
           window.gsap.to(box, { opacity: 1, duration: .35 });

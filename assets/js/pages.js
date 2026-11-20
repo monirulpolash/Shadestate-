@@ -6,6 +6,9 @@
 (function () {
   'use strict';
 
+  /* responsive-photo helper (assets/js/img-manifest.js), with a plain fallback */
+  var photo = window.shadePhoto || function (img, src) { if (img && src) img.src = src; };
+
   var $ = function (s, c) { return (c || document).querySelector(s); };
   var $$ = function (s, c) { return Array.prototype.slice.call((c || document).querySelectorAll(s)); };
   var money = window.shadeMoney;
@@ -345,12 +348,16 @@
 
     grid.innerHTML = posts.map(function (p, i) {
       return '<a class="jcard" href="blog.html?article=' + p.slug + '" data-cat="' + p.cat + '" style="--i:' + (i % 3) + '" data-no-transition>' +
-        '<figure class="jcard__figure"><img src="' + p.img + '" alt="" loading="lazy" decoding="async"></figure>' +
+        '<figure class="jcard__figure"><img alt="" loading="lazy" decoding="async" data-photo="' + p.img + '"></figure>' +
         '<p class="jcard__meta"><b>' + p.cat + '</b><span>' + p.date + '</span><span>' + p.read + '</span></p>' +
         '<h3 class="jcard__title">' + p.title + '</h3>' +
         '<p class="jcard__excerpt">' + p.excerpt + '</p>' +
         '<span class="jcard__more">Read the essay →</span></a>';
     }).join('');
+
+    $$('.jcard__figure img', grid).forEach(function (im) {
+      photo(im, im.getAttribute('data-photo'), '(max-width: 700px) 100vw, 34vw');
+    });
 
     var cards = $$('.jcard', grid);
     if ('IntersectionObserver' in window) {
@@ -386,7 +393,7 @@
         $('#readerCat').textContent = post.cat + ' · ' + post.date;
         $('#readerTitle').textContent = post.title;
         $('#readerMeta').textContent = 'By the Shadestate studio · ' + post.read + ' read';
-        window.shadePhoto($('#readerImg'), post.img, '(max-width: 900px) 100vw, 62vw');
+        photo($('#readerImg'), post.img, '(max-width: 900px) 100vw, 62vw');
         $('#readerImg').alt = post.title;
         $('#readerBody').innerHTML = post.body.map(function (b) {
           if (typeof b === 'string') return '<p>' + b + '</p>';
