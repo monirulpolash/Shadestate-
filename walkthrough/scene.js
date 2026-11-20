@@ -3162,10 +3162,12 @@ if (renderer) {
       return { geo: g, pts };
     }
 
-    function addPalm(x, z, scale = 1) {
-      const h = rr(6.2, 8.4) * scale;
-      const bend = rr(0.8, 1.7) * scale;
-      const dir = rr(0, 6.3);
+    function addPalm(x, z, scale = 1, opts = {}) {
+      // a framed palm (the four corner palms) takes its height, lean and lean
+      // direction from the composition, so the quartet is a matching set
+      const h = opts.h ?? rr(6.2, 8.4) * scale;
+      const bend = opts.bend ?? rr(0.8, 1.7) * scale;
+      const dir = opts.dir ?? rr(0, 6.3);
       const dx = Math.cos(dir), dz = Math.sin(dir);
 
       const spine = new THREE.CatmullRomCurve3([
@@ -3259,7 +3261,7 @@ if (renderer) {
       [-14, 26, 1.15], [1.2, 35.5, 0.9], [-7, 44, 1.1], [20.5, 50, 1.0],
       [-18, 62, 1.2], [7.5, 68, 1.05], [-9.5, 88, 1.15], [26, 96, 1.1],
       [-11.5, -13.5, 1.05], [12.5, -16, 1.0], [-13, -2.5, 0.95], [15.5, 6.5, 0.95],
-      [-16, -24, 1.1], [11, -26, 1.05], [-6, -30, 1.0], [2, -36, 1.1],
+      [-19.0, -27.0, 1.1], [13.2, -28.8, 1.05], [-6, -30, 1.0], [2, -36, 1.1],
       // a closer rank so the drive has parallax and bark you can read — kept
       // off the gravel itself so the approach stays an open corridor
       [-5.2, 13.5, 0.62], [-1.4, 18.6, 0.58], [-3.4, 27, 0.66], [4.6, 43.0, 0.62],
@@ -3269,15 +3271,22 @@ if (renderer) {
 
     // cypresses: dark verticals against the pale hills, and a pair by the drive
     [[-22, 30, 1.0], [-26, 8, 0.9], [24, 22, 1.0], [30, 70, 1.1], [-20, 108, 1.2],
-     [18, 118, 1.1], [-30, -40, 1.0], [26, -48, 1.05], [-13.2, 8.4, 0.92],
-     [16.4, 13.6, 0.95], [-19, 49, 1.08], [21, 40, 0.9]]
+     [18, 118, 1.1], [-30, -40, 1.0], [26, -48, 1.05], [-16.4, 6.2, 0.92],
+     [21.5, 18.5, 0.95], [-19, 49, 1.08], [21, 40, 0.9]]
       .forEach(([x, z, s]) => addCypress(x, z, s));
 
-    // date palms: the architectural Gulf vertical, at the entry and round the pool
-    [[-6.0, 9.8, 1.0], [7.4, 12.8, 0.92], [10.9, -12.8, 1.02], [1.9, -23.6, 1.0],
-     [14.2, 28.5, 0.88], [-8.8, 35, 0.82], [17.5, 4.5, 0.9], [-4.9, -21.4, 0.94],
-     [7.8, -21.0, 0.92], [-12.5, -22, 0.94]]
-      .forEach(([x, z, s]) => addPalm(x, z, s));
+    /* date palms: four Gulf date palms standing on the four corners of the
+       house + terrace + pool plinth, the way four minarets frame the Taj. One
+       height, one lean length, each leaning out along the plinth's own
+       diagonal, so the quartet is a measured set rather than a grove: the
+       approach passes between the front pair, and the orbit turns inside them.
+       Kept clear of the gravel, the entry canopy, the wing and the pool. */
+    const PALM_FRAME = { cx: 1.5, cz: -5.1, h: 9.7, bend: 0.42 };
+    [[-14.2, 11.4], [17.2, 11.4], [-14.2, -21.6], [17.2, -21.6]]
+      .forEach(([x, z]) => {
+        const dir = Math.atan2(z - PALM_FRAME.cz, x - PALM_FRAME.cx);
+        addPalm(x, z, 1, { h: PALM_FRAME.h, bend: PALM_FRAME.bend, dir });
+      });
 
     // (low shrubs are grass tufts and vine skirts now — no separate pass)
 
