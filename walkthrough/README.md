@@ -10,18 +10,17 @@ equirect sky is both the visible background *and* the PMREM environment map — 
 mullion, the pool and the horizon always reflect the same sun.
 
 ```
-walkthrough/
-├── scene.js                the whole experience (ES module, ~3,030 lines)
-├── walkthrough.css         HUD, grading layers, editorial overlay, fallback —
-│                           every selector scoped to #walk for the host page
+shadestate-3d/
+├── index.html              page + editorial overlay
+├── style.css               typography, HUD, grading layers, fallbacks
+├── scene.js                the whole experience (ES module, ~3,000 lines)
+├── fonts.css               @font-face for the two local webfonts
+├── fonts/                  Cormorant Garamond + Plus Jakarta Sans (latin woff2)
 ├── vendor/three.module.js  three.js r160, vendored (see "Three.js" below)
+├── ShadestateWalkthrough.tsx  self-contained Framer Code Component
+├── previews/               captured frames of each stage
 └── README.md
 ```
-
-It is already embedded in `../index.html` (section `#walkthrough`, page position 6);
-its Framer twin is `../framer/ShadestateWalkthrough.tsx`. The standalone page it was
-built on (`index.html`, `style.css`, `fonts/`) is gone — the host page loads the same
-two Google families, so the woff2 set is not shipped twice.
 
 ---
 
@@ -30,12 +29,13 @@ two Google families, so the woff2 set is not shipped twice.
 Any static server works; ES modules need `http://`, not `file://`.
 
 ```bash
-cd real-estate-template      # the folder that holds index.html
+cd shadestate-3d
 python3 -m http.server 8080
-# open http://localhost:8080/#walkthrough
+# open http://localhost:8080/
 ```
 
 `?post=0` disables the post-processing chain (useful for profiling on weak GPUs).
+`?aa=0` drops MSAA; `?capture=1` keeps the drawing buffer so tooling can screenshot it.
 
 ### Three.js
 
@@ -61,12 +61,19 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.m
 | concrete | `makeConcrete()` — speckle, mottling, form-board seams |
 | gravel drive | `makeGravel()` — 9k pebbles, dust, strong normal map |
 | meadow | `makeMeadow()` — grass strokes over mottled base + normal map |
-| limestone ashlar | `makeAshlar()` — five courses, staggered joints, per-block tone, sediment bands, joints recessed in the normal map |
-| olive foliage | `makeLeafCluster()` — ~1,900 leaves over a soft green body, so thin cards fuse instead of reading as puffballs |
-| bark | `makeBarkTextures()` — long flaking fissures with a lit lip, lichen, plus normal and roughness maps; trunks are swept, tapered, root-flared tubes (`limb()`) |
-| grass | one instanced draw of 62k blades (12k mobile) in tufts — per-blade tint, dark base to sunlit tip, backlit rim, two gust frequencies, hand-applied fog |
-| bougainvillea | `makeBractCard()` (three papery bracts round a small eye) and `makeVineLeafCard()`, tinted per instance in magenta / crimson / coral / warm pink |
-| water | `makeWaterNormal()` — three wave sets → tileable normal map, driving a `ShaderMaterial` (Fresnel, sun glitter, sparkle) that mixes it over a half-res planar mirror |
+| limestone ashlar | `makeAshlar()` — five courses of staggered blocks, per-block tone, sediment bands and open pores, joints recessed in the height map |
+| olive foliage | `makeLeafCluster()` — a soft green body under ~1,900 leaves on an alpha card, instanced |
+| bark | `makeBarkTextures()` — long flaking fissures with a lit lip, lichen, plus normal and roughness maps |
+| pool tile | `makePoolTile()` — 8 × 8 pale green-grey ceramic with grout |
+| bougainvillea | `makeBractCard()` (three papery bracts) and `makeVineLeafCard()`, tinted per instance |
+| cypress surface | `makeCypressSurface()` — dark green, vertically streaked, almost black in shade |
+| cypress needles | `makeNeedleCluster()` — a thousand short sprays on an alpha card, instanced |
+| date palm trunk | `makePalmBark()` — overlapping leaf-base diamonds down a dusty grey column |
+| oak / walnut joinery | `makeWoodGrain()` — long grain, cathedral figure around knots, open pores, plus a normal map |
+| bouclé | `makeBoucle()` — loop-pile arcs over a slubbed wool ground |
+| wool rug | `makeRug()` — weft ribs, warp threads, flecks, a fine 2048² weave |
+| framed work | `makeArtwork()` — warm paper, one ochre disc, one ink gesture |
+| water | `makeWaterNormal()` — three interfering wave sets → tileable normal map, scrolled in the shader |
 | linen | fibre strokes |
 
 ### Shader detail (`onBeforeCompile`)
@@ -75,6 +82,43 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.m
 large-scale grime, vertical rain streaks and a darkened base where a wall meets the
 ground. It is what stops the 2.5 m-tiled bitmap from reading as wallpaper: the pattern
 never repeats because it is driven by world position, not UV.
+
+### Landscape, water, paper flower
+
+- **Olives.** Each olive is a swept, tapered, root-flared trunk on a kinked spine
+  (`limb()` builds a `TubeGeometry`-style tube with per-ring radius and bark UVs along
+  the grain), five forking limbs, two or three twigs each, buttress roots, and a crown of
+  displaced foliage clumps (body + shadow) wrapped in alpha cards for the silhouette.
+- **Cypresses.** Not cards: a flared trunk under a closed surface of revolution whose
+  radius is modulated by height *and* by angle, so both its silhouette and its shading
+  change as you walk past. Tiered clumps sit inside that body for organic mass, and
+  instanced needle cards at its surface give the ragged edge. It reads as one volume from
+  any angle, at 3 m or at 100 m.
+- **Date palms.** Ten of them. The trunk is a chain of short tapered cylinders laid along
+  a leaning spline, each segment stepping wider than its base to leave a leaf-base collar;
+  a crownshaft, a crown of 26 arched fronds plus an inner whorl, six dry skirt fronds and
+  three date clusters. A frond is real geometry — a rachis with two ranks of leaflet
+  triangles in a twisted frame, so the crown has depth instead of reading as a fern.
+- Clumps, cards, needles and vine bracts all sway on the GPU: `windify()` replaces
+  `project_vertex` so the displacement happens in world space after instancing, driven by
+  one shared `WIND.time` uniform.
+- **Grass.** One `InstancedBufferGeometry` draw of ~62k blades in tufts. Placement follows
+  the drive, the house apron and a wide falloff, skips paving and the pool, and shortens
+  where the lawn meets the gravel. The shader bends each blade by its own height with two
+  gust frequencies, shades it from a dark base to a sunlit tip (per-blade tint), adds a
+  backlit rim and applies fog by hand.
+- **Water.** A `ShaderMaterial` over the basin: two scrolling wave normal sets drive a
+  Fresnel mix between a deep-teal body and a **planar reflection** of the house, trees and
+  sky, plus sun glitter. The mirror is a second camera reflected about the water plane,
+  rendered into a half-resolution target only when the pool is on screen, close enough and
+  the eye is above it; the water and the basin are on layer 1 so the mirror pass skips them.
+  Underwater tiles get moving caustics from `caustic()`; there is a bench, steps and a
+  dark waterline band. Mobile skips the mirror and falls back to a sky-colour reflection.
+- **Paper flower.** Bougainvillea runners are swept stems along the entry canopy, the
+  pergola beams, the wing's roof edge, the wall by the door and the rear wall. Leaves and
+  bract clusters are instanced cards with per-instance magenta/crimson/coral colour,
+  a touch of emissive warmth and the same wind sway, with extra dense `mass()` fills where
+  the vine is established.
 
 ### Geometry that you can actually walk through
 
@@ -169,67 +213,147 @@ const POOL = { x0: -3.2, x1: 8.4, z0: -19.6, z1: -9.8 };
 
 ---
 
-## 5. How it sits inside `real-estate-template/`
+## 5. Fold it into `real-estate-template/`
 
-It is integrated (page position 6, inside the template's own `#walkthrough` section).
-What was actually done, in case you move or re-embed it:
+The template is being rewritten by another task, so **nothing here touches that folder**.
+When you are ready, this is the whole integration:
 
-1. **Files** — `scene.js`, `walkthrough.css`, `vendor/`, this README. `style.css` became
-   `walkthrough.css` **with every selector prefixed by `#walk`** and its `:root` tokens
-   moved onto `#walk`, so it cannot touch the host's `.btn`, `.eyebrow`, `.display`,
-   `--espresso` or heading rules in either direction. The local `fonts/` and `fonts.css`
-   were dropped: the host already loads Cormorant Garamond + Plus Jakarta Sans.
+1. **Copy the folder in** (keeping the name avoids path edits):
 
-2. **Head** — one extra stylesheet, after the host's own:
+   ```bash
+   cp -r shadestate-3d real-estate-template/walkthrough
+   ```
+
+   That brings `scene.js`, `style.css` → rename to `walkthrough.css`, `index.html`
+   (as a reference), `fonts/`, `fonts.css`, `vendor/`.
+
+2. **In `real-estate-template/index.html`**, add before `</head>`:
 
    ```html
    <link rel="stylesheet" href="walkthrough/walkthrough.css">
+   <link rel="stylesheet" href="walkthrough/fonts.css">
    ```
 
-3. **Markup** — the `<section class="walk" id="walk"> … </section>` block (canvas,
-   grading layers, HUD, the six editorial overlays, the CSS poster fallback) sits under
-   the template's `<div class="walkthrough__head">`. The closing paper's CTA points at
-   the host's `#inquire`.
+3. **Paste the section** — copy the whole `<section class="walk" id="walk"> … </section>`
+   block from `walkthrough/index.html` and place it after the template's hero.
 
-4. **Module** — before `</body>`:
+4. **Add the canvas id** — the module looks up `#walk` and `#scene`; if the template
+   already uses either id, rename it in the pasted markup *and* at the top of `scene.js`.
+
+5. **Load the module** just before `</body>`:
 
    ```html
    <script type="module" src="walkthrough/scene.js"></script>
    ```
 
-5. **Ids** — the module looks up `#walk` and `#scene`; the host uses `#walkthrough`
-   and `#shadestate-3d`, so both are free. Inside the section the scene also queries
-   `.copy__item`, `.walk__*`, `.hud*` — all unique to this block.
+6. **Typography:** the walkthrough's overlay uses the same Cormorant Garamond /
+   Plus Jakarta Sans pair and the same palette as the template (`#F7F4EF`, `#1C1A17`,
+   `#9A7B56`, `#E6DFD3`), so no restyling is needed. If the template already loads those
+   fonts from Google, delete `walkthrough/fonts.css` and skip step 2's second line.
 
-6. **Sticky** — the section is `600vh` tall on purpose (the scroll rail). Two rules:
+7. **Beware:** the section is `600vh` tall on purpose (the scroll rail). If the template's
+   scroll snapping or smooth-scroll library re-writes `transform` on `body` or a wrapper,
+   the sticky canvas will break — disable it for this section.
 
-   - no ancestor may be a scroll container. The host's `.walkthrough` uses
-     `overflow: clip` (not `hidden`) for exactly this reason, and
-     `html`/`body` must not get `overflow: hidden` while the section is on screen.
-   - a window-based smooth scroller (Lenis) is fine — it moves the real scroll
-     offset. A library that transforms a wrapper (or scroll-snapping) is not.
-
-7. **Failure** — `fail()` adds `.no-webgl` to the section itself (as well as to
-   `<html>`), and the error listeners only react to this module's own failures, so an
-   unrelated error elsewhere on the host page cannot hide the section.
-
-The `?post=0` switch still works on the host URL while profiling.
+The `?post=0` switch is handy here: keep it on a `<html data-post="0">` attribute if the
+template ships other heavy WebGL above the fold.
 
 ---
 
 ## 6. Framer
 
-`ShadestateWalkthrough.tsx` is a self-contained Code Component containing the same scene.
+The scene is portable: one call mounts it into any element and hands back a handle.
 
-1. **Assets → Code → New File**, name it `ShadestateWalkthrough.tsx`, paste the file.
-2. **Insert → Code Component → ShadestateWalkthrough**.
-3. Property controls: `Rail (vh)`, `Eyebrow`, `Lines`, `Stone`, `Field`.
-4. Set the component's height to anything — it renders its own `railVh × 100vh` rail with a
-   sticky canvas inside, and reads the page scroll.
+```js
+const inst = await createWalkthrough(el, options)   // el: any sized element
+inst.setProgress(0.47); inst.setOptions({ palms: false }); inst.destroy();
+```
 
-It imports three from `https://esm.sh/three@0.160.1` at runtime, so the first paint waits
-for that fetch (show a colour placeholder). For a fully self-hosted build, replace that
-import with a bundled copy.
+Nothing is read from the page — no ids, no global CSS, no asset paths. Every texture is
+generated in the canvas, three.js is the only dependency, and `destroy()` removes the
+canvas, its listeners, its observers, its render targets and every geometry, material and
+texture it created. The live page keeps its own thin integration at the bottom of
+`scene.js` (`autoMount`), which is skipped on any page without `#walk`.
+
+There are two ways into Framer. **Use the code component** — it is the only one that gives
+you the controls in the Framer panel.
+
+### 6a. Code component (recommended)
+
+`framer/ShadestateWalkthrough.tsx` — the scene inlined, three.js from npm.
+
+1. In Framer: **Assets → Code → New File**, name it `ShadestateWalkthrough.tsx`.
+2. Paste the whole file (it is self-contained; ~220 kB, and it is generated — see below).
+3. **Insert → Code Component → ShadestateWalkthrough**, then drag it to fill the section.
+4. Style it in the panel. All the look controls are on the right.
+
+Controls, in plain words:
+
+| Group | Control | What it does |
+|---|---|---|
+| Camera | **Follow scroll** | The camera follows the page's scroll through the component. Off: it plays the take by itself. |
+| Camera | **Autoplay** | Start the walk on its own (shown when Follow scroll is off). |
+| Camera | **Open on** | Where it starts: Approach / Door / Inside / Terrace / Orbit. |
+| Camera | **Speed** | How fast the camera moves, 0.2–3×. |
+| Camera | **Loop** | Play the take back and forth instead of stopping at the end. |
+| Look | **Light** | Morning / Noon / Golden hour / Dusk — sky, sun height, colour and the light on the house. |
+| Look | **Clouds** | 0 clear … 1 overcast. |
+| Look | **Grass** | Density of the meadow, 0.15–1. Lower is cheaper. |
+| Look | **Water ripples** | Strength of the pool's surface movement, 0–2. |
+| Look | **Corner palms** | The four date palms on the four sides of the house, on/off. |
+| Performance | **Quality** | Auto (phones get the lite tier) / High / Lite. Changing this rebuilds the scene. |
+| Performance | **Pause off-screen** | Stops rendering when the section leaves the viewport. Leave it on. |
+| Performance | **Max pixel ratio** | Cap on the drawing buffer, 1–2. 1.5 is already crisp for this render. |
+| Performance | **Height (px)** | 0 fills the frame; set a height for a fixed-height section inside a scrolling page. |
+
+Defaults are the approved look: morning light, 55% cloud, full grass, ripples on, four
+palms, quality auto, pause off-screen on. Dropping the component in changes nothing until
+you touch a control.
+
+Because it imports `three` from npm (the local build is r160), Framer resolves whatever
+version is current. If a future three ever breaks it, pin the import to
+`https://esm.sh/three@0.160.1` — it is a single line at the top of the file.
+
+### 6b. Embed route (a hosted bundle, no controls)
+
+`dist/shadestate-walkthrough.min.js` is the same scene with three.js inlined — one file,
+no imports, 1.2 MB (≈330 kB gzipped). Upload it next to the site (it is already on
+`shadestate.vercel.app/walkthrough/`), then in Framer use **Insert → Embed**:
+
+```html
+<div data-shadestate-walkthrough
+     data-scroll="1"      <!-- 0 = autoplay -->
+     data-autoplay="0"
+     data-stop="approach" <!-- approach|entry|interior|terrace|orbit -->
+     data-tod="morning"   <!-- morning|noon|golden|dusk -->
+     data-cover="0.55"    <!-- clouds 0..1 -->
+     data-grass="1"       <!-- 0.15..1 -->
+     data-water="1"       <!-- ripples 0..2 -->
+     data-palms="1"
+     data-quality="auto"  <!-- auto|high|lite -->
+     style="width:100%;height:640px"></div>
+<script src="https://shadestate.vercel.app/walkthrough/shadestate-walkthrough.min.js"></script>
+<link rel="stylesheet" href="https://shadestate.vercel.app/walkthrough/shadestate-walkthrough.css">
+```
+
+The bundle mounts every `[data-shadestate-walkthrough]` element on the page. It carries no
+panel controls — that is the trade for a two-line install.
+
+### Rebuilding the packages
+
+`scene.js` is the source. Both packages are generated from it:
+
+```bash
+python3 build/build.py      # writes dist/* and framer/ShadestateWalkthrough.tsx
+```
+
+Both may be verified on their own, outside the site:
+
+```bash
+python3 -m http.server 8080 -d dist
+# http://localhost:8080/standalone-test.html   (embed route)
+# http://localhost:8080/api-test.html          (createWalkthrough + destroy)
+```
 
 ---
 
@@ -237,13 +361,15 @@ import with a bundled copy.
 
 | | desktop | mobile |
 |---|---|---|
-| pixel ratio cap | 2 | 1.5 |
+| pixel ratio cap | 1.5 | 1.25 |
 | shadow map | 2048² + four 1024² point cubes (baked once) | 1024² + four 512² |
 | post chain | bloom + grade (5 passes at ¼ res) | none, CSS grade only |
-| leaves / shrubs / pebbles | 100% | ~55% |
-| grass blades | 62k (1 draw) | 12k (1 draw) |
-| draw calls | ~55–200 depending on stage (approach 118, terrace 57) | ~40 |
-| triangles | ~630k approach, ~1.24M terrace | ~320k |
+| grass | 32k tuft cards ≈ 300k blades, 1 draw | 16k cards ≈ 150k blades, 1 draw |
+| leaves / bracts / pebbles | 100% | ~50% |
+| planar reflection | half-res, only when the pool is in frame | off |
+| clouds | one canvas pass at boot, zero per frame | half-res canvas pass |
+| draw calls | ~140 (materials × shadow/receive variants, static) | ~127 |
+| shadow maps | 1536² sun + four 512² point cubes (each baked once) | 1024² + four 512² |
 
 Additional discipline:
 
@@ -259,16 +385,15 @@ Additional discipline:
 
 ## 8. Known limitations
 
-- **The water's mirror is planar and half-res.** It reflects what is above the surface
-  (house, trees, sky) from a second camera reflected about the water plane; the pass is
-  skipped unless the pool is on screen, within 52 m and the eye is above the surface, and
-  mobile falls back to a sky-colour reflection.
+- **The water's mirror is planar and half-res.** It reflects what is above the surface,
+  not the tiles below it, and it is skipped on mobile and beyond ~52 m.
 - **No SSAO/GTAO.** Contact darkening comes from the sun shadow map, the baked point-light
   cubes and the shader's base darkening. Corners at oblique angles can look a touch light.
-- **The interior furniture is modelled from primitives** (sofa, table, stair, pendant,
-  lamp, island) and reads well at walk-through speed, less so if you freeze and stare.
-- **Frames animate the camera, the water, the grass, the leaf and bract sway and the dust
-  motes**; the buildings, trunks and shadows are static, which is why the shadow maps can
-  be frozen. Sway is one shared clock in the vertex shader, so it costs one uniform.
+- **The interior furniture is still modelled from primitives**, but every edge is
+  bevelled (`roundedBoxGeo()`), the sofa is bouclé on a woven rug with a fluted walnut
+  table, thrown vessels, a brass linear pendant and a framed work under a 2700 K spot; it
+  holds up when you stop and look, though a real chair would not be out of place.
+- **Dust motes and the camera path are the only per-frame animation** — everything else is
+  static, which is why the shadow maps can be frozen.
 - **Pinned scroll** assumes the document scrolls. Scroll-hijacking libraries that transform
   a wrapper will break the sticky canvas (see integration step 7).
