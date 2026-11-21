@@ -323,7 +323,21 @@
     });
     var oc = $('#enquireCopy');
     if (oc) oc.textContent = 'Walk ' + p.name + ' with the people who built it, in ' + (p.country === 'Saudi Arabia' ? 'Riyadh' : 'Dubai') + '. By appointment.';
-    var we = $('#walkEyebrow'); if (we) we.textContent = p.name + ' · ' + p.location;
+    var we = $('#walkEyebrow'); if (we) we.textContent = '01 · Location · ' + p.name;
+
+    /* the walkthrough's five-stop story, made project-aware where the facts are
+       the project's own: the address pill and the pricing/handover pill (plus
+       the handover headline). The materials, hall and amenities pills describe
+       the villa the camera walks through, so they stay as written. */
+    var setWalk = function (id, txt) { var n = document.getElementById(id); if (n) n.textContent = txt; };
+    setWalk('walkSpecLocation', p.location + ' · ' + p.status);
+    var done = p.status === 'Completed';
+    var price = window.shadeMoney ? window.shadeMoney(p, p.currency) : p.currency + ' ' + p.price;
+    var plan = (p.plan || []).map(function (c) { return String(c[0]).replace(/\D/g, ''); }).filter(Boolean).join('/');
+    setWalk('walkHeadPricing', done ? 'Ready when you are.' : 'Yours by ' + p.handover + '.');
+    setWalk('walkSpecPricing', done
+      ? 'From ' + price + ' · Ready to move'
+      : 'From ' + price + (plan ? ' · ' + plan + ' · ' : ' · ') + p.handover);
 
     initCurrency();
     renderPayplan();

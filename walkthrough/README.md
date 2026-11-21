@@ -407,10 +407,12 @@ Controls, in plain words:
 | Group | Control | What it does |
 |---|---|---|
 | Copy | **Show copy** | The scroll copy over the scene, on/off. |
-| Copy | **Approach · headline / subtitle** | The line and note over the drive (default *Architecture with permanence.*). |
-| Copy | **Entry · headline / subtitle** | The large line at the door (default *Honest materials.*). |
-| Copy | **Interior · headline / subtitle** | The line in the hall (default *Room to breathe.*). |
-| Copy | **Terrace · headline / subtitle** | The line held from the terrace through the orbit (default *Built to stay.*). |
+| Copy | **Show spec pills** | The Apple-glass fact pill under each stop's headline, on/off. |
+| Copy | **01 Location · headline / subtitle / spec pill** | The line, note and address pill over the drive (defaults *Architecture with permanence.* / *Dubai Hills · 12 min to Downtown*). |
+| Copy | **02 Exterior · headline / subtitle / spec pill** | The large centred line at the door (defaults *Honest materials.* / *720 m² · Travertine, bronze & oak*). |
+| Copy | **03 Interior · headline / subtitle / spec pill** | The line in the hall (defaults *Room to breathe.* / *8 m hall · 5 bedrooms · 6 baths*). |
+| Copy | **04 Amenities · headline / subtitle / spec pill** | The line at the pool (defaults *A private resort.* / *Infinity pool · Rooftop pergola deck*). |
+| Copy | **05 Pricing · headline / subtitle / spec pill** | The closing line over the orbit (defaults *Yours by Q4 2026.* / *From AED 18.5M · 60/40 plan · Q4 2026*). |
 | Camera | **Follow scroll** | The camera follows the page's scroll through the component. Off: it plays the take by itself. |
 | Camera | **Autoplay** | Start the walk on its own (shown when Follow scroll is off). |
 | Camera | **Open on** | Where it starts: Approach / Door / Inside / Terrace / Orbit. |

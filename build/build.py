@@ -119,6 +119,7 @@ window.ShadestateWalkthrough = {
         grassDensity: d.grass != null ? parseFloat(d.grass) : undefined,
         waterRipples: d.water != null ? parseFloat(d.water) : undefined,
         palms: d.palms !== '0',
+        city: d.city !== '0',
         quality: d.quality || 'auto',
         pausedOffscreen: d.pause !== '0'
       });

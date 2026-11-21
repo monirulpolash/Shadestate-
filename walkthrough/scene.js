@@ -6402,7 +6402,9 @@ const grade = document.querySelector('.walk__grade');
 const bloomEl = document.querySelector('.walk__bloom');
 const veil = document.querySelector('.walk__veil');
 
-const STAGE_EDGES = [0, 0.30, 0.555, 0.79, 0.888, 1.01];
+/* the HUD's five acts, cut where the copy hands over: 01 location, 02 exterior,
+   03 interior, 04 amenities, 05 pricing & handover */
+const STAGE_EDGES = [0, 0.36, 0.575, 0.716, 0.855, 1.01];
 const STATIC_VIEWS = [0.0, 0.30, 0.47, 0.528, 0.705, 0.845, 0.94, 1.0];
 
 function readProgress() {

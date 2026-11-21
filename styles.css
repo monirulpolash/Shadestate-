@@ -60,7 +60,10 @@ html.is-locked, body.is-locked { overflow: hidden; }
 .hero__bg { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
 .hero__back { position: absolute; inset: 0; }
 .hero__back img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 42%; will-change: transform; }
-.hero__house { position: absolute; top: 60svh; left: 0; right: 0; height: 88.96vw; z-index: 1; transform-origin: 50% 100%; will-change: transform, opacity; }
+/* the roofline rests ~80px clear of the hero CTA at 1440×900 (60svh alone put it
+   57px under the button); expressed in px so the clearance holds as the
+   viewport height changes, never closing up on a short window */
+.hero__house { position: absolute; top: calc(60svh + 23px); left: 0; right: 0; height: 88.96vw; z-index: 1; transform-origin: 50% 100%; will-change: transform, opacity; }
 .hero__house img { width: 100%; height: 100%; object-fit: contain; }
 .hero__composite {
   position: absolute; inset: 0; z-index: 1; opacity: 0;
