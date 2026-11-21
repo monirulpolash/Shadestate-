@@ -1153,7 +1153,7 @@ function makePalmFrondTex() {
   const c = cv(W, H), g = c.getContext('2d');
   g.clearRect(0, 0, W, H);
   const Y = (v) => (1 - v) * H;                 // v = 0 at the base, 1 at the tip
-  const N = 64;
+  const N = 70;
 
   for (const side of [-1, 1]) {
     for (let k = 0; k < N; k++) {
@@ -1165,7 +1165,7 @@ function makePalmFrondTex() {
       const x1 = W / 2 + side * reach * 0.46, y1 = Y(v0 + (tip - v0) * 0.86);
 
       // a quadratic spine with a width that tapers to nothing
-      const wb = 6.6 - 2.8 * v0, STEPS = 9, L = [], R = [];
+      const wb = 8.4 - 3.6 * v0, STEPS = 9, L = [], R = [];
       for (let i = 0; i <= STEPS; i++) {
         const t = i / STEPS, it = 1 - t;
         const px = it * it * x0 + 2 * it * t * x1 + t * t * x2;
