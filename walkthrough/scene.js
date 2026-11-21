@@ -32,7 +32,7 @@ const BUILD = 'shadestate-3d/2.0';
    ───────────────────────────────────────────────────────────────────────────── */
 
 /** Camera stops a host can open on. */
-const STOPS = { approach: 0.03, entry: 0.47, interior: 0.63, terrace: 0.84, orbit: 0.97 };
+const STOPS = { approach: 0.03, entry: 0.505, interior: 0.705, terrace: 0.845, orbit: 0.97 };
 
 const DEFAULTS = {
   scrollDriven: true,      // camera follows the section's scroll progress
@@ -45,6 +45,7 @@ const DEFAULTS = {
   waterRipples: 1,         // ripple strength multiplier
   grassDensity: 1,         // 0 … 1 (clamped to the device tier)
   palms: true,             // the four corner date palms
+  city: true,              // the skyline beyond the pool
   quality: 'auto',         // auto | high | lite
   pausedOffscreen: true,   // stop the loop when the section leaves the viewport
   interactive: true,       // drag to look around
@@ -1105,6 +1106,7 @@ export async function createWalkthrough(container, options = {}) {
     if (q.has('cover')) opts.cloudCover = parseFloat(q.get('cover'));
     if (q.has('grass')) opts.grassDensity = parseFloat(q.get('grass'));
     if (q.has('palms')) opts.palms = q.get('palms') !== '0';
+    if (q.has('city')) opts.city = q.get('city') !== '0';
     if (q.has('quality')) opts.quality = q.get('quality');
   }
 
@@ -1187,6 +1189,8 @@ export async function createWalkthrough(container, options = {}) {
     /* hooks the look controls fill in later (sky rebuild, palm toggle) */
     let setSky = null;
     let setPalms = () => {};
+    let setCity = () => {};
+    let cityMood = null;
     const camera = new THREE.PerspectiveCamera(35, 1, 0.1, 900);
 
     /* ── sky + environment ───────────────────────────────────────────────
@@ -1443,6 +1447,7 @@ export async function createWalkthrough(container, options = {}) {
         grassUniforms.uFogCol.value.setHex(P.fog);
       }
       if (post) post.compMat.uniforms.uExposure.value = renderer.toneMappingExposure;
+      if (cityMood) cityMood(name);
       drawFrame();
       return true;
     };
@@ -2047,7 +2052,7 @@ export async function createWalkthrough(container, options = {}) {
     // gravel drive — a ribbon following the same spline the camera flies
     const drivePts = [
       [30, 150], [26, 128], [22.5, 108], [19.5, 92], [17, 78], [14.5, 64],
-      [12, 52], [9.2, 41], [6.4, 31], [4.0, 23], [2.2, 16.5], [1.0, 11.5], [0, 8.4], [0, 6.4]
+      [12, 52], [9.2, 41], [6.4, 31], [4.0, 23], [2.2, 16.5], [1.0, 12.6], [0.3, 10.4], [0, 8.8]
     ].map(([x, z]) => new THREE.Vector3(x, 0, z));
     const drive = new THREE.CatmullRomCurve3(drivePts, false, 'centripetal', 0.5);
     {
@@ -2397,124 +2402,295 @@ export async function createWalkthrough(container, options = {}) {
     waterUniforms.uTime = WIND.time;
 
     /* ─────────────────────────────────────────────────────────────────────
-       6 · the house
+       5c · the city beyond
+       The house faces a city it does not show you until you are inside it.
+       Beyond the pool, 190–430 m out, a low dense skyline stands on the
+       meadow: slab towers with setbacks, a few crowns, four needles. It is
+       deliberately almost a rumour — fog does half the work, the window grid
+       is a canvas with a few lights left on, and the whole thing is two
+       instanced draws. Everything about its scale is chosen so that it reads
+       as distance: from the hall it is a horizon behind the glass, from the
+       terrace a line of lights across the water, never a subject of its own.
        ───────────────────────────────────────────────────────────────────── */
-    const A = { x0: -10, x1: 4, z0: -6, z1: 6, h: 6.8, t: 0.5 };
-    const B = { x0: 3.6, x1: 13, z0: -6, z1: 3.2, h: 3.9, t: 0.42 };
-    const DOOR = { a: -1.15, b: 1.15, top: 2.95 };
-    const REAR = { a: -6.0, b: 2.2, top: 3.35 };
-
-    addBox(A.x1 - A.x0 + 0.5, 0.34, A.z1 - A.z0 + 0.5, (A.x0 + A.x1) / 2, -0.17, (A.z0 + A.z1) / 2, M.concrete, { uv: 0.42 });
-    addBox(B.x1 - B.x0 + 0.4, 0.3, B.z1 - B.z0 + 0.4, (B.x0 + B.x1) / 2, -0.15, (B.z0 + B.z1) / 2, M.concrete, { uv: 0.42 });
-
-    addWall({
-      axis: 'x', at: A.z1, from: A.x0, to: A.x1, y0: 0, y1: A.h, thick: A.t, mat: M.stone, uv: 0.4,
-      holes: [
-        { a: DOOR.a, b: DOOR.b, y0: 0, y1: DOOR.top },
-        { a: -7.6, b: -3.7, y0: 0.95, y1: 3.45 },
-        { a: -7.6, b: -3.7, y0: 4.9, y1: 6.05 }
-      ]
-    });
-    addWall({
-      axis: 'x', at: A.z0, from: A.x0, to: A.x1, y0: 0, y1: A.h, thick: A.t, mat: M.stone, uv: 0.4,
-      holes: [
-        { a: REAR.a, b: REAR.b, y0: 0, y1: REAR.top },
-        { a: -8.6, b: -3.2, y0: 4.6, y1: 5.9 }
-      ]
-    });
-    addWall({
-      axis: 'z', at: A.x0, from: A.z0, to: A.z1, y0: 0, y1: A.h, thick: A.t, mat: M.stone, uv: 0.4,
-      holes: [
-        { a: -4.6, b: -2.2, y0: 0.85, y1: 3.5 },
-        { a: 1.3, b: 3.4, y0: 0.85, y1: 3.5 }
-      ]
-    });
-    addWall({
-      axis: 'z', at: A.x1, from: A.z0, to: A.z1, y0: 0, y1: A.h, thick: A.t, mat: M.stone, uv: 0.4,
-      holes: [{ a: -4.3, b: -1.1, y0: 0, y1: 3.15 }]
-    });
-
-    // expressed floor line + cladding joints
-    for (const [z, ry] of [[A.z1 + 0.005, 0], [A.z0 - 0.005, 0]]) {
-      addBox(13.98, 0.055, 0.02, 0, 3.44, z, M.dark, { uv: 0.4, cast: false });
-    }
-    for (const x of [-8.2, -4.4, 0.9, 3.45]) {
-      addBox(0.03, 2.9, 0.02, x, 5.1, A.z1 + 0.005, M.dark, { uv: 0.4, cast: false });
-    }
-    addBox(0.02, 6.4, 0.055, A.x0 - 0.005, 3.2, -0.9, M.dark, { uv: 0.4, cast: false });
-
-    // roofs
-    const roofMat = new THREE.MeshStandardMaterial({
-      map: tex(grav.map, { srgb: true }), normalMap: tex(grav.normal),
-      color: 0xd8cdb8, roughness: 0.98, metalness: 0, envMapIntensity: 0.9,
-      emissive: new THREE.Color(0x1b1712), emissiveIntensity: 1.0
-    });
-    // main volume: slab, membrane roof, low parapet with a bronze coping
-    addBox(A.x1 - A.x0 + 1.9, 0.55, A.z1 - A.z0 + 1.9, (A.x0 + A.x1) / 2, A.h + 0.28, (A.z0 + A.z1) / 2, M.stonePale, { uv: 0.4 });
-    addBox(A.x1 - A.x0 + 1.7, 0.06, A.z1 - A.z0 + 1.7, (A.x0 + A.x1) / 2, A.h + 0.575, (A.z0 + A.z1) / 2, roofMat, { uv: 0.3, cast: false });
     {
-      const px = (A.x0 + A.x1) / 2, pz = (A.z0 + A.z1) / 2;
-      const ow = A.x1 - A.x0 + 1.9, od = A.z1 - A.z0 + 1.9;
-      addBox(ow, 0.34, 0.16, px, A.h + 0.73, pz - od / 2 + 0.08, M.stonePale, { uv: 0.4 });
-      addBox(ow, 0.34, 0.16, px, A.h + 0.73, pz + od / 2 - 0.08, M.stonePale, { uv: 0.4 });
-      addBox(0.16, 0.34, od, px - ow / 2 + 0.08, A.h + 0.73, pz, M.stonePale, { uv: 0.4 });
-      addBox(0.16, 0.34, od, px + ow / 2 - 0.08, A.h + 0.73, pz, M.stonePale, { uv: 0.4 });
-    }
-    // wing
-    addBox(B.x1 - B.x0 + 1.1, 0.42, B.z1 - B.z0 + 1.1, (B.x0 + B.x1) / 2, B.h + 0.21, (B.z0 + B.z1) / 2, M.stonePale, { uv: 0.4 });
-    addBox(B.x1 - B.x0 + 0.95, 0.05, B.z1 - B.z0 + 0.95, (B.x0 + B.x1) / 2, B.h + 0.44, (B.z0 + B.z1) / 2, roofMat, { uv: 0.3, cast: false });
-    {
-      const px = (B.x0 + B.x1) / 2, pz = (B.z0 + B.z1) / 2;
-      const ow = B.x1 - B.x0 + 1.1, od = B.z1 - B.z0 + 1.1;
-      addBox(ow, 0.26, 0.14, px, B.h + 0.55, pz - od / 2 + 0.07, M.stonePale, { uv: 0.4 });
-      addBox(ow, 0.26, 0.14, px, B.h + 0.55, pz + od / 2 - 0.07, M.stonePale, { uv: 0.4 });
-      addBox(0.14, 0.26, od, px - ow / 2 + 0.07, B.h + 0.55, pz, M.stonePale, { uv: 0.4 });
-      addBox(0.14, 0.26, od, px + ow / 2 - 0.07, B.h + 0.55, pz, M.stonePale, { uv: 0.4 });
-    }
-
-    // timber wing
-    addWall({
-      axis: 'x', at: B.z1, from: B.x0, to: B.x1, y0: 0, y1: B.h, thick: B.t, mat: M.stone, uv: 0.4,
-      holes: [{ a: 5.1, b: 11.7, y0: 0.05, y1: 2.92 }]
-    });
-    addWall({
-      axis: 'x', at: B.z0, from: B.x0, to: B.x1, y0: 0, y1: B.h, thick: B.t, mat: M.stone, uv: 0.4,
-      holes: [{ a: 5.0, b: 12.1, y0: 0.05, y1: 2.92 }]
-    });
-    addWall({
-      axis: 'z', at: B.x1, from: B.z0, to: B.z1, y0: 0, y1: B.h, thick: B.t, mat: M.stone, uv: 0.4,
-      holes: [{ a: -4.7, b: 1.4, y0: 0.05, y1: 2.92 }]
-    });
-
-    // vertical oak slats — real geometry, one instanced draw
-    {
-      const slatGeo = new THREE.BoxGeometry(0.045, 1, 0.12);
-      const count = MOBILE ? 78 : 118;
-      const slatMat = new THREE.MeshStandardMaterial({
-        map: texV(oakWood.map, [1, 0.4]),
-        normalMap: texV(oakWood.normal, [1, 0.4]),
-        color: 0xb99772, roughness: 0.68, metalness: 0, envMapIntensity: 0.55
+      /* facade: piers, floor lines, dark glass, and the lamps still on */
+      const CW = 128, CH = 256;
+      const faceC = cv(CW, CH), fg = faceC.getContext('2d');
+      const emC = cv(CW, CH), eg = emC.getContext('2d');
+      fg.fillStyle = '#5f6874'; fg.fillRect(0, 0, CW, CH);
+      eg.fillStyle = '#000000'; eg.fillRect(0, 0, CW, CH);
+      const cols = 9, rows = 30, cw = CW / cols, ch = CH / rows;
+      for (let j = 0; j < rows; j++) {
+        for (let i = 0; i < cols; i++) {
+          const x = i * cw + cw * 0.2, y = j * ch + ch * 0.24, w = cw * 0.6, h = ch * 0.48;
+          const r = rnd();
+          if (r > 0.93) {
+            fg.fillStyle = 'rgba(255,224,182,.95)'; fg.fillRect(x, y, w, h);
+            eg.fillStyle = 'rgba(255,198,138,1)'; eg.fillRect(x, y, w, h);
+          } else if (r > 0.68) {
+            fg.fillStyle = 'rgba(156,174,188,.5)'; fg.fillRect(x, y, w, h);
+            eg.fillStyle = 'rgba(34,38,44,1)'; eg.fillRect(x, y, w, h);
+          } else {
+            fg.fillStyle = 'rgba(42,50,62,.6)'; fg.fillRect(x, y, w, h);
+          }
+        }
+        fg.fillStyle = 'rgba(88,96,108,.4)'; fg.fillRect(0, j * ch, CW, 1.2);
+      }
+      // a few columns are structure rather than glass
+      for (const i of [0, 4, 8]) {
+        fg.fillStyle = 'rgba(104,112,124,.9)'; fg.fillRect(i * cw, 0, cw * 0.12, CH);
+      }
+      const cityMat = new THREE.MeshStandardMaterial({
+        map: tex(faceC, { srgb: true }),
+        emissiveMap: tex(emC, { srgb: true }),
+        emissive: new THREE.Color(0xffbe82),
+        emissiveIntensity: 0.34,
+        color: 0xffffff,
+        roughness: 0.74, metalness: 0.14,
+        envMapIntensity: 0.5
       });
-      const inst = new THREE.InstancedMesh(slatGeo, slatMat, count);
-      inst.castShadow = true; inst.receiveShadow = true;
-      const d = new THREE.Object3D();
-      let i = 0;
-      const front = Math.round(count * 0.62);
-      for (; i < front; i++) {
-        d.position.set(lerp(B.x0 + 0.4, B.x1 - 0.3, i / (front - 1)), 1.62, B.z1 + 0.16);
-        d.scale.set(1, 3.24, 1); d.rotation.set(0, 0, 0);
-        d.updateMatrix(); inst.setMatrixAt(i, d.matrix);
+      cityMat.uniforms = { uHaze: { value: new THREE.Color(0xd9d0bd) } };
+      cityMat.onBeforeCompile = (sh) => {
+        sh.uniforms.uHaze = cityMat.uniforms.uHaze;
+        sh.vertexShader = sh.vertexShader
+          .replace('#include <common>', '#include <common>\nvarying float vCY;')
+          .replace('#include <begin_vertex>', `#include <begin_vertex>
+            vec4 cwPos = modelMatrix * vec4(transformed, 1.0);
+            #ifdef USE_INSTANCING
+              cwPos = modelMatrix * instanceMatrix * vec4(transformed, 1.0);
+            #endif
+            vCY = cwPos.y;`);
+        sh.fragmentShader = sh.fragmentShader
+          .replace('#include <common>', '#include <common>\nuniform vec3 uHaze;\nvarying float vCY;')
+          .replace('#include <fog_fragment>', `#include <fog_fragment>
+            gl_FragColor.rgb = mix(uHaze, gl_FragColor.rgb, smoothstep(-1.0, 8.0, vCY));`);
+      };
+      cityMat.customProgramCacheKey = () => 'cityhaze';
+
+      const boxGeo = new THREE.BoxGeometry(1, 1, 1);
+      boxGeo.translate(0, 0.5, 0);
+      const spireGeo = new THREE.CylinderGeometry(0.07, 1, 1, 5, 1);
+      spireGeo.translate(0, 0.5, 0);
+
+      const NEAR = 0x9aa2ac, FAR = 0xc6cbd1;
+      const parts = [];
+      const N = MOBILE ? 78 : 156;
+      for (let i = 0; i < N; i++) {
+        const x = (rnd() < 0.5 ? -1 : 1) * Math.pow(rnd(), 1.55) * 340;
+        const z = -205 - Math.pow(rnd(), 0.9) * 245;
+        const w = rr(13, 31), d = rr(13, 31);
+        let h = 8 + Math.pow(rnd(), 2.0) * 20;
+        if (rnd() < 0.06) h += rr(8, 16);
+        const far = clamp((-z - 205) / 245);
+        const col = new THREE.Color(NEAR).lerp(new THREE.Color(FAR), far * rr(0.55, 1));
+        parts.push({ x, z, w, d, h, col });
+        // a setback crown on the taller ones: the silhouette is the whole story
+        if (h > 18 && rnd() < 0.7) {
+          parts.push({
+            x: x + rr(-2, 2), z: z + rr(-2, 2), w: w * rr(0.5, 0.72), d: d * rr(0.5, 0.72),
+            h: h + rr(2, 6), col: col.clone().offsetHSL(0, 0, 0.03)
+          });
+        }
       }
-      for (; i < count; i++) {
-        d.position.set(B.x1 + 0.16, 1.62, lerp(B.z0 + 0.5, B.z1 - 0.4, (i - front) / (count - front - 1)));
-        d.scale.set(1, 3.24, 1); d.rotation.set(0, Math.PI / 2, 0);
-        d.updateMatrix(); inst.setMatrixAt(i, d.matrix);
+
+      const dm = new THREE.Object3D();
+      const cityA = new THREE.InstancedMesh(boxGeo, cityMat, parts.length);
+      parts.forEach((p, i) => {
+        dm.position.set(p.x, -5, p.z);
+        dm.scale.set(p.w, p.h + 5, p.d);
+        dm.rotation.set(0, 0, 0);
+        dm.updateMatrix();
+        cityA.setMatrixAt(i, dm.matrix);
+        cityA.setColorAt(i, p.col);
+      });
+      cityA.instanceMatrix.needsUpdate = true;
+      if (cityA.instanceColor) cityA.instanceColor.needsUpdate = true;
+      cityA.castShadow = false; cityA.receiveShadow = false;
+      cityA.frustumCulled = false;
+      world.add(cityA);
+
+      // four monoliths and their needles, the landmarks that give the line a scale
+      const spires = [];
+      const SPOT = [[-136, -430, 44, 18], [96, -396, 50, 15], [-40, -452, 56, 17]];
+      for (const [x, z, h, w] of SPOT) {
+        spires.push({ x, z, w, h, needle: rr(5, 9) });
       }
-      inst.instanceMatrix.needsUpdate = true;
-      world.add(inst);
+      const cityB = new THREE.InstancedMesh(spireGeo, cityMat, spires.length * 2);
+      let si = 0;
+      for (const s of spires) {
+        dm.position.set(s.x, -5, s.z);
+        dm.scale.set(s.w, s.h + 5, s.w);
+        dm.rotation.set(0, rr(0, 6.28), 0);
+        dm.updateMatrix();
+        cityB.setMatrixAt(si, dm.matrix);
+        cityB.setColorAt(si, new THREE.Color(0x8b95a2));
+        si++;
+        dm.position.set(s.x, s.h * 0.72, s.z);
+        dm.scale.set(s.w * 0.14, s.h * 0.6 + s.needle, s.w * 0.14);
+        dm.rotation.set(0, 0, 0);
+        dm.updateMatrix();
+        cityB.setMatrixAt(si, dm.matrix);
+        cityB.setColorAt(si, new THREE.Color(0x9aa3ae));
+        si++;
+      }
+      cityB.instanceMatrix.needsUpdate = true;
+      if (cityB.instanceColor) cityB.instanceColor.needsUpdate = true;
+      cityB.castShadow = false; cityB.receiveShadow = false;
+      cityB.frustumCulled = false;
+      world.add(cityB);
+
+      setCity = (on) => {
+        cityA.visible = !!on;
+        cityB.visible = !!on;
+        drawFrame();
+      };
+      const cityOn = opts.city !== false;
+      cityA.visible = cityOn; cityB.visible = cityOn;
+
+      /* the sky decides how far the city is allowed to recede */
+      cityMood = (P) => {
+        const dusk = P === 'dusk' || P === 'golden';
+        cityMat.color.setHex(dusk ? 0xd8d2c9 : 0xffffff);
+        cityMat.emissiveIntensity = P === 'dusk' ? 1.0 : (P === 'golden' ? 0.7 : 0.45);
+        const preset = SKY_PRESETS[P] || SKY_PRESETS.morning;
+        cityMat.uniforms.uHaze.value.setHex(preset.fog);
+      };
     }
 
-    /* ── glazing ───────────────────────────────────────────────────────── */
+    /* ─────────────────────────────────────────────────────────────────────
+       6 · the house — one mass, two storeys
+       A travertine upper floor overhangs a recessed, entirely glazed ground
+       floor: four metres of shaded glass below, four metres of stone above,
+       and a 1.8 m porch in the shadow of the slab between them. The upper
+       storey is a single continuous block — a long bronze-framed ribbon, a
+       loggia cut into it, the entry slot passing through both floors — so the
+       house reads as one commanding volume from 80 m out on the drive and as a
+       sequence of rooms up close. The wing stays one storey and its roof
+       becomes the second terrace, flush with the first floor, looking back at
+       the house.
+       ───────────────────────────────────────────────────────────────────── */
+    const G = { x0: -12.5, x1: 4.0, z0: -6.0, z1: 6.6, h: 4.05, t: 0.54 };
+    const S = { x0: -14.1, x1: 4.6, z0: -6.0, z1: 8.4, y0: 4.05, y1: 8.15, t: 0.54 };
+    const WING = { x0: 4.0, x1: 16.2, z0: -6.0, z1: 3.4, h: 3.72, t: 0.44 };
+    const DECK = 4.05;              // structural second floor, and the wing roof
+    const F2 = 4.45;                // finished floor of the upper storey
+    const RL = 8.15;                // underside of the roof slab
+    const ROOF = RL + 0.38;
+    const DOOR = { a: -1.3, b: 1.3, top: 3.05 };
+    const REAR = { a: -6.4, b: 1.6, top: 3.85 };
+    const ATRIUM = { x0: -10.6, x1: 1.4, z0: -6.0, z1: 2.4 };
+    const LOGGIA = { x0: -10.6, x1: -5.2, z0: 6.9, z1: S.z1 };
+    const SKY = { x0: -8.4, x1: -2.8, z0: -5.2, z1: 0.9 };
+    const PORCH = { z0: G.z1, z1: S.z1 };
+
+    const warmLamp = new THREE.MeshBasicMaterial({ color: new THREE.Color(3.4, 2.2, 1.25) });
+
+    /* plinths: one pale slab under each volume, 0.36 proud of the meadow */
+    addBox(G.x1 - G.x0 + 0.9, 0.36, G.z1 - G.z0 + 0.9, (G.x0 + G.x1) / 2, -0.18, (G.z0 + G.z1) / 2, M.concrete, { uv: 0.42 });
+    addBox(WING.x1 - WING.x0 + 0.7, 0.34, WING.z1 - WING.z0 + 0.7, (WING.x0 + WING.x1) / 2, -0.17, (WING.z0 + WING.z1) / 2, M.concrete, { uv: 0.42 });
+
+    /* ── ground storey: stone piers, glass between them ─────────────────── */
+    addWall({
+      axis: 'x', at: G.z1, from: G.x0, to: G.x1, y0: 0, y1: G.h, thick: G.t, mat: M.stone, uv: 0.4,
+      holes: [
+        { a: -1.35, b: 1.35, y0: 0, y1: 3.95 },         // the entry, with its transom
+        { a: -11.7, b: -3.1, y0: 0.05, y1: 3.8 },       // the living room, floor to ceiling
+        { a: 2.05, b: 3.55, y0: 1.0, y1: 3.45 }         // beside the door
+      ]
+    });
+    addWall({
+      axis: 'x', at: G.z0, from: G.x0, to: G.x1, y0: 0, y1: G.h, thick: G.t, mat: M.stone, uv: 0.4,
+      holes: [
+        { a: REAR.a, b: REAR.b, y0: 0.03, y1: REAR.top },
+        { a: -11.9, b: -10.3, y0: 0.95, y1: 3.5 }
+      ]
+    });
+    addWall({
+      axis: 'z', at: G.x0, from: G.z0, to: G.z1, y0: 0, y1: G.h, thick: G.t, mat: M.stone, uv: 0.4,
+      holes: [
+        { a: -4.4, b: -2.0, y0: 0.9, y1: 3.6 },
+        { a: 0.8, b: 2.9, y0: 0.9, y1: 3.6 }
+      ]
+    });
+    addWall({
+      axis: 'z', at: G.x1, from: G.z0, to: G.z1, y0: 0, y1: G.h, thick: G.t, mat: M.stone, uv: 0.4,
+      holes: [
+        { a: -2.4, b: 0.4, y0: 0, y1: 2.95 },           // through to the wing
+        { a: -5.2, b: -3.6, y0: 1.0, y1: 3.4 }
+      ]
+    });
+
+    /* ── upper storey: one plane, one ribbon of glass ───────────────────── */
+    addWall({
+      axis: 'x', at: S.z1, from: S.x0, to: S.x1, y0: DECK, y1: S.y1, thick: S.t, mat: M.stone, uv: 0.4,
+      holes: [
+        { a: -12.9, b: -10.6, y0: 4.95, y1: 7.45 },
+        { a: LOGGIA.x0, b: LOGGIA.x1, y0: 4.4, y1: 7.95 },   // the loggia, cut out of the block
+        { a: -5.2, b: -1.9, y0: 4.95, y1: 7.45 },
+        { a: -0.9, b: 0.9, y0: 4.9, y1: 7.5 },               // above the entry
+        { a: 2.3, b: 3.6, y0: 4.95, y1: 7.45 }
+      ]
+    });
+    addWall({
+      axis: 'x', at: S.z0, from: S.x0, to: S.x1, y0: DECK, y1: S.y1, thick: S.t, mat: M.stone, uv: 0.4,
+      holes: [
+        { a: -12.8, b: -7.0, y0: 5.0, y1: 7.5 },
+        { a: -6.6, b: -3.4, y0: F2, y1: 7.4 },               // out onto the rear balcony
+        { a: -3.0, b: 1.2, y0: 5.0, y1: 7.5 }
+      ]
+    });
+    addWall({
+      axis: 'z', at: S.x0, from: S.z0, to: S.z1, y0: DECK, y1: S.y1, thick: S.t, mat: M.stone, uv: 0.4,
+      holes: [
+        { a: -4.6, b: -2.2, y0: 4.95, y1: 7.45 },
+        { a: 1.0, b: 3.2, y0: 4.95, y1: 7.45 },
+        { a: 4.8, b: 6.6, y0: 4.95, y1: 7.45 }
+      ]
+    });
+    addWall({
+      axis: 'z', at: S.x1, from: S.z0, to: S.z1, y0: DECK, y1: S.y1, thick: S.t, mat: M.stone, uv: 0.4,
+      holes: [
+        { a: -1.4, b: 1.6, y0: F2, y1: 7.2 },                // the door onto the roof deck
+        { a: -5.4, b: -3.4, y0: 4.95, y1: 7.45 }
+      ]
+    });
+    /* the loggia's side returns */
+    for (const [x, sgn] of [[LOGGIA.x0, 1], [LOGGIA.x1, -1]]) {
+      addWall({
+        axis: 'z', at: x, from: LOGGIA.z0, to: LOGGIA.z1, y0: F2, y1: RL, thick: 0.28, mat: M.stone, uv: 0.4
+      });
+    }
+
+    /* ── the wing: one storey of glass under a timber screen ────────────── */
+    addWall({
+      axis: 'x', at: WING.z1, from: WING.x0, to: WING.x1, y0: 0, y1: WING.h, thick: WING.t, mat: M.stone, uv: 0.4,
+      holes: [{ a: 5.6, b: 15.0, y0: 0.05, y1: 3.3 }]
+    });
+    addWall({
+      axis: 'x', at: WING.z0, from: WING.x0, to: WING.x1, y0: 0, y1: WING.h, thick: WING.t, mat: M.stone, uv: 0.4,
+      holes: [{ a: 5.4, b: 15.6, y0: 0.05, y1: 3.3 }]
+    });
+    addWall({
+      axis: 'z', at: WING.x1, from: WING.z0, to: WING.z1, y0: 0, y1: WING.h, thick: WING.t, mat: M.stone, uv: 0.4,
+      holes: [{ a: -5.2, b: 2.6, y0: 0.05, y1: 3.3 }]
+    });
+
+    /* ── expressed lines: the floor band, the joints, the shadow gaps ───── */
+    // the ground floor is capped by a bronze shadow line where the slab meets it
+    for (const [z, dir] of [[G.z1 + 0.005, 1], [G.z0 - 0.005, -1]]) {
+      addBox(G.x1 - G.x0 + 0.02, 0.07, 0.02, (G.x0 + G.x1) / 2, 4.02, z, M.dark, { uv: 0.4, cast: false });
+    }
+    addBox(0.02, 0.07, G.z1 - G.z0 + 0.02, G.x0 - 0.005, 4.02, (G.z0 + G.z1) / 2, M.dark, { uv: 0.4, cast: false });
+    addBox(0.02, 0.07, G.z1 - G.z0 + 0.02, G.x1 + 0.005, 4.02, (G.z0 + G.z1) / 2, M.dark, { uv: 0.4, cast: false });
+    // ashlar joints on the upper front, so 18 m of wall still has a scale
+    for (const x of [-13.4, -11.7, -6.4, -3.4, 1.3, 4.1]) {
+      addBox(0.03, RL - DECK - 0.1, 0.02, x, (DECK + RL) / 2, S.z1 + 0.005, M.dark, { uv: 0.4, cast: false });
+    }
+    for (const z of [-3.6, 0.2, 3.6, 7.2]) {
+      addBox(0.02, RL - DECK - 0.1, 0.03, S.x0 - 0.005, (DECK + RL) / 2, z, M.dark, { uv: 0.4, cast: false });
+    }
+
+    /* ── glazing, bronze-framed, in every opening ───────────────────────── */
     function glaze({ axis, at, from, to, y0, y1, mullions = 3, openFrom = null, openTo = null, sill = true }) {
       const tF = 0.075, dF = 0.17;            // frame face, frame depth
       const mul = Array.isArray(mullions)
@@ -2533,13 +2709,11 @@ export async function createWalkthrough(container, options = {}) {
         else mk(dF, y1 - y0, tF, at, (y0 + y1) / 2, u);
       }
       // a transom across the tall bays: real glazing is never one pane
-      const hMid = (y0 + y1) / 2;
       const tall = y1 - y0 > 2.3;
       if (tall) {
         if (axis === 'x') mk(to - from, 0.05, dF * 0.85, (from + to) / 2, y1 - 0.62, at);
         else mk(dF * 0.85, 0.05, to - from, at, y1 - 0.62, (from + to) / 2);
       }
-      // stone sill outside and a shadow reveal inside the opening
       if (sill) {
         if (axis === 'x') {
           mk(to - from + 0.3, 0.07, 0.26, (from + to) / 2, y0 - 0.02, at, M.stonePale);
@@ -2552,7 +2726,7 @@ export async function createWalkthrough(container, options = {}) {
 
       const panes = [];
       for (let i = 0; i < mul.length - 1; i++) {
-        const a = mul[i] ?? mul[i], b = mul[i + 1];
+        const a = mul[i], b = mul[i + 1];
         if (openFrom === null) { panes.push([a, b]); continue; }
         if (b <= openTo + 0.001 || a >= openFrom - 0.001) { panes.push([a, b]); continue; }
         if (a < openTo) panes.push([a, openTo]);
@@ -2569,46 +2743,260 @@ export async function createWalkthrough(container, options = {}) {
       }
     }
 
-    glaze({ axis: 'x', at: A.z0, from: REAR.a, to: REAR.b, y0: 0.02, y1: REAR.top, mullions: [-6, -4.4, -2.8, -1.2, 0.0], openFrom: 2.2, openTo: 0.0 });
-    glaze({ axis: 'x', at: A.z0 + 0.02, from: -8.6, to: -3.2, y0: 4.6, y1: 5.9, mullions: 3 });
-    glaze({ axis: 'x', at: A.z1 - 0.02, from: -7.6, to: -3.7, y0: 4.9, y1: 6.05, mullions: 3 });
-    glaze({ axis: 'x', at: A.z1 - 0.02, from: -7.6, to: -3.7, y0: 0.95, y1: 3.45, mullions: 2 });
-    glaze({ axis: 'z', at: A.x0 + 0.02, from: -4.6, to: -2.2, y0: 0.85, y1: 3.5, mullions: 2 });
-    glaze({ axis: 'z', at: A.x0 + 0.02, from: 1.3, to: 3.4, y0: 0.85, y1: 3.5, mullions: 2 });
-    glaze({ axis: 'x', at: B.z1 - 0.02, from: 5.1, to: 11.7, y0: 0.05, y1: 2.92, mullions: 5 });
-    glaze({ axis: 'x', at: B.z0 + 0.02, from: 5.0, to: 12.1, y0: 0.05, y1: 2.92, mullions: 5 });
-    glaze({ axis: 'z', at: B.x1 - 0.02, from: -4.7, to: 1.4, y0: 0.05, y1: 2.92, mullions: 4 });
+    // ground floor
+    glaze({ axis: 'x', at: G.z1 - 0.02, from: -11.7, to: -3.1, y0: 0.05, y1: 3.8, mullions: 6 });
+    glaze({ axis: 'x', at: G.z1 - 0.02, from: -1.35, to: 1.35, y0: 3.05, y1: 3.95, mullions: 2, sill: false });
+    glaze({ axis: 'x', at: G.z1 - 0.02, from: 2.05, to: 3.55, y0: 1.0, y1: 3.45, mullions: 1 });
+    glaze({ axis: 'x', at: G.z0 + 0.02, from: REAR.a, to: REAR.b, y0: 0.03, y1: REAR.top, mullions: [-6.4, -4.8, -3.2, -1.6, 0.0], openFrom: 1.6, openTo: 0.0 });
+    glaze({ axis: 'x', at: G.z0 + 0.02, from: -11.9, to: -10.3, y0: 0.95, y1: 3.5, mullions: 1 });
+    glaze({ axis: 'z', at: G.x0 + 0.02, from: -4.4, to: -2.0, y0: 0.9, y1: 3.6, mullions: 2 });
+    glaze({ axis: 'z', at: G.x0 + 0.02, from: 0.8, to: 2.9, y0: 0.9, y1: 3.6, mullions: 2 });
+    glaze({ axis: 'z', at: G.x1 - 0.02, from: -5.2, to: -3.6, y0: 1.0, y1: 3.4, mullions: 1 });
+    // upper floor
+    glaze({ axis: 'x', at: S.z1 - 0.02, from: -12.9, to: -10.6, y0: 4.95, y1: 7.45, mullions: 1 });
+    glaze({ axis: 'x', at: S.z1 - 0.02, from: -5.2, to: -1.9, y0: 4.95, y1: 7.45, mullions: 2 });
+    glaze({ axis: 'x', at: S.z1 - 0.02, from: -0.9, to: 0.9, y0: 4.9, y1: 7.5, mullions: 1 });
+    glaze({ axis: 'x', at: S.z1 - 0.02, from: 2.3, to: 3.6, y0: 4.95, y1: 7.45, mullions: 1 });
+    glaze({ axis: 'x', at: LOGGIA.z0 - 0.02, from: LOGGIA.x0, to: LOGGIA.x1, y0: F2, y1: 7.9, mullions: [-10.6, -8.8, -7.0, -5.2], sill: false });
+    glaze({ axis: 'x', at: S.z0 + 0.02, from: -12.8, to: -7.0, y0: 5.0, y1: 7.5, mullions: 3 });
+    glaze({ axis: 'x', at: S.z0 + 0.02, from: -3.0, to: 1.2, y0: 5.0, y1: 7.5, mullions: 2 });
+    glaze({ axis: 'x', at: S.z0 + 0.02, from: -6.6, to: -3.4, y0: F2, y1: 7.4, mullions: 2, sill: false });
+    glaze({ axis: 'z', at: S.x0 + 0.02, from: -4.6, to: -2.2, y0: 4.95, y1: 7.45, mullions: 1 });
+    glaze({ axis: 'z', at: S.x0 + 0.02, from: 1.0, to: 3.2, y0: 4.95, y1: 7.45, mullions: 1 });
+    glaze({ axis: 'z', at: S.x0 + 0.02, from: 4.8, to: 6.6, y0: 4.95, y1: 7.45, mullions: 1 });
+    glaze({ axis: 'z', at: S.x1 - 0.02, from: -1.4, to: 1.6, y0: F2, y1: 7.2, mullions: 2, sill: false });
+    glaze({ axis: 'z', at: S.x1 - 0.02, from: -5.4, to: -3.4, y0: 4.95, y1: 7.45, mullions: 1 });
+    // wing
+    glaze({ axis: 'x', at: WING.z1 - 0.02, from: 5.6, to: 15.0, y0: 0.05, y1: 3.3, mullions: 6 });
+    glaze({ axis: 'x', at: WING.z0 + 0.02, from: 5.4, to: 15.6, y0: 0.05, y1: 3.3, mullions: 6 });
+    glaze({ axis: 'z', at: WING.x1 - 0.02, from: -5.2, to: 2.6, y0: 0.05, y1: 3.3, mullions: 5 });
 
-    // entry portal — the deep recess the camera travels through
-    addBox(1.0, 3.45, 1.35, -1.65, 1.72, A.z1 + 0.66, M.stone, { uv: 0.4 });
-    addBox(1.0, 3.45, 1.35, 1.65, 1.72, A.z1 + 0.66, M.stone, { uv: 0.4 });
-    addBox(2.4, 0.62, 1.35, 0, 3.28, A.z1 + 0.66, M.stone, { uv: 0.4 });
-    addBox(5.6, 0.28, 3.2, 0.4, 3.72, A.z1 + 1.6, M.stonePale, { uv: 0.4 });
-    addBox(5.7, 0.06, 3.3, 0.4, 3.89, A.z1 + 1.6, M.bronze, { uv: 0.4 });
-    addBox(2.34, 0.05, 0.56, 0, DOOR.top - 0.02, A.z1, M.bronze, { uv: 0.5 });
-    addBox(0.05, DOOR.top, 0.56, -1.17, DOOR.top / 2, A.z1, M.bronze, { uv: 0.5 });
-    addBox(0.05, DOOR.top, 0.56, 1.17, DOOR.top / 2, A.z1, M.bronze, { uv: 0.5 });
-    addBox(0.055, 2.86, 2.1, 2.25, 1.45, 4.62, M.walnutVert, { uv: 0.6 });
-    addBox(0.09, 0.03, 1.4, 2.22, 1.02, 4.4, M.bronze, { uv: 0.5 });
-
-    /* ── exterior detailing ────────────────────────────────────────────────
-       Timber soffits, a pergola over the terrace, bronze sconces with their
-       warm pools on the stone, roof copings with a shadow line, and the teak
-       loungers by the pool. All merged into the existing material buckets.
-       ─────────────────────────────────────────────────────────────────── */
-    // entrance canopy: slatted oak soffit + bronze fascia
+    /* ── the entry: a bronze portal, a deep reveal, the transom above ───── */
     {
-      const cx = 0.4, cz = A.z1 + 1.6, cy = 3.56;
-      for (let x = -2.25; x <= 3.15; x += 0.17) {
-        addBox(0.085, 0.115, 3.06, x, cy, cz, M.oakVert, { uv: 0.7 });
+      const z = G.z1;
+      // jambs and lintel stand 0.3 proud of the glass line
+      addBox(0.34, 3.1, 0.36, -1.5, 1.55, z + 0.08, M.stone, { uv: 0.4 });
+      addBox(0.34, 3.1, 0.36, 1.5, 1.55, z + 0.08, M.stone, { uv: 0.4 });
+      addBox(3.34, 0.3, 0.36, 0, 3.12, z + 0.08, M.stone, { uv: 0.4 });
+      // the bronze frame of the leaf opening
+      addBox(2.66, 0.05, 0.2, 0, DOOR.top + 0.02, z, M.bronze, { uv: 0.5 });
+      addBox(0.05, DOOR.top, 0.2, -1.31, DOOR.top / 2, z, M.bronze, { uv: 0.5 });
+      addBox(0.05, DOOR.top, 0.2, 1.31, DOOR.top / 2, z, M.bronze, { uv: 0.5 });
+      // a bronze threshold, and the step up onto the plinth
+      addBox(2.7, 0.02, 0.3, 0, 0.005, z + 0.12, M.bronze, { uv: 0.5 });
+      // the door itself, open inward against the wall
+      addBox(0.06, 3.0, 1.18, -1.28, 1.5, z - 0.62, M.walnutVert, { uv: 0.6 });
+      addBox(0.05, 0.05, 1.0, -1.24, 1.05, z - 0.6, M.bronze, { uv: 0.5 });
+    }
+
+    /* ── porch: oak soffit under the cantilever, two bronze columns ─────── */
+    {
+      const z0 = PORCH.z0, z1 = PORCH.z1 - 0.05, zc = (z0 + z1) / 2, d = z1 - z0;
+      for (let x = S.x0 + 0.15; x <= S.x1 - 0.1; x += 0.17) {
+        addBox(0.085, 0.13, d, x, 3.97, zc, M.oakVert, { uv: 0.7 });
       }
-      addBox(5.66, 0.1, 0.08, 0.4, cy + 0.02, cz + 1.62, M.bronze, { uv: 0.5 });
-      for (let z = cz - 1.5; z <= cz + 1.5; z += 0.5) {
-        addBox(0.06, 0.09, 0.06, -2.3, cy + 0.04, z, M.bronze, { uv: 0.5 });
+      addBox(S.x1 - S.x0, 0.08, 0.07, (S.x0 + S.x1) / 2, 3.9, z0 + 0.03, M.bronze, { uv: 0.5 });
+      for (const x of [-8.6, 2.4]) {
+        addBox(0.14, 4.0, 0.14, x, 2.0, z1 - 0.16, M.bronze, { uv: 0.5 });
+        addBox(0.3, 0.03, 0.3, x, 4.03, z1 - 0.16, M.bronze, { uv: 0.5 });
+        contactShadow(x, z1 - 0.16, 0.7, 0.7, true, 0.02);
+      }
+      // two recessed downlights in the soffit, washing the stone
+      for (const x of [-6.2, -1.9, 3.0]) {
+        addBox(0.1, 0.02, 0.1, x, 3.93, zc - 0.4, warmLamp, { cast: false, receive: false });
       }
     }
 
-    // pergola over the terrace, clear of the camera's exit line
+    /* ── roofs: a deep flat slab, a crisp fascia, a slim parapet ────────── */
+    const roofMat = new THREE.MeshStandardMaterial({
+      map: tex(grav.map, { srgb: true }), normalMap: tex(grav.normal),
+      color: 0xd8cdb8, roughness: 0.98, metalness: 0, envMapIntensity: 0.9,
+      emissive: new THREE.Color(0x1b1712), emissiveIntensity: 1.0
+    });
+    const OV = 1.5;                 // overhang
+    {
+      const x0 = S.x0 - OV, x1 = S.x1 + OV, z0 = S.z0 - OV, z1 = S.z1 + OV;
+      const bx = [[x0, SKY.x0, z0, z1], [SKY.x1, x1, z0, z1], [SKY.x0, SKY.x1, z0, SKY.z0], [SKY.x0, SKY.x1, SKY.z1, z1]];
+      for (const [a, b, c, d] of bx) {
+        addBox(b - a, ROOF - RL, d - c, (a + b) / 2, (RL + ROOF) / 2, (c + d) / 2, M.stonePale, { uv: 0.4 });
+      }
+      // membrane + pale walkway where it shows from the orbit
+      for (const [a, b, c, d] of bx) {
+        addBox(b - a - 0.9, 0.04, d - c - 0.9, (a + b) / 2, ROOF + 0.02, (c + d) / 2, roofMat, { uv: 0.3, cast: false });
+      }
+      // fascia: a stone band with a bronze drip line, and the parapet above
+      const fh = 0.38;
+      addBox(x1 - x0 + 0.06, fh, 0.1, (x0 + x1) / 2, ROOF - fh / 2 + 0.02, z0 - 0.02, M.stonePale, { uv: 0.4 });
+      addBox(x1 - x0 + 0.06, fh, 0.1, (x0 + x1) / 2, ROOF - fh / 2 + 0.02, z1 + 0.02, M.stonePale, { uv: 0.4 });
+      addBox(0.1, fh, z1 - z0, x0 - 0.02, ROOF - fh / 2 + 0.02, (z0 + z1) / 2, M.stonePale, { uv: 0.4 });
+      addBox(0.1, fh, z1 - z0, x1 + 0.02, ROOF - fh / 2 + 0.02, (z0 + z1) / 2, M.stonePale, { uv: 0.4 });
+      for (const [a, b, c, d] of [[x0 + 0.06, x1 - 0.06, z0 + 0.02, z0 + 0.1], [x0 + 0.06, x1 - 0.06, z1 - 0.1, z1 - 0.02],
+        [x0 + 0.02, x0 + 0.1, z0 + 0.06, z1 - 0.06], [x1 - 0.1, x1 - 0.02, z0 + 0.06, z1 - 0.06]]) {
+        addBox(b - a, 0.05, d - c, (a + b) / 2, ROOF - fh + 0.03, (c + d) / 2, M.bronze, { uv: 0.5, cast: false });
+      }
+      // parapet, set back 0.14 with a bronze coping
+      const pw2 = 0.14, ph = 0.30;
+      for (const [a, b, c, d] of [[x0 + 0.14, x1 - 0.14, z0 + 0.14, z0 + 0.14 + pw2], [x0 + 0.14, x1 - 0.14, z1 - 0.14 - pw2, z1 - 0.14],
+        [x0 + 0.14, x0 + 0.14 + pw2, z0 + 0.14, z1 - 0.14], [x1 - 0.14 - pw2, x1 - 0.14, z0 + 0.14, z1 - 0.14]]) {
+        addBox(b - a, ph, d - c, (a + b) / 2, ROOF + ph / 2, (c + d) / 2, M.stonePale, { uv: 0.4 });
+        addBox(b - a + 0.06, 0.055, d - c + 0.06, (a + b) / 2, ROOF + ph + 0.02, (c + d) / 2, M.bronze, { uv: 0.5, cast: false });
+      }
+    }
+    // the skylight over the hall, raised out of the roof
+    {
+      const w = SKY.x1 - SKY.x0, d = SKY.z1 - SKY.z0, cx = (SKY.x0 + SKY.x1) / 2, cz = (SKY.z0 + SKY.z1) / 2;
+      // the lantern: 1.5 m of stonewall above the roof, glazed over the top
+      const LH = 1.5;
+      for (const [a, b, c, dd] of [[SKY.x0 - 0.24, SKY.x1 + 0.24, SKY.z0 - 0.24, SKY.z0], [SKY.x0 - 0.24, SKY.x1 + 0.24, SKY.z1, SKY.z1 + 0.24],
+        [SKY.x0 - 0.24, SKY.x0, SKY.z0, SKY.z1], [SKY.x1, SKY.x1 + 0.24, SKY.z0, SKY.z1]]) {
+        addBox(b - a, LH, dd - c, (a + b) / 2, ROOF + LH / 2, (c + dd) / 2, M.stonePale, { uv: 0.4 });
+      }
+      const lw = SKY.x1 - SKY.x0 + 0.48, ld = SKY.z1 - SKY.z0 + 0.48;
+      addBox(lw + 0.1, 0.07, ld + 0.1, cx, ROOF + LH + 0.02, cz, M.bronze, { uv: 0.5 });
+      const lglass = new THREE.Mesh(new THREE.PlaneGeometry(lw - 0.06, ld - 0.06), M.glass);
+      lglass.rotation.x = -Math.PI / 2;
+      lglass.position.set(cx, ROOF + LH + 0.06, cz);
+      lglass.renderOrder = 3;
+      world.add(lglass);
+      // the well lined in plaster through the depth of the slab
+      for (const [a, b, c, dd] of [[SKY.x0 - 0.03, SKY.x0, SKY.z0, SKY.z1], [SKY.x1, SKY.x1 + 0.03, SKY.z0, SKY.z1],
+        [SKY.x0, SKY.x1, SKY.z0 - 0.03, SKY.z0], [SKY.x0, SKY.x1, SKY.z1, SKY.z1 + 0.03]]) {
+        addBox(b - a, ROOF - RL, dd - c, (a + b) / 2, (RL + ROOF) / 2, (c + dd) / 2, M.plaster, { uv: 0.4, cast: false });
+      }
+      const skyGlow = new THREE.MeshBasicMaterial({ color: new THREE.Color(2.1, 2.35, 2.6) });
+      addBox(w - 0.04, 0.01, d - 0.04, cx, ROOF + LH - 0.03, cz, skyGlow, { cast: false, receive: false });
+      const cover = new THREE.Mesh(new THREE.PlaneGeometry(w + 0.06, d + 0.06), M.glass);
+      cover.rotation.x = -Math.PI / 2;
+      cover.position.set(cx, ROOF + LH, cz);
+      cover.renderOrder = 3;
+      world.add(cover);
+    }
+
+    /* ── balconies and the roof deck ────────────────────────────────────── */
+    /** A frameless glass balustrade on a bronze shoe, axis aligned. */
+    function railX(x0, x1, z, y, h = 1.05) {
+      const w = x1 - x0, cx = (x0 + x1) / 2;
+      const g = new THREE.Mesh(new THREE.PlaneGeometry(w, h), M.glass);
+      g.position.set(cx, y + h / 2, z); g.renderOrder = 3; world.add(g);
+      addBox(w, 0.075, 0.1, cx, y + 0.037, z, M.bronze, { uv: 0.6 });
+      addBox(w, 0.045, 0.12, cx, y + h + 0.02, z, M.bronze, { uv: 0.6 });
+    }
+    function railZ(z0, z1, x, y, h = 1.05) {
+      const d = z1 - z0, cz = (z0 + z1) / 2;
+      const g = new THREE.Mesh(new THREE.PlaneGeometry(d, h), M.glass);
+      g.rotation.y = Math.PI / 2;
+      g.position.set(x, y + h / 2, cz); g.renderOrder = 3; world.add(g);
+      addBox(0.1, 0.075, d, x, y + 0.037, cz, M.bronze, { uv: 0.6 });
+      addBox(0.12, 0.045, d, x, y + h + 0.02, cz, M.bronze, { uv: 0.6 });
+    }
+
+    // the loggia: glass at the outer face of the recess
+    railX(LOGGIA.x0, LOGGIA.x1, S.z1 - 0.16, F2, 1.08);
+    addBox(LOGGIA.x1 - LOGGIA.x0, 0.16, LOGGIA.z1 - LOGGIA.z0, (LOGGIA.x0 + LOGGIA.x1) / 2, F2 - 0.08, (LOGGIA.z0 + LOGGIA.z1) / 2, M.stonePale, { uv: 0.5 });
+    // the rear balcony, projecting over the terrace
+    {
+      addBox(3.9, 0.18, 1.6, -5.0, F2 - 0.09, S.z0 - 0.8, M.stonePale, { uv: 0.5 });
+      addBox(3.96, 0.06, 1.66, -5.0, F2 - 0.19, S.z0 - 0.8, M.bronze, { uv: 0.5, cast: false });
+      railX(-6.9, -3.1, S.z0 - 1.55, F2, 1.06);
+      railZ(S.z0 - 1.55, S.z0, -6.9, F2, 1.06);
+      railZ(S.z0 - 1.55, S.z0, -3.1, F2, 1.06);
+      contactShadow(-5.0, S.z0 - 0.8, 4.4, 2.2, true, 0.02);
+    }
+    // the wing's roof deck: slab, pale paving, glass rail on three edges
+    {
+      addBox(WING.x1 - WING.x0 + 0.9, 0.33, WING.z1 - WING.z0 + 0.9, (WING.x0 + WING.x1) / 2, DECK - 0.165, (WING.z0 + WING.z1) / 2, M.stonePale, { uv: 0.4 });
+      addPlane(WING.x1 - WING.x0 + 0.6, WING.z1 - WING.z0 + 0.6, (WING.x0 + WING.x1) / 2, DECK + 0.004, (WING.z0 + WING.z1) / 2, M.oakFloor, { uv: 1 / 3.1 });
+      railX(WING.x0 + 0.3, WING.x1 + 0.35, WING.z1 + 0.35, DECK, 1.05);
+      railZ(WING.z0 - 0.35, WING.z1 + 0.35, WING.x1 + 0.35, DECK, 1.05);
+      railZ(WING.z0 - 0.35, WING.z1 + 0.35, WING.x0 + 0.3, DECK, 1.05);
+      // pergola over the east half of the deck
+      const px0 = 10.4, px1 = 15.8, pz0 = -4.6, pz1 = 2.4, py = 6.45;
+      for (const [x, z] of [[px0, pz0], [px1, pz0], [px0, pz1], [px1, pz1]]) {
+        addBox(0.13, py - DECK, 0.13, x, (py + DECK) / 2, z, M.bronze, { uv: 0.5 });
+      }
+      addBox(px1 - px0 + 0.5, 0.24, 0.16, (px0 + px1) / 2, py + 0.09, pz0, M.oakDark, { uv: 0.6 });
+      addBox(px1 - px0 + 0.5, 0.24, 0.16, (px0 + px1) / 2, py + 0.09, pz1, M.oakDark, { uv: 0.6 });
+      for (let x = px0 + 0.24; x <= px1 - 0.18; x += 0.23) {
+        addBox(0.07, 0.14, pz1 - pz0 - 0.1, x, py + 0.22, (pz0 + pz1) / 2, M.oakVert, { uv: 0.7 });
+      }
+      // a daybed and two planters, so the deck reads as a room
+      const daybed = (x, z) => {
+        addBox(1.8, 0.12, 0.9, x, DECK + 0.32, z, M.oakDark, { uv: 0.6 });
+        for (const dx of [-0.78, 0.78]) {
+          for (const dz of [-0.36, 0.36]) addBox(0.06, 0.3, 0.06, x + dx, DECK + 0.15, z + dz, M.bronze, { uv: 0.5 });
+        }
+        addBox(1.7, 0.16, 0.82, x, DECK + 0.46, z, M.linenA, { uv: 0.6 });
+        addBox(0.42, 0.16, 0.4, x - 0.55, DECK + 0.58, z, M.linenB, { uv: 0.6 });
+      };
+      daybed(9.2, 1.5); daybed(9.2, 0.1);
+      addBox(0.7, 0.5, 0.7, 5.2, DECK + 0.25, 2.6, M.stonePale, { uv: 0.5 });
+      addBox(0.7, 0.5, 0.7, 5.2, DECK + 0.25, -5.2, M.stonePale, { uv: 0.5 });
+      addBox(6.0, 0.6, 0.4, 13.0, DECK + 0.3, -5.6, M.stone, { uv: 0.4 });
+    }
+
+    /* ── timber slat screen along the wing ──────────────────────────────── */
+    {
+      const slatGeo = new THREE.BoxGeometry(0.045, 1, 0.12);
+      const count = MOBILE ? 78 : 118;
+      const slatMat = new THREE.MeshStandardMaterial({
+        map: texV(oakWood.map, [1, 0.4]),
+        normalMap: texV(oakWood.normal, [1, 0.4]),
+        color: 0xa08a6c, roughness: 0.72, metalness: 0, envMapIntensity: 0.5
+      });
+      const inst = new THREE.InstancedMesh(slatGeo, slatMat, count);
+      inst.castShadow = true; inst.receiveShadow = true;
+      const d = new THREE.Object3D();
+      let i = 0;
+      const front = Math.round(count * 0.66);
+      for (; i < front; i++) {
+        d.position.set(lerp(WING.x0 + 4.4, WING.x1 - 0.25, i / (front - 1)), 1.58, WING.z1 + 0.17);
+        d.scale.set(1, 3.16, 1); d.rotation.set(0, 0, 0);
+        d.updateMatrix(); inst.setMatrixAt(i, d.matrix);
+      }
+      for (; i < count; i++) {
+        d.position.set(WING.x1 + 0.17, 1.58, lerp(WING.z0 + 0.35, WING.z1 - 0.35, (i - front) / (count - front - 1)));
+        d.scale.set(1, 3.16, 1); d.rotation.set(0, Math.PI / 2, 0);
+        d.updateMatrix(); inst.setMatrixAt(i, d.matrix);
+      }
+      inst.instanceMatrix.needsUpdate = true;
+      world.add(inst);
+    }
+
+    /* ── exterior lighting: sconces, step lights ─────────────────────────── */
+    function sconce(x, y, z, axis = 'z', sign = 1) {
+      const w = axis === 'z' ? 0.17 : 0.05;
+      const d = axis === 'z' ? 0.05 : 0.17;
+      addBox(w, 0.36, d, x, y, z, M.bronze, { uv: 0.5 });
+      const ox = axis === 'z' ? 0 : sign * 0.075;
+      const oz = axis === 'z' ? sign * 0.075 : 0;
+      addBox(0.13, 0.22, 0.13, x + ox, y, z + oz, M.bronze, { uv: 0.5 });
+      addBox(0.1, 0.06, 0.1, x + ox, y - 0.13, z + oz, warmLamp, { cast: false, receive: false });
+      const glowMat = M.glow.clone();
+      glowMat.opacity = 0.3;
+      const q = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 1.9), glowMat);
+      if (axis === 'z') q.position.set(x + ox, y + 0.05, z + sign * 0.11);
+      else { q.rotation.y = Math.PI / 2; q.position.set(x + sign * 0.11, y + 0.05, z + oz); }
+      q.renderOrder = 4;
+      world.add(q);
+    }
+    sconce(-2.6, 2.6, G.z1 + 0.14, 'z', 1);
+    sconce(2.6, 2.6, G.z1 + 0.14, 'z', 1);
+    sconce(-6.8, 2.7, G.z0 - 0.28, 'z', -1);
+    sconce(3.0, 2.7, G.z0 - 0.28, 'z', -1);
+    sconce(-13.0, 2.7, G.z0 - 0.28, 'z', -1);
+    for (const [lx, ly, lz, li] of [[-2.6, 2.55, G.z1 + 0.5, MOBILE ? 2.5 : 4.2],
+                                     [-6.8, 2.6, G.z0 - 0.6, MOBILE ? 2.2 : 3.6]]) {
+      const pl = new THREE.PointLight(0xffb877, li, 6.5, 2);
+      pl.position.set(lx, ly, lz);
+      scene.add(pl);
+    }
+
+    // recessed step lights in the pool coping face
+    for (const sx of [-2.4, 0.6, 3.6, 6.6]) {
+      addBox(0.16, 0.05, 0.02, sx, -0.22, POOL.z1 + pw + 0.005, warmLamp, { cast: false, receive: false });
+    }
+
+    /* ── the pergola over the terrace ───────────────────────────────────── */
     {
       const px0 = 4.5, px1 = 9.8, pz0 = -9.5, pz1 = -6.75, py = 3.12;
       for (const [x, z] of [[px0, pz0], [px1, pz0], [px0, pz1], [px1, pz1]]) {
@@ -2621,81 +3009,14 @@ export async function createWalkthrough(container, options = {}) {
       }
     }
 
-    // roof copings: a projecting cap with a shadow reveal under it
+    /* ── the way in: a stone apron under the porch, a step at its edge ──── */
     {
-      const px = (A.x0 + A.x1) / 2, pz = (A.z0 + A.z1) / 2;
-      const ow = A.x1 - A.x0 + 1.9, od = A.z1 - A.z0 + 1.9;
-      const yTop = A.h + 0.73 + 0.17;
-      addBox(ow + 0.14, 0.075, 0.3, px, yTop, pz - od / 2 + 0.08, M.stonePale, { uv: 0.4 });
-      addBox(ow + 0.14, 0.075, 0.3, px, yTop, pz + od / 2 - 0.08, M.stonePale, { uv: 0.4 });
-      addBox(0.3, 0.075, od, px - ow / 2 + 0.08, yTop, pz, M.stonePale, { uv: 0.4 });
-      addBox(0.3, 0.075, od, px + ow / 2 - 0.08, yTop, pz, M.stonePale, { uv: 0.4 });
-
-      const bx = (B.x0 + B.x1) / 2, bz = (B.z0 + B.z1) / 2;
-      const bw = B.x1 - B.x0 + 1.1, bd = B.z1 - B.z0 + 1.1;
-      const byTop = B.h + 0.55 + 0.13;
-      addBox(bw + 0.12, 0.06, 0.26, bx, byTop, bz - bd / 2 + 0.07, M.stonePale, { uv: 0.4 });
-      addBox(bw + 0.12, 0.06, 0.26, bx, byTop, bz + bd / 2 - 0.07, M.stonePale, { uv: 0.4 });
-      addBox(0.26, 0.06, bd, bx - bw / 2 + 0.07, byTop, bz, M.stonePale, { uv: 0.4 });
-      addBox(0.26, 0.06, bd, bx + bw / 2 - 0.07, byTop, bz, M.stonePale, { uv: 0.4 });
-
-      // chamfered arrises: a 45 degree strip bedded into each outer edge, so
-      // the coping catches a highlight instead of ending in a knife edge
-      const ch = (len, x, y, z, axisX) => {
-        const g = new THREE.BoxGeometry(axisX ? len : 0.05, 0.05, axisX ? 0.05 : len);
-        if (axisX) g.rotateX(Math.PI / 4); else g.rotateZ(Math.PI / 4);
-        g.translate(x, y, z);
-        queue(g, M.stonePale, true, true);
-      };
-      const cyA = yTop + 0.014;
-      ch(ow + 0.14, px, cyA, pz - od / 2 + 0.08 - 0.132, true);
-      ch(ow + 0.14, px, cyA, pz + od / 2 - 0.08 + 0.132, true);
-      ch(od, px - ow / 2 + 0.08 - 0.132, cyA, pz, false);
-      ch(od, px + ow / 2 - 0.08 + 0.132, cyA, pz, false);
-      const cyB = byTop + 0.002;
-      ch(bw + 0.12, bx, cyB, bz - bd / 2 + 0.07 - 0.112, true);
-      ch(bw + 0.12, bx, cyB, bz + bd / 2 - 0.07 + 0.112, true);
-      ch(bd, bx - bw / 2 + 0.07 - 0.112, cyB, bz, false);
-      ch(bd, bx + bw / 2 - 0.07 + 0.112, cyB, bz, false);
+      addPlane(9.2, PORCH.z1 - G.z1 + 1.6, 0, 0.028, (G.z1 + PORCH.z1 + 1.6) / 2 - 0.2, M.stonePale, { uv: 0.5 });
+      addBox(9.4, 0.16, 0.3, 0, -0.06, PORCH.z1 + 0.75, M.stonePale, { uv: 0.5 });
+      for (const x of [-4.2, 4.2]) addBox(0.14, 0.05, 0.14, x, 0.03, PORCH.z1 + 0.9, M.bronze, { cast: false });
     }
 
-    /* ── exterior lighting: sconces, step lights ─────────────────────────── */
-    const warmLamp = new THREE.MeshBasicMaterial({ color: new THREE.Color(3.4, 2.2, 1.25) });
-
-    function sconce(x, y, z, axis = 'z', sign = 1) {
-      const w = axis === 'z' ? 0.17 : 0.05;
-      const d = axis === 'z' ? 0.05 : 0.17;
-      addBox(w, 0.36, d, x, y, z, M.bronze, { uv: 0.5 });
-      const ox = axis === 'z' ? 0 : sign * 0.075;
-      const oz = axis === 'z' ? sign * 0.075 : 0;
-      addBox(0.13, 0.22, 0.13, x + ox, y, z + oz, M.bronze, { uv: 0.5 });
-      addBox(0.1, 0.06, 0.1, x + ox, y - 0.13, z + oz, warmLamp, { cast: false, receive: false });
-      // the warm pool it throws on the stone
-      const glowMat = M.glow.clone();
-      glowMat.opacity = 0.3;
-      const q = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 1.9), glowMat);
-      if (axis === 'z') q.position.set(x + ox, y + 0.05, z + sign * 0.11);
-      else { q.rotation.y = Math.PI / 2; q.position.set(x + sign * 0.11, y + 0.05, z + oz); }
-      q.renderOrder = 4;
-      world.add(q);
-    }
-    sconce(-2.62, 2.62, A.z1 + 0.26, 'z', 1);
-    sconce(2.62, 2.62, A.z1 + 0.26, 'z', 1);
-    sconce(-6.8, 2.7, A.z0 - 0.26, 'z', -1);
-    sconce(3.1, 2.7, A.z0 - 0.26, 'z', -1);
-    for (const [lx, ly, lz, li] of [[-2.62, 2.55, A.z1 + 0.55, MOBILE ? 2.5 : 4.2],
-                                     [-6.8, 2.6, A.z0 - 0.55, MOBILE ? 2.2 : 3.6]]) {
-      const pl = new THREE.PointLight(0xffb877, li, 6.5, 2);
-      pl.position.set(lx, ly, lz);
-      scene.add(pl);
-    }
-
-    // recessed step lights in the pool coping face
-    for (const sx of [-2.4, 0.6, 3.6, 6.6]) {
-      addBox(0.16, 0.05, 0.02, sx, -0.22, POOL.z1 + pw + 0.005, warmLamp, { cast: false, receive: false });
-    }
-
-    /* ── teak loungers by the pool ───────────────────────────────────────── */
+    /* ── teak loungers by the pool ──────────────────────────────────────── */
     function lounger(x, z) {
       const sx = 1.95, sz = 0.72;
       for (const dz of [-sz / 2 + 0.07, sz / 2 - 0.07]) {
@@ -2706,11 +3027,9 @@ export async function createWalkthrough(container, options = {}) {
       for (let i = 0; i < 9; i++) {
         addBox(0.075, 0.035, sz, x - sx / 2 + 0.16 + i * 0.205, 0.345, z, M.oak, { uv: 0.7 });
       }
-      // inclined back
       for (let i = 0; i < 5; i++) {
         addBox(0.075, 0.035, sz, x - sx / 2 + 0.1 + i * 0.16, 0.36 + i * 0.12, z, M.oak, { uv: 0.7 });
       }
-      // folded linen at the foot
       addBox(0.44, 0.1, 0.5, x + sx / 2 - 0.4, 0.41, z, M.linenA, { uv: 0.6 });
     }
     lounger(5.3, -8.55);
@@ -2718,10 +3037,373 @@ export async function createWalkthrough(container, options = {}) {
     contactShadow(5.3, -8.55, 2.6, 1.15, true, 0.018);
     contactShadow(7.6, -8.55, 2.6, 1.15, true, 0.018);
     contactShadow(6.45, -8.55, 0.82, 0.82, true, 0.018);
-    // a low stone side table between them
     addBox(0.46, 0.34, 0.46, 6.45, 0.17, -8.55, M.stonePale, { uv: 0.5 });
     addBox(0.5, 0.05, 0.5, 6.45, 0.36, -8.55, M.stonePale, { uv: 0.5 });
 
+    /* ─────────────────────────────────────────────────────────────────────
+       7 · interior
+       Ground floor: one oak plain from the entry to the rear glass, the hall
+       open the full 8 m to a skylight, the stair hanging in that void, and the
+       living room set back under the gallery. The second floor is a gallery
+       that wraps the void on three sides — a bridge over the entry, a landing
+       where the stair arrives, and a run of rooms behind glass along the front.
+       ───────────────────────────────────────────────────────────────────── */
+    addPlane(G.x1 - G.x0 - 0.5, G.z1 - G.z0 - 0.5, (G.x0 + G.x1) / 2, 0.012, (G.z0 + G.z1) / 2, M.oakFloor, { uv: 1 / 3.1 });
+    addPlane(WING.x1 - WING.x0 - 0.4, WING.z1 - WING.z0 - 0.4, (WING.x0 + WING.x1) / 2, 0.014, (WING.z0 + WING.z1) / 2, M.oakFloor, { uv: 1 / 3.1 });
+    // a stone threshold inside the door, then oak
+    addPlane(3.0, 1.1, 0, 0.02, G.z1 - 0.55, M.stonePale, { uv: 0.5 });
+
+    /* ── the second-floor plate, built around the atrium ────────────────── */
+    {
+      const plate = (x0, x1, z0, z1) => {
+        addBox(x1 - x0, F2 - DECK, z1 - z0, (x0 + x1) / 2, (DECK + F2) / 2, (z0 + z1) / 2, M.plaster, { uv: 0.4 });
+        addPlane(x1 - x0 - 0.02, z1 - z0 - 0.02, (x0 + x1) / 2, F2 + 0.004, (z0 + z1) / 2, M.oakFloor, { uv: 1 / 3.1 });
+      };
+      plate(S.x0, ATRIUM.x0, S.z0, S.z1);            // west gallery
+      plate(ATRIUM.x1, S.x1, S.z0, S.z1);            // east gallery
+      plate(ATRIUM.x0, ATRIUM.x1, ATRIUM.z1, S.z1);  // the bridge over the entry
+      // bronze fascia round the void edge, and the shadow line under it
+      addBox(0.06, F2 - DECK + 0.02, ATRIUM.z1 - ATRIUM.z0, ATRIUM.x0, (DECK + F2) / 2, (ATRIUM.z0 + ATRIUM.z1) / 2, M.bronze, { uv: 0.5, cast: false });
+      addBox(0.06, F2 - DECK + 0.02, ATRIUM.z1 - ATRIUM.z0, ATRIUM.x1, (DECK + F2) / 2, (ATRIUM.z0 + ATRIUM.z1) / 2, M.bronze, { uv: 0.5, cast: false });
+      addBox(ATRIUM.x1 - ATRIUM.x0, F2 - DECK + 0.02, 0.06, (ATRIUM.x0 + ATRIUM.x1) / 2, (DECK + F2) / 2, ATRIUM.z1, M.bronze, { uv: 0.5, cast: false });
+      // a stone floor on the loggia, where the upper floor meets the air
+      addPlane(LOGGIA.x1 - LOGGIA.x0 - 0.1, LOGGIA.z1 - LOGGIA.z0 - 0.1, (LOGGIA.x0 + LOGGIA.x1) / 2, F2 + 0.008, (LOGGIA.z0 + LOGGIA.z1) / 2, M.stonePale, { uv: 0.5 });
+    }
+
+    /* ── the stair: 16 oak treads on a bronze stringer, in the void ─────── */
+    {
+      const n = 16, rise = F2 / n, run = 0.30, sx = -10.0, w = 1.5;
+      const zBot = 3.18, zTop = zBot - (n - 1) * run;
+      for (let i = 0; i < n; i++) {
+        const y = (i + 1) * rise, z = zBot - i * run;
+        addBox(w, 0.075, run + 0.05, sx, y - 0.038, z, M.oak, { uv: 0.6 });
+      }
+      // the stringer: a plate on the east side, following the flight
+      {
+        const len = Math.hypot(zBot - zTop + 0.4, F2);
+        const g = new THREE.BoxGeometry(0.05, 0.28, len);
+        g.rotateX(Math.atan2(F2, zBot - zTop + 0.4));
+        g.translate(sx + w / 2 + 0.02, F2 / 2 - 0.02, (zBot + zTop) / 2);
+        queue(g, M.bronze, true, true);
+      }
+      // a glass balustrade following the flight
+      {
+        const z0 = zBot + 0.16, z1 = zTop - 0.02, y0 = rise + 0.06, y1 = F2 + 0.06, hh = 1.02, px = sx + w / 2 + 0.05;
+        const g = new THREE.BufferGeometry();
+        g.setAttribute('position', new THREE.Float32BufferAttribute([
+          px, y0, z0, px, y1, z1, px, y0 + hh, z0, px, y1 + hh, z1
+        ], 3));
+        g.setAttribute('uv', new THREE.Float32BufferAttribute([0, 0, 1, 0, 0, 1, 1, 1], 2));
+        g.setIndex([0, 1, 2, 1, 3, 2]);
+        g.computeVertexNormals();
+        const pane = new THREE.Mesh(g, M.glass);
+        pane.renderOrder = 3;
+        world.add(pane);
+        // bronze handrail over it
+        const hrPts = [];
+        for (let i = 0; i <= 6; i++) {
+          const s = i / 6;
+          hrPts.push(new THREE.Vector3(px, y0 + hh + s * (y1 - y0) + 0.03, z0 + s * (z1 - z0)));
+        }
+        const hr = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(hrPts), 16, 0.026, 8), M.bronze);
+        hr.castShadow = true; world.add(hr);
+      }
+      // the landing: a small plate at the top, into the west gallery
+      addBox(1.9, 0.12, 1.3, -10.1, F2 - 0.06, zTop - 0.65, M.stonePale, { uv: 0.5 });
+      addBox(1.94, 0.05, 1.34, -10.1, F2 - 0.14, zTop - 0.65, M.bronze, { uv: 0.5, cast: false });
+      railZ(zTop - 1.3, zTop, -9.18, F2, 1.04);
+      railX(-10.6, -9.18, zTop - 1.28, F2, 1.04);
+      contactShadow(-10.0, 0.05, 1.8, 4.6, true, 0.02);
+    }
+
+    /* ── gallery balustrades: glass, bronze shoe, bronze cap ────────────── */
+    railZ(ATRIUM.z0, -2.55, ATRIUM.x0, F2, 1.05);
+    railX(ATRIUM.x0, ATRIUM.x1, ATRIUM.z1, F2, 1.05);
+    railZ(ATRIUM.z0, ATRIUM.z1, ATRIUM.x1, F2, 1.05);
+
+    /* ── ceilings: plaster at 8.15, cut around the skylight ─────────────── */
+    {
+      const L = SKY.x0, R = SKY.x1, B = SKY.z0, F = SKY.z1;
+      addPlane(S.x1 - S.x0, B - S.z0, (S.x0 + S.x1) / 2, RL - 0.02, (S.z0 + B) / 2, M.plaster, { uv: 0.35, faceDown: true });
+      addPlane(S.x1 - S.x0, S.z1 - F, (S.x0 + S.x1) / 2, RL - 0.02, (F + S.z1) / 2, M.plaster, { uv: 0.35, faceDown: true });
+      addPlane(L - S.x0, F - B, (S.x0 + L) / 2, RL - 0.02, (B + F) / 2, M.plaster, { uv: 0.35, faceDown: true });
+      addPlane(S.x1 - R, F - B, (R + S.x1) / 2, RL - 0.02, (B + F) / 2, M.plaster, { uv: 0.35, faceDown: true });
+      // the reveal of the light well, and its bronze trim
+      for (const [x, z, w, d] of [[(L + R) / 2, B - 0.02, R - L, 0.04], [(L + R) / 2, F + 0.02, R - L, 0.04],
+        [L - 0.02, (B + F) / 2, 0.04, F - B], [R + 0.02, (B + F) / 2, 0.04, F - B]]) {
+        addBox(w, 0.42, d, x, RL + 0.2, z, M.plaster, { uv: 0.4, cast: false });
+      }
+    }
+
+    /* ── the living room ──────────────────────────────────────────────────
+       Low bouclé sectional on a woven rug, a fluted oak coffee table with
+       thrown vessels, one framed work on the limestone, and a brass linear
+       pendant dropped 5.5 m out of the ceiling. Every edge is bevelled. */
+    {
+      const g = new THREE.PlaneGeometry(4.7, 3.6);
+      g.rotateX(-Math.PI / 2);
+      g.translate(-5.0, 0.034, -3.5);
+      queue(g, M.rugWoven, false, true);
+    }
+    {
+      const sx = -5.2, sz = -4.45;
+      addSoft(3.42, 0.10, 1.0, 0.03, sx, 0.07, sz, M.dark, { uv: 0.5 });
+      addSoft(3.52, 0.28, 1.14, 0.06, sx, 0.27, sz, M.boucle, { uv: 0.55 });
+      for (let i = 0; i < 2; i++) {
+        addSoft(1.68, 0.16, 1.02, 0.07, sx - 0.85 + i * 1.7, 0.485, sz + 0.04, M.boucle, { uv: 0.5, seg: 3 });
+      }
+      addSoft(3.52, 0.50, 0.20, 0.06, sx, 0.60, sz - 0.52, M.boucle, { uv: 0.55 });
+      for (let i = 0; i < 2; i++) {
+        addSoft(1.64, 0.46, 0.24, 0.09, sx - 0.85 + i * 1.7, 0.68, sz - 0.42,
+          M.boucle, { uv: 0.5, rx: -0.13, seg: 3 });
+      }
+      for (const ax of [sx - 1.76, sx + 1.76]) {
+        addSoft(0.20, 0.40, 1.16, 0.09, ax, 0.44, sz, M.boucle, { uv: 0.5, seg: 3 });
+      }
+      addSoft(1.02, 0.24, 1.5, 0.05, sx - 1.36, 0.26, -3.66, M.boucle, { uv: 0.55 });
+      addSoft(0.96, 0.14, 1.42, 0.07, sx - 1.36, 0.46, -3.66, M.boucle, { uv: 0.5, seg: 3 });
+      const throws = [
+        [-6.05, 0.72, -4.72, 0.44, M.linenB, 0.14, -0.22],
+        [-4.35, 0.70, -4.74, 0.42, M.linenA, -0.10, -0.20],
+        [-4.86, 0.66, -4.80, 0.38, M.boucle, 0.05, -0.26],
+        [-6.40, 0.55, -3.30, 0.46, M.linenA, 0.42, 0.06]
+      ];
+      for (const [x, y, z, s, mat, rz, rx] of throws) {
+        addSoft(s, s, 0.15, 0.06, x, y, z, mat, { uv: 0.6, rz, rx, seg: 3 });
+      }
+
+      const tx = -4.85, tz = -2.9;
+      addSoft(1.74, 0.08, 0.88, 0.035, tx, 0.335, tz, M.walnut, { uv: 0.7, seg: 3 });
+      for (const dx of [-0.46, 0.46]) {
+        const drum = new THREE.CylinderGeometry(0.235, 0.26, 0.29, 22);
+        worldUV(drum, 1.1);
+        drum.translate(tx + dx, 0.155, tz);
+        queue(drum, M.walnut, true, true);
+        const flutes = MOBILE ? 12 : 18;
+        for (let i = 0; i < flutes; i++) {
+          const a = (i / flutes) * Math.PI * 2;
+          const f = new THREE.CylinderGeometry(0.027, 0.029, 0.285, 6, 1, false);
+          f.translate(tx + dx + Math.cos(a) * 0.247, 0.152, tz + Math.sin(a) * 0.247);
+          queue(f, M.walnut, true, false);
+        }
+      }
+      addLathe([[0.001, 0], [0.055, 0.006], [0.078, 0.10], [0.048, 0.21], [0.052, 0.30], [0.036, 0.35]],
+        -5.28, 0.375, -2.94, M.ceramic, 24);
+      addLathe([[0.001, 0], [0.075, 0], [0.135, 0.02], [0.158, 0.085], [0.148, 0.098], [0.128, 0.072], [0.062, 0.013], [0.001, 0.012]],
+        -4.58, 0.375, -3.02, M.stoneVessel, 24);
+      addBox(0.34, 0.035, 0.24, -5.55, 0.392, -2.72, M.dark, { uv: 0.5 });
+      addBox(0.31, 0.03, 0.22, -5.53, 0.424, -2.73, M.linenB, { uv: 0.6 });
+
+      addLathe([[0.001, 0], [0.13, 0.01], [0.19, 0.22], [0.14, 0.48], [0.10, 0.62], [0.115, 0.70], [0.10, 0.72]],
+        -8.55, 0.012, -1.55, M.stoneVessel, 26);
+
+      contactShadow(-5.2, -4.45, 4.1, 1.7, false, 0.032);
+      contactShadow(-6.56, -3.66, 1.5, 1.9, false, 0.032);
+      contactShadow(-4.85, -2.9, 2.2, 1.35, false, 0.032);
+      contactShadow(-8.55, -1.55, 0.86, 0.86, false, 0.032);
+      contactShadow(-10.0, -1.9, 1.9, 1.6, false, 0.03);
+    }
+
+    /* ── the entry itself: a runner, a stone bench, one tall vessel ─────── */
+    {
+      const g = new THREE.PlaneGeometry(2.7, 4.6);
+      g.rotateX(-Math.PI / 2);
+      g.translate(0, 0.038, 4.0);
+      queue(g, M.linenA, false, true);
+      addBox(2.74, 0.02, 4.64, 0, 0.028, 4.0, M.rugEdge, { cast: false });
+      addBox(1.9, 0.09, 0.5, 2.9, 0.42, 4.4, M.stonePale, { uv: 0.5 });
+      for (const dz of [-0.72, 0.72]) addBox(0.42, 0.38, 0.06, 2.9, 0.19, 4.4 + dz, M.bronze, { uv: 0.5, cast: false });
+      addLathe([[0.001, 0], [0.14, 0.01], [0.19, 0.24], [0.13, 0.5], [0.1, 0.66], [0.11, 0.72]],
+        2.9, 0.47, 3.2, M.stoneVessel, 22);
+      contactShadow(2.9, 4.4, 2.2, 1.0, false, 0.03);
+      contactShadow(2.9, 3.2, 0.7, 0.7, false, 0.03);
+    }
+
+    /* ── framed work, on the rear stone beside the sliding wall ─────────── */
+    {
+      const az = G.z0 + G.t / 2 + 0.03, ax = -9.35, ay = 2.12;
+      const aw = 1.7, ah = 1.2;
+      const art = new THREE.PlaneGeometry(aw, ah);
+      art.translate(ax, ay, az + 0.03);
+      queue(art, M.art, false, false);
+      const fw = 0.03, fd = 0.045;
+      addBox(aw + fw * 2, fw, fd, ax, ay + ah / 2 + fw / 2, az + 0.012, M.bronze, { uv: 0.6 });
+      addBox(aw + fw * 2, fw, fd, ax, ay - ah / 2 - fw / 2, az + 0.012, M.bronze, { uv: 0.6 });
+      addBox(fw, ah, fd, ax - aw / 2 - fw / 2, ay, az + 0.012, M.bronze, { uv: 0.6 });
+      addBox(fw, ah, fd, ax + aw / 2 + fw / 2, ay, az + 0.012, M.bronze, { uv: 0.6 });
+    }
+
+    /* ── brass linear pendant, hung the full height of the hall ─────────── */
+    {
+      const px = -4.85, pz = -2.9, py = 2.62;
+      const bar = new THREE.CylinderGeometry(0.048, 0.048, 1.56, 14);
+      bar.rotateZ(Math.PI / 2);
+      bar.translate(px, py, pz);
+      queue(bar, M.brass, true, false);
+      for (const ex of [-0.78, 0.78]) {
+        addSoft(0.075, 0.075, 0.075, 0.03, px + ex, py, pz, M.brass, { seg: 2 });
+      }
+      const diffuser = new THREE.MeshBasicMaterial({ color: new THREE.Color(1.95, 1.42, 0.96) });
+      addBox(1.44, 0.014, 0.072, px, py - 0.048, pz, diffuser, { cast: false, receive: false });
+      for (const cx of [-0.62, 0.62]) {
+        addBox(0.013, RL - 0.06 - py, 0.013, px + cx, (RL - 0.06 + py) / 2, pz, M.bronze, { cast: false, receive: false });
+      }
+      const pl = new THREE.PointLight(0xffc287, MOBILE ? 8 : 16, 10, 2);
+      pl.position.set(px, py - 0.2, pz);
+      scene.add(pl);
+      const glow = M.glow.clone();
+      glow.opacity = 0.3;
+      const q = new THREE.Mesh(new THREE.PlaneGeometry(1.9, 1.1), glow);
+      q.rotation.x = -Math.PI / 2;
+      q.position.set(px, py - 0.06, pz);
+      q.renderOrder = 4;
+      world.add(q);
+    }
+
+    /* ── the dining room in the wing ────────────────────────────────────── */
+    {
+      const tx = 9.6, tz = -1.3;
+      addBox(3.6, 0.07, 1.15, tx, 0.745, tz, M.walnut, { uv: 0.6 });
+      addBox(0.5, 0.71, 0.9, tx - 1.2, 0.36, tz, M.walnut, { uv: 0.6 });
+      addBox(0.5, 0.71, 0.9, tx + 1.2, 0.36, tz, M.walnut, { uv: 0.6 });
+      const chair = (x, z, ry) => {
+        const c = Math.cos(ry), s = Math.sin(ry);
+        const at = (dx, dz) => [x + dx * c - dz * s, z + dx * s + dz * c];
+        const [bx, bz] = at(0, 0);
+        addSoft(0.46, 0.05, 0.44, 0.02, bx, 0.45, bz, M.oak, { uv: 0.6, ry });
+        for (const [dx, dz] of [[-0.19, -0.18], [0.19, -0.18], [-0.19, 0.18], [0.19, 0.18]]) {
+          const [lx, lz] = at(dx, dz);
+          addBox(0.032, 0.43, 0.032, lx, 0.215, lz, M.bronze, { uv: 0.5 });
+        }
+        const [bkx, bkz] = at(0, -0.21);
+        addSoft(0.44, 0.42, 0.05, 0.02, bkx, 0.68, bkz, M.oak, { uv: 0.6, ry });
+      };
+      for (const x of [8.4, 9.6, 10.8]) { chair(x, -2.05, 0); chair(x, -0.55, Math.PI); }
+      // a long low sideboard against the rear glass, and the pendants over it
+      addBox(4.2, 0.86, 0.75, 9.8, 0.43, -5.2, M.stonePale, { uv: 0.5 });
+      addBox(4.4, 0.06, 0.95, 9.8, 0.89, -5.2, M.concrete, { uv: 0.5 });
+      addLathe([[0.001, 0], [0.09, 0.01], [0.12, 0.2], [0.08, 0.34], [0.09, 0.4]],
+        9.0, 0.92, -5.2, M.stoneVessel, 20);
+      for (const x of [8.4, 9.6, 10.8]) {
+        addBox(0.03, 2.0, 0.03, x, 1.75, -1.3, M.bronze, { cast: false, receive: false });
+        addSoft(0.2, 0.12, 0.2, 0.03, x, 0.72, -1.3, M.brass, { seg: 2 });
+      }
+      contactShadow(tx, tz, 4.0, 1.6, false, 0.032);
+    }
+
+    /* ── the gallery above: a console, a runner, a warm room behind glass ── */
+    {
+      // the bridge over the entry, with its own rug and a low console
+      const g = new THREE.PlaneGeometry(4.2, 1.7);
+      g.rotateX(-Math.PI / 2);
+      g.translate(-4.4, F2 + 0.02, 5.0);
+      queue(g, M.rugWoven, false, true);
+      addBox(2.4, 0.06, 0.42, -4.4, F2 + 0.76, 7.9, M.walnut, { uv: 0.6 });
+      for (const dx of [-1.05, 1.05]) addBox(0.05, 0.73, 0.36, -4.4 + dx, F2 + 0.365, 7.9, M.bronze, { uv: 0.5 });
+      addLathe([[0.001, 0], [0.07, 0.01], [0.1, 0.16], [0.06, 0.3], [0.07, 0.35]], -5.0, F2 + 0.79, 7.9, M.ceramic, 20);
+      addBox(0.26, 0.03, 0.2, -3.7, F2 + 0.81, 7.9, M.linenB, { uv: 0.6 });
+      // a framed work over it, on the front wall between the windows
+      {
+        const aw = 1.15, ah = 0.92, ax = -5.2, ay = F2 + 1.75, az = S.z1 - S.t / 2 - 0.02;
+        const art = new THREE.PlaneGeometry(aw, ah);
+        art.translate(ax, ay, az);
+        queue(art, M.art, false, false);
+        addBox(aw + 0.05, 0.025, 0.04, ax, ay + ah / 2, az, M.bronze, { uv: 0.6 });
+        addBox(aw + 0.05, 0.025, 0.04, ax, ay - ah / 2, az, M.bronze, { uv: 0.6 });
+      }
+      // a walnut wardrobe run along the east gallery, and a tall vessel
+      addBox(0.55, 2.5, 3.4, S.x1 - 0.62, F2 + 1.25, -3.2, M.walnutVert, { uv: 0.6 });
+      addLathe([[0.001, 0], [0.16, 0.01], [0.22, 0.26], [0.16, 0.55], [0.12, 0.72], [0.13, 0.8]],
+        S.x1 - 1.05, F2 + 0.01, -0.4, M.stoneVessel, 24);
+      // the glazed screen that closes the front rooms off the gallery
+      {
+        const z = 4.6, x0 = ATRIUM.x0, x1 = -3.2;
+        const g2 = new THREE.Mesh(new THREE.PlaneGeometry(x1 - x0, RL - F2 - 0.1), M.glass);
+        g2.position.set((x0 + x1) / 2, (F2 + RL) / 2, z);
+        g2.renderOrder = 3;
+        world.add(g2);
+        addBox(x1 - x0, 0.07, 0.12, (x0 + x1) / 2, RL - 0.06, z, M.bronze, { uv: 0.5 });
+        addBox(x1 - x0, 0.07, 0.12, (x0 + x1) / 2, F2 + 0.04, z, M.bronze, { uv: 0.5 });
+        for (const x of [x0 + 0.02, -8.2, -5.6, x1 - 0.02]) {
+          addBox(0.06, RL - F2 - 0.1, 0.1, x, (F2 + RL) / 2, z, M.bronze, { uv: 0.5 });
+        }
+        addBox(0.9, RL - F2 - 0.1, 0.1, -3.65, (F2 + RL) / 2, z, M.bronze, { uv: 0.5 });
+      }
+      contactShadow(-4.4, 7.9, 2.6, 0.7, false, F2 + 0.01);
+
+      // the front room reads as a bedroom from the drive: a low bed, its
+      // headboard against the loggia wall, and two lamps on walnut cubes
+      {
+        const bx = -4.0, bz = 7.0;
+        addBox(0.1, 1.15, 2.0, -5.02, F2 + 0.58, bz, M.walnutVert, { uv: 0.6 });     // headboard
+        addBox(2.3, 0.24, 1.9, bx, F2 + 0.12, bz, M.walnut, { uv: 0.6 });            // base
+        addSoft(2.16, 0.28, 1.78, 0.09, bx, F2 + 0.34, bz, M.linenA, { uv: 0.6, seg: 3 });
+        addSoft(1.4, 0.12, 1.75, 0.06, bx + 0.42, F2 + 0.5, bz, M.boucle, { uv: 0.55, seg: 3 });
+        for (const dz of [-0.44, 0.44]) {
+          addSoft(0.62, 0.16, 0.44, 0.07, -4.6, F2 + 0.55, bz + dz, M.linenA, { uv: 0.6, seg: 3 });
+        }
+        for (const dz of [-1.12, 1.12]) {
+          addBox(0.46, 0.44, 0.46, -4.72, F2 + 0.22, bz + dz, M.walnut, { uv: 0.6 });
+          addLathe([[0.001, 0], [0.1, 0.01], [0.13, 0.16], [0.1, 0.24], [0.11, 0.26]],
+            -4.72, F2 + 0.45, bz + dz, M.ceramic, 18);
+        }
+        contactShadow(bx, bz, 2.6, 2.2, false, F2 + 0.012);
+      }
+    }
+
+    /* ── interior lighting ─────────────────────────────────────────────── */
+    const warm = 0xffbf85;
+    const addPoint = (x, y, z, intensity, dist, color = warm, castShadow = false) => {
+      const l = new THREE.PointLight(color, intensity, dist, 2);
+      l.position.set(x, y, z);
+      if (castShadow) {
+        l.castShadow = true;
+        const sm = 512;
+        l.shadow.mapSize.set(sm, sm);
+        l.shadow.camera.near = 0.12;
+        l.shadow.camera.far = dist + 4;
+        l.shadow.bias = -0.0009;
+        l.shadow.normalBias = 0.035;
+      }
+      scene.add(l);
+      return l;
+    };
+    addPoint(0.0, 4.2, 3.4, MOBILE ? 14 : 22, 18, warm, true);
+    addPoint(-3.6, 3.4, -2.4, MOBILE ? 16 : 26, 22, warm, true);
+    addPoint(0.6, 2.5, -0.6, MOBILE ? 7 : 10, 9, warm, true);
+    addPoint(9.0, 2.6, -1.6, MOBILE ? 8 : 12, 14, warm, true);
+    addPoint(2.0, -0.7, -14.0, MOBILE ? 5 : 8, 13, 0xbfe2d8);
+    // the light well: cool daylight falling into the hall
+    addPoint(-5.6, 7.7, -2.1, MOBILE ? 10 : 18, 14, 0xdce6f2);
+    // the upper floor, seen through the glass
+    addPoint(-4.2, 6.6, 6.0, MOBILE ? 9 : 14, 12, 0xffc290);
+    addPoint(1.0, 3.4, 4.8, MOBILE ? 6 : 10, 11, 0xffc79a);
+    addPoint(-6.4, 6.4, -3.4, MOBILE ? 7 : 11, 12, 0xffc290);
+
+    // a recessed spot washing the framed work on the rear wall
+    {
+      const spot = new THREE.SpotLight(0xffc89c, MOBILE ? 10 : 20, 11, 0.5, 0.78, 2);
+      spot.position.set(-9.35, 6.9, -4.6);
+      spot.target.position.set(-9.35, 1.9, -5.9);
+      scene.add(spot, spot.target);
+    }
+
+    /* cove strips: warm light at the top of the hall, and under the galleries */
+    const coveMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(2.05, 1.44, 0.86) });
+    addBox(ATRIUM.x1 - ATRIUM.x0, 0.03, 0.06, (ATRIUM.x0 + ATRIUM.x1) / 2, RL - 0.12, ATRIUM.z0 + 0.06, coveMat, { cast: false, receive: false });
+    addBox(ATRIUM.x1 - ATRIUM.x0, 0.03, 0.06, (ATRIUM.x0 + ATRIUM.x1) / 2, RL - 0.12, ATRIUM.z1 - 0.06, coveMat, { cast: false, receive: false });
+    addBox(0.06, 0.03, ATRIUM.z1 - ATRIUM.z0, ATRIUM.x0 + 0.06, RL - 0.12, (ATRIUM.z0 + ATRIUM.z1) / 2, coveMat, { cast: false, receive: false });
+    addBox(0.06, 0.03, ATRIUM.z1 - ATRIUM.z0, ATRIUM.x1 - 0.06, RL - 0.12, (ATRIUM.z0 + ATRIUM.z1) / 2, coveMat, { cast: false, receive: false });
+    addBox(0.05, 0.03, ATRIUM.z1 - ATRIUM.z0, ATRIUM.x0 + 0.05, F2 - 0.02, (ATRIUM.z0 + ATRIUM.z1) / 2, coveMat, { cast: false, receive: false });
+    addBox(ATRIUM.x1 - ATRIUM.x0, 0.03, 0.05, (ATRIUM.x0 + ATRIUM.x1) / 2, F2 - 0.02, ATRIUM.z1 - 0.05, coveMat, { cast: false, receive: false });
+
+    // bollards on the terrace
+    const bollard = (x, z) => {
+      addBox(0.12, 0.5, 0.12, x, 0.25, z, M.bronze, { uv: 0.5 });
+      addBox(0.1, 0.04, 0.1, x, 0.5, z, new THREE.MeshBasicMaterial({ color: new THREE.Color(2.6, 1.7, 1.0) }), { cast: false, receive: false });
+      addPoint(x, 0.62, z, MOBILE ? 2.5 : 4, 5, 0xffb877);
+    };
+    bollard(-6.6, -8.6); bollard(9.6, -8.6);
 
     /* ── bougainvillea ─────────────────────────────────────────────────────
        Paper flower draped over the entry canopy, the pergola, the wing's roof
@@ -2869,20 +3551,23 @@ export async function createWalkthrough(container, options = {}) {
         }
       }
 
-      // 1 · the entry canopy: a sheet spilling over its outer edge
-      runner([[-2.45, 3.96, 9.05], [-1.2, 4.02, 9.16], [0.4, 3.98, 9.2], [2.0, 4.0, 9.14], [3.3, 3.94, 9.0]],
-        { r: 0.05, density: 1.5, droop: 1.1, spread: 0.5, pick: 0 });
-      for (let x = -2.3; x < 3.2; x += 0.46) {
-        runner([[x, 3.95, 9.12], [x + rr(-0.12, 0.12), 3.62, 9.3], [x + rr(-0.2, 0.2), 3.2, 9.28],
-                [x + rr(-0.26, 0.26), 2.86, 9.18]], { r: 0.026, density: 1.4, droop: 0.7, spread: 0.34, pick: 2 });
+      // 1 · the porch edge: a sheet of flower along the fascia and the curtain
+      //     that hangs off it, so the last three metres to the door are in shade
+      runner([[-4.0, 4.02, 8.3], [-2.0, 4.06, 8.36], [0.4, 4.04, 8.34], [2.4, 4.02, 8.3], [4.0, 3.98, 8.26]],
+        { r: 0.05, density: 1.6, droop: 1.1, spread: 0.52, pick: 0 });
+      for (let x = -3.9; x < 3.95; x += 0.5) {
+        runner([[x, 4.0, 8.3], [x + rr(-0.12, 0.12), 3.8, 8.4], [x + rr(-0.2, 0.2), 3.5, 8.36],
+                [x + rr(-0.26, 0.26), 3.14, 8.28], [x + rr(-0.3, 0.3), 2.92, 8.2]],
+          { r: 0.024, density: 1.3, droop: 0.6, spread: 0.3, pick: 2 });
       }
-      // and up the pier, from the gravel
-      runner([[-2.2, 0.05, 7.6], [-2.28, 1.1, 7.4], [-2.1, 2.2, 7.5], [-2.24, 3.3, 7.3], [-2.15, 3.9, 7.5]],
-        { r: 0.05, density: 1.5, droop: 0.5, spread: 0.4, pick: 3 });
-      runner([[-2.5, 0.05, 8.7], [-2.42, 1.4, 8.5], [-2.55, 2.6, 8.6], [-2.4, 3.7, 8.4]],
-        { r: 0.04, density: 1.2, droop: 0.55, spread: 0.4, pick: 1 });
+      // canes up both porch columns
+      for (const [px2, pz2] of [[-8.6, 8.24], [2.4, 8.24]]) {
+        runner([[px2 + 0.1, 0.05, pz2 + 0.06], [px2 + 0.14, 1.3, pz2 + 0.1], [px2 + 0.06, 2.6, pz2 + 0.08],
+                [px2 + 0.12, 3.6, pz2 + 0.06], [px2 + 0.1, 4.0, pz2 + 0.05]],
+          { r: 0.038, density: 1.2, droop: 0.45, spread: 0.3, pick: 1 });
+      }
 
-      // 2 · over the pergola, both beams and the hanging edge
+      // 2 · over the terrace pergola, both beams and the hanging edge
       runner([[4.4, 3.4, -9.5], [6.2, 3.44, -9.56], [8.0, 3.4, -9.5], [9.9, 3.36, -9.46]],
         { r: 0.045, density: 1.6, droop: 1.2, spread: 0.42, pick: 4 });
       runner([[4.4, 3.38, -6.8], [6.4, 3.42, -6.84], [8.4, 3.38, -6.8], [9.9, 3.34, -6.78]],
@@ -2891,29 +3576,32 @@ export async function createWalkthrough(container, options = {}) {
         runner([[x, 3.4, -9.5], [x + rr(-0.1, 0.1), 3.05, -9.62], [x + rr(-0.16, 0.16), 2.62, -9.55]],
           { r: 0.022, density: 1.2, droop: 0.75, spread: 0.3, pick: 1 });
       }
-      // a few canes up the pergola posts
       for (const [px2, pz2] of [[9.8, -9.5], [4.5, -9.5]]) {
         runner([[px2 + 0.1, 0.05, pz2 + 0.1], [px2 + 0.12, 1.1, pz2 + 0.14], [px2 + 0.08, 2.3, pz2 + 0.1],
                 [px2 + 0.1, 3.1, pz2 + 0.12]], { r: 0.036, density: 1.1, droop: 0.4, spread: 0.3, pick: 0 });
       }
 
-      // 3 · the wing's roof edge above the terrace, spilling over the coping
-      runner([[4.2, 4.5, -6.62], [6.0, 4.52, -6.66], [7.9, 4.48, -6.62], [9.6, 4.46, -6.6], [11.0, 4.44, -6.58]],
-        { r: 0.05, density: 1.5, droop: 1.4, spread: 0.45, pick: 3 });
-      for (let x = 4.5; x < 10.8; x += 0.72) {
-        runner([[x, 4.48, -6.62], [x + rr(-0.15, 0.15), 4.05, -6.8], [x + rr(-0.2, 0.2), 3.6, -6.78]],
-          { r: 0.022, density: 1.1, droop: 0.7, spread: 0.28, pick: 5 });
+      // 3 · the roof deck over the wing: over its glass edge, and up the pergola
+      runner([[5.0, 5.28, 3.62], [7.4, 5.34, 3.66], [9.8, 5.3, 3.62], [12.4, 5.32, 3.64], [15.4, 5.26, 3.6]],
+        { r: 0.045, density: 1.4, droop: 1.5, spread: 0.44, pick: 3 });
+      for (let x = 5.2; x < 15.2; x += 0.78) {
+        runner([[x, 5.28, 3.62], [x + rr(-0.15, 0.15), 4.9, 3.78], [x + rr(-0.2, 0.2), 4.5, 3.7]],
+          { r: 0.02, density: 1.05, droop: 0.7, spread: 0.26, pick: 5 });
       }
+      runner([[10.6, 6.72, -4.4], [12.4, 6.76, -2.0], [14.4, 6.7, 0.6], [15.6, 6.66, 2.2]],
+        { r: 0.04, density: 1.3, droop: 1.2, spread: 0.4, pick: 1 });
 
-      // 4 · a stretch of the limestone wall by the door, ground to lintel
-      runner([[3.55, 0.05, 6.35], [3.62, 1.2, 6.34], [3.5, 2.4, 6.36], [3.6, 3.4, 6.35], [3.52, 4.3, 6.34]],
-        { r: 0.045, density: 1.4, droop: 0.45, spread: 0.36, pick: 2 });
-      runner([[2.9, 0.05, 6.4], [3.0, 1.5, 6.42], [2.86, 2.8, 6.4], [2.95, 3.9, 6.41]],
-        { r: 0.032, density: 1.1, droop: 0.55, spread: 0.3, pick: 4 });
+      // 4 · the narrow pier beside the door, ground to lintel
+      runner([[1.72, 0.05, 6.7], [1.78, 1.2, 6.68], [1.68, 2.4, 6.7], [1.74, 3.4, 6.69], [1.7, 4.0, 6.68]],
+        { r: 0.042, density: 1.4, droop: 0.45, spread: 0.34, pick: 2 });
+      runner([[3.82, 0.05, 6.72], [3.88, 1.5, 6.7], [3.78, 2.8, 6.72], [3.84, 3.9, 6.71]],
+        { r: 0.03, density: 1.1, droop: 0.55, spread: 0.28, pick: 4 });
 
-      // 5 · the rear wall beside the opening, seen as you step out
-      runner([[3.2, 0.05, -6.2], [3.3, 1.3, -6.22], [3.18, 2.5, -6.2], [3.26, 3.6, -6.21]],
+      // 5 · the rear wall beside the sliding opening, seen as you step out
+      runner([[2.3, 0.05, -6.3], [2.4, 1.3, -6.32], [2.26, 2.5, -6.3], [2.36, 3.6, -6.31]],
         { r: 0.042, density: 1.3, droop: 0.5, spread: 0.34, pick: 1 });
+      runner([[-7.0, 0.05, -6.3], [-6.9, 1.4, -6.32], [-7.04, 2.6, -6.3], [-6.94, 3.7, -6.31]],
+        { r: 0.038, density: 1.2, droop: 0.6, spread: 0.32, pick: 5 });
 
       function mass(x0, x1, y0, y1, z0, z1, count, pick) {
         for (let i = 0; i < count; i++) {
@@ -2922,11 +3610,16 @@ export async function createWalkthrough(container, options = {}) {
           if (i % 3 === 0) vleaf(x + rr(-0.1, 0.1), y - rr(0.02, 0.12), z + rr(-0.1, 0.1), rr(0.07, 0.15));
         }
       }
-      mass(-2.45, 3.4, 2.88, 4.02, 8.95, 9.4, MOBILE ? 220 : 560, 0);     // entry canopy
-      mass(4.2, 9.85, 2.62, 3.55, -9.72, -9.3, MOBILE ? 240 : 620, 4);    // pergola, pool side
-      mass(4.2, 11.0, 3.5, 4.5, -6.95, -6.5, MOBILE ? 220 : 520, 3);      // wing roof edge
-      mass(3.35, 3.78, 0.5, 4.25, 6.18, 6.52, MOBILE ? 120 : 300, 2);     // wall by the door
-      mass(-2.6, -2.1, 0.4, 3.5, 7.2, 7.75, MOBILE ? 90 : 220, 1);        // entry pier
+      mass(-4.0, 4.0, 3.45, 4.1, 8.16, 8.44, MOBILE ? 260 : 620, 0);     // porch edge
+      mass(-4.0, 4.0, 2.74, 3.4, 8.14, 8.4, MOBILE ? 140 : 340, 2);       // its hanging curtain
+      mass(-8.8, -8.35, 0.4, 3.95, 8.1, 8.42, MOBILE ? 90 : 220, 1);      // porch column, west
+      mass(2.18, 2.62, 0.4, 3.95, 8.1, 8.42, MOBILE ? 90 : 220, 4);       // porch column, east
+      mass(4.2, 9.85, 2.62, 3.55, -9.72, -9.3, MOBILE ? 240 : 620, 4);    // terrace pergola
+      mass(4.9, 15.6, 4.55, 5.4, 3.55, 3.8, MOBILE ? 220 : 520, 3);       // deck glass edge
+      mass(10.5, 15.7, 6.3, 6.85, -4.5, 2.3, MOBILE ? 160 : 380, 1);      // deck pergola
+      mass(1.55, 1.98, 0.4, 4.0, 6.6, 6.86, MOBILE ? 100 : 260, 2);       // pier by the door
+      mass(2.12, 2.5, 0.4, 3.7, -6.42, -6.2, MOBILE ? 80 : 200, 1);       // rear wall
+      mass(-7.2, -6.7, 0.4, 3.7, -6.42, -6.2, MOBILE ? 70 : 180, 5);      // rear wall, west
 
       const bracts = new THREE.InstancedMesh(bGeo, bractMat, bMats.length);
       bMats.forEach((m, i) => { bracts.setMatrixAt(i, m); bracts.setColorAt(i, bCols[i]); });
@@ -2944,241 +3637,6 @@ export async function createWalkthrough(container, options = {}) {
       vLeaves.frustumCulled = false;
       world.add(vLeaves);
     }
-
-    /* ─────────────────────────────────────────────────────────────────────
-       7 · interior
-       ───────────────────────────────────────────────────────────────────── */
-    addPlane(A.x1 - A.x0 - 0.6, A.z1 - A.z0 - 0.6, 0, 0.012, 0, M.oakFloor, { uv: 1 / 3.1 });
-    addPlane(B.x1 - B.x0 - 0.5, B.z1 - B.z0 - 0.5, (B.x0 + B.x1) / 2 + 0.2, 0.014, (B.z0 + B.z1) / 2, M.oakFloor, { uv: 1 / 3.1 });
-    addPlane(A.x1 - A.x0 - 0.6, A.z1 - A.z0 - 0.6, 0, A.h - 0.02, 0, M.plaster, { uv: 0.35, faceDown: true });
-
-    addBox(6.0, 0.26, 4.6, -7.0, 3.62, 0.3, M.stonePale, { uv: 0.42 });
-    addPlane(5.9, 4.5, -7.0, 3.485, 0.3, M.plaster, { uv: 0.35, faceDown: true });
-    addBox(6.0, 0.05, 0.05, -7.0, 3.79, 2.6, M.oak, { uv: 0.6 });
-    {
-      const g = new THREE.Mesh(new THREE.PlaneGeometry(5.8, 1.0), M.glass);
-      g.position.set(-7.0, 4.3, 2.58); g.renderOrder = 3; world.add(g);
-      addBox(5.9, 0.07, 0.09, -7.0, 4.83, 2.58, M.oak, { uv: 0.6 });
-    }
-
-    // floating oak stair
-    {
-      const n = 13, rise = 3.5 / n, run = 0.3;
-      for (let i = 0; i < n; i++) {
-        const y = 0.16 + i * rise, z = 2.05 - i * run;
-        addBox(1.5, 0.075, run + 0.06, -9.0, y, z, M.oak, { uv: 0.6 });
-        addBox(0.05, 0.28, 0.05, -9.7, y + 0.14, z, M.bronze, { uv: 0.5 });
-      }
-      // glass balustrade following the flight, not a floating pane
-      {
-        const z0 = 2.15, z1 = -1.35, y0 = 1.05, y1 = 4.47, hh = 1.02, px = -8.22;
-        const g = new THREE.BufferGeometry();
-        g.setAttribute('position', new THREE.Float32BufferAttribute([
-          px, y0, z0, px, y1, z1, px, y0 + hh, z0, px, y1 + hh, z1
-        ], 3));
-        g.setAttribute('uv', new THREE.Float32BufferAttribute([0, 0, 1, 0, 0, 1, 1, 1], 2));
-        g.setIndex([0, 1, 2, 1, 3, 2]);
-        g.computeVertexNormals();
-        const pane = new THREE.Mesh(g, M.glass);
-        pane.renderOrder = 3;
-        world.add(pane);
-      }
-      contactShadow(-9.0, 0.45, 1.7, 4.1, false, 0.03);
-      contactShadow(-8.24, 0.1, 0.55, 3.9, true, 0.031);
-      const hrPts = [];
-      for (let i = 0; i <= 8; i++) {
-        const s = i / 8;
-        hrPts.push(new THREE.Vector3(-8.22, 1.05 + s * 3.42, 2.15 - s * 3.5));
-      }
-      const hr = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(hrPts), 20, 0.028, 8), M.bronze);
-      hr.castShadow = true; world.add(hr);
-    }
-
-    addWall({ axis: 'z', at: 7.0, from: -5.8, to: 3.0, y0: 0, y1: B.h, thick: 0.16, mat: M.plaster, uv: 0.4 });
-
-    /* ── the living room ──────────────────────────────────────────────────
-       Low bouclé sectional on a woven rug, a fluted oak coffee table with
-       thrown vessels, one framed work on the limestone, and a brass linear
-       pendant hung the full height of the hall. Every edge is bevelled: at
-       walking pace nothing should read as a box.                          */
-    {
-      // rug: one tile, mapped 0..1 so its border lands on its own edge
-      const g = new THREE.PlaneGeometry(4.7, 3.6);
-      g.rotateX(-Math.PI / 2);
-      g.translate(-5.0, 0.034, -3.5);
-      queue(g, M.rugWoven, false, true);
-    }
-
-    // sectional sofa: plinth, seat cushions, leaning back cushions, arms, throw
-    {
-      const sx = -5.2, sz = -4.45;
-      addSoft(3.42, 0.10, 1.0, 0.03, sx, 0.07, sz, M.dark, { uv: 0.5 });        // shadow gap
-      addSoft(3.52, 0.28, 1.14, 0.06, sx, 0.27, sz, M.boucle, { uv: 0.55 });    // base
-      for (let i = 0; i < 2; i++) {
-        addSoft(1.68, 0.16, 1.02, 0.07, sx - 0.85 + i * 1.7, 0.485, sz + 0.04, M.boucle, { uv: 0.5, seg: 3 });
-      }
-      addSoft(3.52, 0.50, 0.20, 0.06, sx, 0.60, sz - 0.52, M.boucle, { uv: 0.55 }); // back frame
-      for (let i = 0; i < 2; i++) {
-        addSoft(1.64, 0.46, 0.24, 0.09, sx - 0.85 + i * 1.7, 0.68, sz - 0.42,
-          M.boucle, { uv: 0.5, rx: -0.13, seg: 3 });
-      }
-      for (const ax of [sx - 1.76, sx + 1.76]) {
-        addSoft(0.20, 0.40, 1.16, 0.09, ax, 0.44, sz, M.boucle, { uv: 0.5, seg: 3 });
-      }
-      // chaise return, west end, running into the room
-      addSoft(1.02, 0.24, 1.5, 0.05, sx - 1.36, 0.26, -3.66, M.boucle, { uv: 0.55 });
-      addSoft(0.96, 0.14, 1.42, 0.07, sx - 1.36, 0.46, -3.66, M.boucle, { uv: 0.5, seg: 3 });
-      // throw cushions, each leaning a little differently
-      const throws = [
-        [-6.05, 0.72, -4.72, 0.44, M.linenB, 0.14, -0.22],
-        [-4.35, 0.70, -4.74, 0.42, M.linenA, -0.10, -0.20],
-        [-4.86, 0.66, -4.80, 0.38, M.boucle, 0.05, -0.26],
-        [-6.40, 0.55, -3.30, 0.46, M.linenA, 0.42, 0.06]
-      ];
-      for (const [x, y, z, s, mat, rz, rx] of throws) {
-        addSoft(s, s, 0.15, 0.06, x, y, z, mat, { uv: 0.6, rz, rx, seg: 3 });
-      }
-
-      // fluted oak coffee table: rounded top on two fluted drums
-      const tx = -4.85, tz = -2.9;
-      addSoft(1.74, 0.08, 0.88, 0.035, tx, 0.335, tz, M.walnut, { uv: 0.7, seg: 3 });
-      for (const dx of [-0.46, 0.46]) {
-        const drum = new THREE.CylinderGeometry(0.235, 0.26, 0.29, 22);
-        worldUV(drum, 1.1);
-        drum.translate(tx + dx, 0.155, tz);
-        queue(drum, M.walnut, true, true);
-        const flutes = MOBILE ? 12 : 18;
-        for (let i = 0; i < flutes; i++) {
-          const a = (i / flutes) * Math.PI * 2;
-          const f = new THREE.CylinderGeometry(0.027, 0.029, 0.285, 6, 1, false);
-          f.translate(tx + dx + Math.cos(a) * 0.247, 0.152, tz + Math.sin(a) * 0.247);
-          queue(f, M.walnut, true, false);
-        }
-      }
-      // thrown pieces: a tall ceramic, a stone bowl, a stack of books
-      addLathe([[0.001, 0], [0.055, 0.006], [0.078, 0.10], [0.048, 0.21], [0.052, 0.30], [0.036, 0.35]],
-        -5.28, 0.375, -2.94, M.ceramic, 24);
-      addLathe([[0.001, 0], [0.075, 0], [0.135, 0.02], [0.158, 0.085], [0.148, 0.098], [0.128, 0.072], [0.062, 0.013], [0.001, 0.012]],
-        -4.58, 0.375, -3.02, M.stoneVessel, 24);
-      addBox(0.34, 0.035, 0.24, -5.55, 0.392, -2.72, M.dark, { uv: 0.5 });
-      addBox(0.31, 0.03, 0.22, -5.53, 0.424, -2.73, M.linenB, { uv: 0.6 });
-
-      // a tall stone vessel standing on the floor by the window
-      addLathe([[0.001, 0], [0.13, 0.01], [0.19, 0.22], [0.14, 0.48], [0.10, 0.62], [0.115, 0.70], [0.10, 0.72]],
-        -8.55, 0.012, -1.55, M.stoneVessel, 26);
-
-      // contact shadows for everything that stands on the floor
-      contactShadow(-5.2, -4.45, 4.1, 1.7, false, 0.032);
-      contactShadow(-6.56, -3.66, 1.5, 1.9, false, 0.032);
-      contactShadow(-4.85, -2.9, 2.2, 1.35, false, 0.032);
-      contactShadow(-8.55, -1.55, 0.86, 0.86, false, 0.032);
-    }
-
-    /* ── framed work over the sofa, on the limestone return wall ────────── */
-    {
-      const az = A.z0 + A.t / 2 + 0.03, ax = -7.7, ay = 2.02;
-      const aw = 1.66, ah = 1.16;
-      const art = new THREE.PlaneGeometry(aw, ah);
-      art.translate(ax, ay, az + 0.03);
-      queue(art, M.art, false, false);
-      const fw = 0.03, fd = 0.045;
-      addBox(aw + fw * 2, fw, fd, ax, ay + ah / 2 + fw / 2, az + 0.012, M.bronze, { uv: 0.6 });
-      addBox(aw + fw * 2, fw, fd, ax, ay - ah / 2 - fw / 2, az + 0.012, M.bronze, { uv: 0.6 });
-      addBox(fw, ah, fd, ax - aw / 2 - fw / 2, ay, az + 0.012, M.bronze, { uv: 0.6 });
-      addBox(fw, ah, fd, ax + aw / 2 + fw / 2, ay, az + 0.012, M.bronze, { uv: 0.6 });
-    }
-
-    /* ── brass linear pendant over the coffee table ─────────────────────── */
-    {
-      const px = -4.85, pz = -2.9, py = 2.44;
-      const bar = new THREE.CylinderGeometry(0.048, 0.048, 1.56, 14);
-      bar.rotateZ(Math.PI / 2);
-      bar.translate(px, py, pz);
-      queue(bar, M.brass, true, false);
-      for (const ex of [-0.78, 0.78]) {
-        addSoft(0.075, 0.075, 0.075, 0.03, px + ex, py, pz, M.brass, { seg: 2 });
-      }
-      const diffuser = new THREE.MeshBasicMaterial({ color: new THREE.Color(1.95, 1.42, 0.96) });
-      addBox(1.44, 0.014, 0.072, px, py - 0.048, pz, diffuser, { cast: false, receive: false });
-      for (const cx of [-0.62, 0.62]) {
-        addBox(0.007, A.h - 0.06 - py, 0.007, px + cx, (A.h - 0.06 + py) / 2, pz, M.bronze, { cast: false, receive: false });
-      }
-      const pl = new THREE.PointLight(0xffc287, MOBILE ? 6 : 12, 8.5, 2);
-      pl.position.set(px, py - 0.2, pz);
-      scene.add(pl);
-      const glow = M.glow.clone();
-      glow.opacity = 0.3;
-      const q = new THREE.Mesh(new THREE.PlaneGeometry(1.9, 1.1), glow);
-      q.rotation.x = -Math.PI / 2;
-      q.position.set(px, py - 0.06, pz);
-      q.renderOrder = 4;
-      world.add(q);
-    }
-
-    /* ── sideboard in the wing, still under the low ceiling ─────────────── */
-    addBox(3.2, 0.9, 1.1, 9.0, 0.45, -1.2, M.stonePale, { uv: 0.5 });
-    addBox(3.4, 0.06, 1.3, 9.0, 0.93, -1.2, M.concrete, { uv: 0.5 });
-    addBox(0.9, 0.06, 0.5, 9.6, 0.99, -1.2, M.dark, { uv: 0.5 });
-
-    /* ── interior lighting ─────────────────────────────────────────────── */
-    const warm = 0xffbf85;
-    const addPoint = (x, y, z, intensity, dist, color = warm, castShadow = false) => {
-      const l = new THREE.PointLight(color, intensity, dist, 2);
-      l.position.set(x, y, z);
-      if (castShadow) {
-        // the walls must block the light, or every room is flooded evenly
-        l.castShadow = true;
-        const sm = MOBILE ? 512 : 512;
-        l.shadow.mapSize.set(sm, sm);
-        l.shadow.camera.near = 0.12;
-        l.shadow.camera.far = dist + 4;
-        l.shadow.bias = -0.0009;
-        l.shadow.normalBias = 0.035;
-      }
-      scene.add(l);
-      return l;
-    };
-    addPoint(0.0, 3.4, 2.6, MOBILE ? 14 : 22, 18, warm, true);
-    addPoint(-4.6, 3.1, -3.0, MOBILE ? 16 : 26, 20, warm, true);
-    addPoint(0.6, 2.5, -0.6, MOBILE ? 7 : 10, 9, warm, true);
-    addPoint(9.0, 2.4, -1.2, MOBILE ? 7 : 10, 13, warm, true);
-    addPoint(2.0, -0.7, -14.0, MOBILE ? 5 : 8, 13, 0xbfe2d8);
-    // 2700 K bounce off the high cove, so the ceiling is warm rather than dark
-    addPoint(-2.4, 6.1, -3.4, MOBILE ? 4 : 8, 15, 0xffb479);
-
-    // a recessed spot washing the framed work on the limestone wall
-    {
-      const spot = new THREE.SpotLight(0xffc89c, MOBILE ? 10 : 20, 11, 0.52, 0.78, 2);
-      spot.position.set(-7.25, 3.55, -0.35);
-      spot.target.position.set(-9.74, 1.7, -0.35);
-      scene.add(spot, spot.target);
-    }
-
-    const coveMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(3.4, 2.4, 1.45) });
-    addBox(8.0, 0.03, 0.06, -2.0, 6.72, -3.9, coveMat, { cast: false, receive: false });
-    addBox(0.06, 0.03, 5.0, 3.6, 6.72, 0.5, coveMat, { cast: false, receive: false });
-    addBox(5.0, 0.03, 0.06, -7.0, 3.45, 2.4, coveMat, { cast: false, receive: false });
-    addBox(0.06, 0.03, 5.6, -9.55, 6.72, -2.4, coveMat, { cast: false, receive: false });
-    // the cove throws a soft warm band a little way down the wall
-    for (const [cx, cy, cz, w, d, ry] of [[-2.0, 6.45, -3.62, 8.0, 0.9, 0], [-9.3, 6.45, -2.4, 5.6, 0.9, 1]]) {
-      const gm = M.glow.clone();
-      gm.opacity = 0.24;
-      const q = new THREE.Mesh(new THREE.PlaneGeometry(w, d), gm);
-      if (ry) { q.rotation.set(0, Math.PI / 2, 0); }
-      else { q.rotation.set(0, 0, 0); }
-      q.position.set(cx, cy, cz);
-      q.renderOrder = 4;
-      world.add(q);
-    }
-
-    // bollards on the terrace
-    const bollard = (x, z) => {
-      addBox(0.12, 0.5, 0.12, x, 0.25, z, M.bronze, { uv: 0.5 });
-      addBox(0.1, 0.04, 0.1, x, 0.5, z, new THREE.MeshBasicMaterial({ color: new THREE.Color(2.6, 1.7, 1.0) }), { cast: false, receive: false });
-      addPoint(x, 0.62, z, MOBILE ? 2.5 : 4, 5, 0xffb877);
-    };
-    bollard(-6.6, -8.6); bollard(9.6, -8.6);
-
 
     /* ─────────────────────────────────────────────────────────────────────
        7b · grass — instanced tuft cards, wind in the vertex shader
@@ -3221,7 +3679,8 @@ export async function createWalkthrough(container, options = {}) {
 
       const paved = (x, z) => {
         if (driveDist(x, z) < 0.22) return true;
-        if (x > A.x0 - 0.9 && x < B.x1 + 1.0 && z > A.z0 - 1.0 && z < A.z1 + 0.9) return true;
+        if (x > G.x0 - 1.2 && x < WING.x1 + 1.2 && z > G.z0 - 1.2 && z < S.z1 + 1.3) return true;
+        if (x > -4.4 && x < 4.2 && z > S.z1 && z < 12.2) return true;   // the entrance walk
         if (x > -9.8 && x < 12.8 && z > -10.4 && z < -5.5) return true;
         if (x > POOL.x0 - 1.1 && x < POOL.x1 + 1.1 && z > POOL.z0 - 1.1 && z < POOL.z1 + 1.1) return true;
         return false;
@@ -4046,8 +4505,8 @@ export async function createWalkthrough(container, options = {}) {
        the approach its parallax. Everything else in the field is the meadow,
        the four palms, and the light. */
     const treeSpots = [
-      [-6.4, 16.5, 1.12],
-      [11.6, 32.0, 1.0]
+      [-9.4, 18.8, 1.16],
+      [13.6, 34.0, 1.0]
     ];
     treeSpots.forEach(([x, z, s]) => addOlive(x, z, s));
 
@@ -4057,8 +4516,8 @@ export async function createWalkthrough(container, options = {}) {
        diagonal, so the quartet is a measured set rather than a grove: the
        approach passes between the front pair, and the orbit turns inside them.
        Kept clear of the gravel, the entry canopy, the wing and the pool. */
-    const PALM_FRAME = { cx: 1.5, cz: -5.1, h: 9.7, bend: 0.42 };
-    [[-14.2, 11.4], [17.2, 11.4], [-14.2, -21.6], [17.2, -21.6]]
+    const PALM_FRAME = { cx: 1.0, cz: -2.0, h: 10.8, bend: 0.52 };
+    [[-19.2, 13.0], [22.4, 13.0], [-19.2, -26.4], [22.4, -26.4]]
       .forEach(([x, z]) => {
         const dir = Math.atan2(z - PALM_FRAME.cz, x - PALM_FRAME.cx);
         addPalm(x, z, 1, { h: PALM_FRAME.h, bend: PALM_FRAME.bend, dir });
@@ -4387,27 +4846,31 @@ export async function createWalkthrough(container, options = {}) {
     const V3 = (a) => new THREE.Vector3(a[0], a[1], a[2]);
 
     const CAMERA_KEYS = [
-      { t: 0.000, p: [15.6, 5.2, 61.0], l: [0.0, 4.5, 2.5], fov: 31 },
-      { t: 0.075, p: [14.4, 4.8, 54.0], l: [0.0, 4.3, 1.5], fov: 32 },
-      { t: 0.150, p: [12.8, 4.2, 46.0], l: [0.0, 4.0, 0.8], fov: 33 },
-      { t: 0.225, p: [12.2, 3.8, 43.0], l: [0.0, 3.8, 0.2], fov: 36 },
-      { t: 0.300, p: [10.4, 3.2, 36.0], l: [0.0, 3.5, 0.0], fov: 38 },
-      { t: 0.355, p: [8.6, 2.7, 30.0], l: [0.2, 3.0, 1.0], fov: 40 },
-      { t: 0.400, p: [6.2, 2.3, 24.0], l: [0.2, 2.6, 3.0], fov: 42 },
-      { t: 0.440, p: [3.2, 1.86, 18.5], l: [0.0, 2.2, 5.0], fov: 45 },
-      { t: 0.472, p: [1.0, 1.70, 13.5], l: [0.0, 2.05, 5.8], fov: 46 },
-      { t: 0.492, p: [0.0, 1.66, 9.4], l: [0.0, 1.95, 5.6], fov: 46 },
-      { t: 0.512, p: [0.0, 1.65, 6.5], l: [0.0, 1.90, 2.0], fov: 47 },
-      { t: 0.534, p: [0.0, 1.66, 4.4], l: [-0.6, 1.95, -1.5], fov: 48 },
-      { t: 0.565, p: [-0.2, 1.72, 2.4], l: [-2.8, 1.92, -3.0], fov: 50 },
-      { t: 0.610, p: [-0.9, 1.80, 0.5], l: [-5.6, 1.58, -3.4], fov: 50 },
-      { t: 0.660, p: [-1.9, 1.94, -1.3], l: [-7.0, 1.92, -2.9], fov: 48 },
-      { t: 0.705, p: [-1.3, 1.96, -2.2], l: [-2.0, 2.40, -6.0], fov: 47 },
-      { t: 0.745, p: [-0.2, 1.86, -3.8], l: [2.2, 2.00, -9.0], fov: 46 },
-      { t: 0.780, p: [0.6, 1.80, -5.4], l: [3.4, 1.75, -12.0], fov: 45 },
-      { t: 0.808, p: [1.2, 1.78, -7.0], l: [4.0, 1.55, -15.0], fov: 44 },
-      { t: 0.830, p: [1.4, 1.95, -9.2], l: [3.0, 2.05, -18.0], fov: 43 },
-      { t: 0.860, p: [1.4, 2.00, -9.8], l: [2.0, 2.10, -19.0], fov: 43 }
+      { t: 0.000, p: [15.2, 3.3, 62.0], l: [0.0, 4.6, 2.2], fov: 30 },
+      { t: 0.075, p: [14.6, 3.1, 58.0], l: [0.0, 4.5, 1.8], fov: 31 },
+      { t: 0.150, p: [13.8, 2.9, 50.0], l: [0.0, 4.2, 1.2], fov: 32 },
+      { t: 0.225, p: [12.0, 2.7, 42.0], l: [0.0, 3.9, 0.6], fov: 34 },
+      { t: 0.300, p: [11.2, 2.4, 38.0], l: [0.0, 3.7, 0.4], fov: 36 },
+      { t: 0.355, p: [8.8, 2.2, 30.0], l: [0.4, 3.4, 1.2], fov: 39 },
+      { t: 0.400, p: [6.0, 2.0, 23.0], l: [0.4, 2.9, 3.4], fov: 42 },
+      { t: 0.440, p: [3.2, 1.85, 17.4], l: [0.0, 2.4, 5.6], fov: 45 },
+      { t: 0.470, p: [1.2, 1.74, 13.2], l: [0.0, 2.1, 6.2], fov: 46 },
+      { t: 0.488, p: [0.3, 1.72, 10.0], l: [0.0, 2.02, 5.6], fov: 46 },
+      { t: 0.505, p: [0.0, 1.68, 7.7], l: [0.0, 1.98, 3.0], fov: 47 },
+      { t: 0.522, p: [0.0, 1.66, 6.9], l: [0.0, 1.95, 0.6], fov: 47 },
+      { t: 0.545, p: [0.0, 1.70, 4.8], l: [-1.2, 2.20, -1.4], fov: 48 },
+      { t: 0.575, p: [-0.6, 1.76, 3.2], l: [-3.6, 2.50, -3.0], fov: 50 },
+      { t: 0.615, p: [-1.5, 1.86, 1.6], l: [-6.4, 2.20, -3.4], fov: 50 },
+      { t: 0.655, p: [-2.3, 1.94, 0.6], l: [-6.6, 2.20, -4.6], fov: 50 },
+      { t: 0.705, p: [-2.6, 1.96, 0.2], l: [-5.8, 2.15, -5.6], fov: 49 },
+      { t: 0.745, p: [-2.4, 1.94, -0.6], l: [-2.0, 2.30, -6.0], fov: 47 },
+      { t: 0.780, p: [-1.4, 1.86, -2.0], l: [1.4, 2.20, -7.0], fov: 46 },
+      { t: 0.800, p: [-0.1, 1.84, -4.2], l: [1.8, 2.10, -10.4], fov: 45 },
+      { t: 0.816, p: [0.7, 1.80, -5.9], l: [1.6, 2.05, -12.2], fov: 46 },
+      { t: 0.826, p: [3.4, 1.74, -7.4], l: [0.8, 2.05, -13.0], fov: 48 },
+      { t: 0.836, p: [7.2, 1.58, -8.6], l: [-0.8, 2.08, -13.8], fov: 50 },
+      { t: 0.845, p: [10.4, 1.42, -11.2], l: [-3.0, 2.10, -15.0], fov: 53 },
+      { t: 0.858, p: [10.9, 1.38, -12.0], l: [-3.6, 2.12, -15.6], fov: 53 }
     ];
 
     const posCurve = new THREE.CatmullRomCurve3(CAMERA_KEYS.map(k => V3(k.p)), false, 'centripetal', 0.5);
@@ -4415,12 +4878,12 @@ export async function createWalkthrough(container, options = {}) {
     posCurve.arcLengthDivisions = 800;
     tgtCurve.arcLengthDivisions = 800;
 
-    const ORBIT_T0 = 0.860;
+    const ORBIT_T0 = 0.858;
     const ORBIT = {
-      cx: 0, cz: CZ,
-      r0: Math.hypot(1.4, -9.6 - CZ),
-      a0: Math.atan2(1.4, -9.6 - CZ),
-      y0: 1.9, r1: 34, y1: 14, turns: 1.0
+      cx: 0.5, cz: -1.0,
+      r0: Math.hypot(10.4, -11.0),
+      a0: Math.atan2(10.4, -11.0),
+      y0: 1.9, r1: 48, y1: 14, turns: 1.0
     };
 
     /** The curve passes exactly through every key at its own t. */
@@ -4457,14 +4920,14 @@ export async function createWalkthrough(container, options = {}) {
       }
       const s = clamp((tt - ORBIT_T0) / (1 - ORBIT_T0));
       const ang = ORBIT.a0 + s * ORBIT.turns * Math.PI * 2;
-      const r = lerp(ORBIT.r0, ORBIT.r1, Math.pow(s, 0.55));
+      const r = lerp(ORBIT.r0, ORBIT.r1, Math.pow(s, 0.45));
       const y = lerp(ORBIT.y0, ORBIT.y1, Math.pow(s, 0.85));
       tmpPos.set(ORBIT.cx + Math.sin(ang) * r, y, ORBIT.cz + Math.cos(ang) * r);
 
       sampleCurve(tgtCurve, ORBIT_T0, tmpTgt);
-      orbitTgt.set(0, lerp(3.1, 2.2, smoothstep(0.35, 1, s)), CZ + 0.4);
+      orbitTgt.set(0.5, lerp(4.6, 3.2, smoothstep(0.35, 1, s)), -1.0);
       tmpTgt.lerp(orbitTgt, smoothstep(0, 0.16, s));
-      return lerp(43, 37, smoothstep(0, 1, s));
+      return lerp(44, 38, smoothstep(0, 1, s));
     }
 
 /* ─────────────────────────────────────────────────────────────────────
@@ -4498,8 +4961,8 @@ const grade = document.querySelector('.walk__grade');
 const bloomEl = document.querySelector('.walk__bloom');
 const veil = document.querySelector('.walk__veil');
 
-const STAGE_EDGES = [0, 0.30, 0.56, 0.78, 0.885, 1.01];
-const STATIC_VIEWS = [0.0, 0.30, 0.44, 0.512, 0.66, 0.83, 0.93, 1.0];
+const STAGE_EDGES = [0, 0.30, 0.555, 0.79, 0.888, 1.01];
+const STATIC_VIEWS = [0.0, 0.30, 0.47, 0.528, 0.705, 0.845, 0.94, 1.0];
 
 function readProgress() {
   if (!opts.scrollDriven) return;
@@ -4525,13 +4988,13 @@ function paintOverlays(p) {
     }
   }
 
-  const dark = smoothstep(0.478, 0.522, p) * (1 - smoothstep(0.545, 0.60, p));
-  const warmUp = smoothstep(0.525, 0.60, p) * (1 - smoothstep(0.72, 0.80, p));
+  const dark = smoothstep(0.505, 0.535, p) * (1 - smoothstep(0.552, 0.60, p));
+  const warmUp = smoothstep(0.53, 0.60, p) * (1 - smoothstep(0.74, 0.82, p));
   if (veil) veil.style.opacity = (0.09 + dark * 0.30).toFixed(3);
   if (grade) grade.style.opacity = (0.82 + dark * 0.18 - warmUp * 0.16).toFixed(3);
   if (bloomEl) bloomEl.style.opacity = (warmUp * 0.42 + smoothstep(0.86, 0.98, p) * 0.14).toFixed(3);
 
-  if (dust) dust.uniforms.uOpacity.value = smoothstep(0.52, 0.62, p) * (1 - smoothstep(0.79, 0.85, p)) * (MOBILE ? 0.5 : 0.62);
+  if (dust) dust.uniforms.uOpacity.value = smoothstep(0.54, 0.63, p) * (1 - smoothstep(0.80, 0.86, p)) * (MOBILE ? 0.5 : 0.62);
   if (opts.onProgress) { try { opts.onProgress(p, stage); } catch (_) { /* host's problem */ } }
 }
 
@@ -4549,8 +5012,17 @@ function applyCamera(t, dt) {
   const f = fov * portrait;
   if (Math.abs(camera.fov - f) > 0.01) { camera.fov = f; camera.updateProjectionMatrix(); }
 
-  const dark = smoothstep(0.478, 0.522, t) * (1 - smoothstep(0.545, 0.60, t));
-  const inside = smoothstep(0.53, 0.62, t) * (1 - smoothstep(0.78, 0.85, t));
+  /* a phone sees a narrow slice of the world: back the camera off along the
+     view ray on the exterior half of the take, so a 30 m facade still fits the
+     frame at the approach and the door is centred by the time we reach it */
+  if (portrait > 1.02 && t < 0.48) {
+    const k = 1 + 0.06 * portrait * (1 - smoothstep(0.26, 0.47, t));
+    tmpPos.sub(tmpTgt).multiplyScalar(k).add(tmpTgt);
+    camera.position.copy(tmpPos);
+  }
+
+  const dark = smoothstep(0.508, 0.538, t) * (1 - smoothstep(0.556, 0.61, t));
+  const inside = smoothstep(0.56, 0.64, t) * (1 - smoothstep(0.80, 0.87, t));
   const target = 0.82 - dark * 0.22 + inside * 0.30;
   exposure += (target - exposure) * Math.min(1, dt * 6);
   renderer.toneMappingExposure = exposure;
@@ -4709,6 +5181,7 @@ const handle = {
     if (next.waterRipples != null && waterUniforms && waterUniforms.uRipples) waterUniforms.uRipples.value = clamp(next.waterRipples, 0, 3);
     if (next.grassDensity != null && grassSetDensity) grassSetDensity(next.grassDensity);
     if (next.palms != null) setPalms(!!next.palms);
+    if (next.city != null) setCity(!!next.city);
     if (next.scrollDriven != null && next.scrollDriven) readProgress();
     if (next.quality != null && next.quality !== before.quality) return 'remount';
     return true;
