@@ -80,7 +80,7 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.m
 | bouclé | `makeBoucle()` — loop-pile arcs over a slubbed wool ground |
 | wool rug | `makeRug()` — weft ribs, warp threads, flecks, a fine 2048² weave |
 | framed work | `makeArtwork()` — warm paper, one ochre disc, one ink gesture |
-| the city | a 128 × 256 canvas of window bays (a few lamps left on) as map and emissive map, per-instance tint, and an aerial-haze mix in the fragment shader |
+| the city | a 128 × 256 curtain-wall canvas (glass bays, piers, floor lines, a few lamps left on) as map and emissive map; tapered prisms built from plans, per-instance tint, and a hand-written aerial-perspective pass |
 | water | `makeWaterNormal()` — three interfering wave sets → tileable normal map, scrolled in the shader |
 | linen | fibre strokes |
 
@@ -127,6 +127,28 @@ never repeats because it is driven by world position, not UV.
   bract clusters are instanced cards with per-instance magenta/crimson/coral colour,
   a touch of emissive warmth and the same wind sway, with extra dense `mass()` fills where
   the vine is established.
+
+### The land beyond the wall
+
+The estate stands on a level pad; everything outside it is country. `terrainH(x, z)` is
+the whole of it: a coastal dune field whose long ridges run across the wind, crests narrow
+and troughs broad, built from four sine trains (`duneNoise`) shaped on the distance from
+the estate rectangle. It is zero on and around the pad, grows to 5–9 m by 200 m out, lifts
+the middle distance into a low ridge so the country has a horizon line above the low rear
+wall, and rises another 3 m toward the far horizon so the plain never ends on an edge.
+
+- **The ground is four quads** round the pool cut-out, each cut from the same two graded
+  axes (`XS`, `ZS`: 4 m near the house, 120 m at 2.4 km), so a shared edge carries exactly
+  the same vertices and no seam can open between them. One merged draw.
+- **One material carries it all.** `M.meadow` mixes a dune-sand map in by the vertex's own
+  height and a large-scale mottle, and darkens the ground into both faces of the boundary
+  wall — so there is no line where the lawn hands over to sand, and no wall looks pasted on.
+- **The approach** keeps a level corridor cut through the dunes: the gravel drive to the
+  gate, then a tarmac lane with gravel shoulders curving out of sight (the same polyline,
+  `APPROACH`, is both the road and the corridor the land is shaped around).
+- **Mid-ground planting:** 19 date palms at 40–160 m, each a leaning trunk and eleven
+  ribbon fronds (~250 triangles, silhouette only), and 78 scrub bushes tinted into the
+  dune tones — all merged into the palm and foliage batching that was already there.
 
 ### The estate line and the terrace planters
 
@@ -178,18 +200,28 @@ IBL. Interior point lights **cast shadows** (1024² cube maps, baked once) — w
 light passes straight through walls and every room is flooded into flat beige. Cove strips
 are emissive at HDR values so the bloom has something real to catch.
 
+Ten **recessed downlights** (a trim ring and an HDR lens, both merged) sit in the living
+room soffit, the hall ceiling either side of the skylight, the gallery over the front rooms
+and the wing; two more point lights — one high in the void, one low off the oak — give the
+hall its bounce. The lenses are bright enough that the bloom catches them.
+
 ### Post-processing (`renderOrder` after the Lusion reference)
 
 ```
 scene (linear HDR, half-float RT)
-  → bloom   : high-pass (threshold 2.0) → ¼-res separable blur ×2   [10]
-  → final   : ACES tone map → saturation → contrast → aspect-corrected
-              vignette → 1/255 dither → exact sRGB transfer         [30]
+  → bloom   : high-pass (threshold 1.18) → ¼-res separable blur ×2,
+              the second pass 1.9× wider                           [10]
+  → final   : two scales of glow (a tight 8-tap + a wide 8-tap veil)
+              → ACES tone map → split tone (cool shadows, warm
+              highlights) → saturation → contrast → toe lift →
+              aspect-corrected vignette → 1/255 dither → sRGB      [30]
   → screen
 ```
 
-Tone mapping lives in the composite so the glow keeps its highlights. Mobile skips the
-chain entirely (three renders straight to the canvas) and the CSS grade takes over.
+Tone mapping lives in the composite so the glow keeps its highlights, and the threshold
+sits just above white so sunlit travertine, pool glitter, cove strips and the pier lamps
+all bloom a little without the frame turning milky. Mobile skips the chain entirely (three
+renders straight to the canvas) and the CSS grade takes over.
 
 ### Scroll
 
@@ -445,13 +477,18 @@ Additional discipline:
 
 - **The water's mirror is planar and half-res.** It reflects what is above the surface,
   not the tiles below it, and it is skipped on mobile and beyond ~52 m.
-- **No SSAO/GTAO.** Contact darkening comes from the sun shadow map, the baked point-light
-  cubes and the shader's base darkening. Corners at oblique angles can look a touch light.
+- **No screen-space AO.** Contact darkening is baked: a soft radial decal under every
+  object that meets the ground, a band along both faces of the boundary wall, and a
+  distance-to-the-wall term in the ground shader. Corners inside furniture can still read
+  a touch light.
 - **The interior furniture is still modelled from primitives**, but every edge is
   bevelled (`roundedBoxGeo()`), the sofa is bouclé on a woven rug with a fluted walnut
   table, thrown vessels, a brass linear pendant and a framed work under a 2700 K spot; it
   holds up when you stop and look, though a real chair would not be out of place.
 - **Dust motes and the camera path are the only per-frame animation** — everything else is
   static, which is why the shadow maps can be frozen.
+- **The skyline is a silhouette with a curtain-wall texture.** At a kilometre the bays are
+  a few pixels each and mipmapping averages them; the towers read by taper, crown, spire
+  and haze, not by detail.
 - **Pinned scroll** assumes the document scrolls. Scroll-hijacking libraries that transform
   a wrapper will break the sticky canvas (see integration step 7).
