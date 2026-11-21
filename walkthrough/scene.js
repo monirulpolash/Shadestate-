@@ -527,84 +527,172 @@ function makeLawnMat() {
 }
 
 function makeLeafCluster() {
-  /* An olive is not a blob: it is a few thin twigs with pairs of narrow,
-     silver-green leaves, and you can see sky through it. This draws exactly
-     that — six to nine twigs from a soft core, paired lanceolate leaves along
-     each, ragged at the edge — so a crown built from these cards keeps the
-     airy silhouette and the grey cast that reads as olive rather than boxwood.
-     The alpha stays hard-edged and the leaves stay above the alphaTest floor,
-     so mipmaps do not chew the cluster away at distance. */
-  const S = 512, c = cv(S), g = c.getContext('2d');
-  g.clearRect(0, 0, S, S);
+  /* Silver, not green, and dense only because many sprays overlap. One tuft:
+     ten fine branchlets out of a knot, a pair of narrow lanceolate leaves at
+     every node, side shoots and short fill leaves between them, tones running
+     from shaded grey-green at the heart to sun-bleached silver at the rim,
+     the underside paler again.
+     Two canvases, not one: mipmaps average an RGBA card with its empty texels,
+     and a leaf card is mostly empty, so the far crown would go black by itself.
+     The colour card is painted over an opaque bed of the same olive, and the
+     cut is a separate greyscale alpha map, so every mip is the right colour and
+     the alphaTest edge stays clean at any distance. */
+  const S = 512;
+  const c = cv(S), g = c.getContext('2d');
+  const ac = cv(S), a = ac.getContext('2d');
+  g.fillStyle = '#6a7359';
+  g.fillRect(0, 0, S, S);
+  a.fillStyle = '#000';
+  a.fillRect(0, 0, S, S);
+  g.lineCap = g.lineJoin = 'round';
   const cx = S * 0.5, cy = S * 0.5;
+  const cl = (v) => Math.max(0, Math.min(255, Math.round(v)));
 
-  // a soft heart, only enough to stop the middle of the card going see-through
-  for (let i = 0; i < 26; i++) {
-    const a = rnd() * Math.PI * 2, rad = Math.pow(rnd(), 0.5) * S * 0.16;
-    const x = cx + Math.cos(a) * rad, y = cy + Math.sin(a) * rad, r = rr(16, 40);
-    const grd = g.createRadialGradient(x, y, 0, x, y, r);
-    grd.addColorStop(0, 'rgba(96,108,70,.34)');
-    grd.addColorStop(1, 'rgba(96,108,70,0)');
-    g.fillStyle = grd; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill();
-  }
-
-  const leafTones = [
-    [86, 96, 66], [104, 116, 80], [118, 128, 90],
-    [136, 145, 104], [156, 162, 126], [72, 82, 58]
-  ];
-
-  const twigs = 6 + Math.floor(rnd() * 4);
-  for (let t = 0; t < twigs; t++) {
-    const a = (t / twigs) * Math.PI * 2 + rr(-0.45, 0.45);
-    const len = rr(0.20, 0.44) * S;
-    const bendA = a + rr(-0.5, 0.5);
-    const mx = cx + Math.cos(bendA) * len * 0.55;
-    const my = cy + Math.sin(bendA) * len * 0.55;
-    const tx = cx + Math.cos(a) * len;
-    const ty = cy + Math.sin(a) * len;
-
-    g.strokeStyle = 'rgba(104,96,74,.62)';
-    g.lineWidth = rr(1.4, 2.8);
-    g.lineCap = 'round';
-    g.beginPath(); g.moveTo(cx, cy);
-    g.quadraticCurveTo(mx, my, tx, ty);
+  /* one leaf, base at (bx, by), pointing along ang. lum 0 = shaded heart,
+     1 = sunlit rim; warm shifts the silver toward yellow-green. */
+  const leaf = (bx, by, ang, len, hw, lum, warm, shade) => {
+    const R = 90 + 78 * lum + 10 * warm;
+    const G = 100 + 78 * lum + 4 * warm;
+    const B = 88 + 72 * lum - 6 * warm;
+    g.save();
+    g.translate(bx, by);
+    g.rotate(ang);
+    const grd = g.createLinearGradient(0, 0, len, 0);
+    grd.addColorStop(0, `rgb(${cl(R * 0.80 * shade)},${cl(G * 0.83 * shade)},${cl(B * 0.86 * shade)})`);
+    grd.addColorStop(0.42, `rgb(${cl(R * 1.06)},${cl(G * 1.04)},${cl(B * 1.07)})`);
+    grd.addColorStop(1, `rgb(${cl(R * 0.90)},${cl(G * 0.93)},${cl(B * 0.88)})`);
+    g.fillStyle = grd;
+    g.beginPath();
+    g.moveTo(0, 0);
+    g.quadraticCurveTo(len * 0.30, -hw * 1.72, len, 0);
+    g.quadraticCurveTo(len * 0.34, hw * 1.72, 0, 0);
+    g.fill();
+    g.strokeStyle = `rgba(${cl(R * 1.16)},${cl(G * 1.16)},${cl(B * 1.22)},.5)`;
+    g.lineWidth = Math.max(0.6, len * 0.013);
+    g.beginPath();
+    g.moveTo(len * 0.03, 0);
+    g.quadraticCurveTo(len * 0.52, -hw * 0.12, len * 0.95, 0);
     g.stroke();
+    g.restore();
 
-    const steps = Math.max(2, Math.round(len / 58));
+    a.save();
+    a.translate(bx, by);
+    a.rotate(ang);
+    a.fillStyle = '#fff';
+    a.beginPath();
+    a.moveTo(0, 0);
+    a.quadraticCurveTo(len * 0.30, -hw * 1.72, len, 0);
+    a.quadraticCurveTo(len * 0.34, hw * 1.72, 0, 0);
+    a.fill();
+    a.restore();
+  };
+
+  // a twig, in the same two passes
+  const twig = (x0, y0, mx, my, tx, ty, w) => {
+    g.strokeStyle = 'rgba(88,80,56,.6)';
+    g.lineWidth = w;
+    g.beginPath(); g.moveTo(x0, y0); g.quadraticCurveTo(mx, my, tx, ty); g.stroke();
+    a.strokeStyle = '#fff';
+    a.lineWidth = Math.max(1.0, w * 0.9);
+    a.beginPath(); a.moveTo(x0, y0); a.quadraticCurveTo(mx, my, tx, ty); a.stroke();
+  };
+
+  const leaves = [];
+  const addPair = (px, py, along, u, scaleLen) => {
+    const lum = clamp(rr(0.26, 0.82));
+    for (const side of [-1, 1]) {
+      const ang = along + side * rr(0.62, 1.06) + rr(-0.14, 0.14);
+      const len = scaleLen * rr(0.92, 1.08);
+      leaves.push({
+        x: px, y: py, ang, len, hw: len * rr(0.082, 0.120), lum,
+        warm: rr(-0.5, 0.7),
+        // a leaf turned away from the sun shows its paler underside
+        shade: Math.sin(ang) > 0.25 ? rr(1.02, 1.14) : rr(0.84, 0.96),
+        d: Math.hypot(px - cx, py - cy)
+      });
+    }
+  };
+
+  // ── the branchlets: a knot, then sprays fanning out of it
+  const sprays = 16;
+  for (let s = 0; s < sprays; s++) {
+    const a0 = (s / sprays) * Math.PI * 2 + rr(-0.30, 0.30);
+    const len = (rnd() < 0.30 ? rr(0.075, 0.15) : rr(0.17, 0.285)) * S;
+    const bend = rr(-0.55, 0.55);
+    const rootR = rr(0.01, 0.05) * S;
+    const x0 = cx + Math.cos(a0) * rootR, y0 = cy + Math.sin(a0) * rootR;
+    const mx = cx + Math.cos(a0 + bend * 0.45) * len * 0.58;
+    const my = cy + Math.sin(a0 + bend * 0.45) * len * 0.58;
+    const tx = cx + Math.cos(a0 + bend) * len, ty = cy + Math.sin(a0 + bend) * len;
+    twig(x0, y0, mx, my, tx, ty, rr(1.0, 1.9) * (0.7 + 0.5 * (len / (0.285 * S))));
+
+    const steps = 11 + Math.floor(rnd() * 4);
     for (let k = 1; k <= steps; k++) {
-      const u = k / steps;
-      const it = 1 - u;
-      const px = it * it * cx + 2 * it * u * mx + u * u * tx;
-      const py = it * it * cy + 2 * it * u * my + u * u * ty;
-      const dx = 2 * it * (mx - cx) + 2 * u * (tx - mx);
-      const dy = 2 * it * (my - cy) + 2 * u * (ty - my);
-      const along = Math.atan2(dy, dx);
-      for (const side of [-1, 1]) {
-        // leaves shrink toward the twig's tip, as they do on the tree
-        const l = rr(58, 96) * (1 - 0.30 * u);
-        const w = l * rr(0.14, 0.19);
-        const ang = along + side * rr(0.55, 0.95);
-        const tone = leafTones[Math.floor(rnd() * leafTones.length)];
-        const k2 = rr(0.88, 1.1);
-        g.save();
-        g.translate(px + Math.cos(ang) * l * 0.5, py + Math.sin(ang) * l * 0.5);
-        g.rotate(ang);
-        const grd = g.createLinearGradient(-l / 2, 0, l / 2, 0);
-        const R = Math.round(tone[0] * k2), G = Math.round(tone[1] * k2), B = Math.round(tone[2] * k2);
-        grd.addColorStop(0, `rgba(${Math.round(R * 0.82)},${Math.round(G * 0.86)},${Math.round(B * 0.84)},1)`);
-        grd.addColorStop(0.55, `rgba(${Math.min(255, R + 16)},${Math.min(255, G + 16)},${Math.min(255, B + 10)},1)`);
-        grd.addColorStop(1, `rgba(${Math.round(R * 0.72)},${Math.round(G * 0.76)},${Math.round(B * 0.74)},1)`);
-        g.fillStyle = grd;
-        g.beginPath();
-        g.moveTo(-l / 2, 0);
-        g.quadraticCurveTo(0, -w, l / 2, 0);
-        g.quadraticCurveTo(0, w, -l / 2, 0);
-        g.fill();
-        g.restore();
+      const u = k / steps, it = 1 - u;
+      const px = it * it * x0 + 2 * it * u * mx + u * u * tx;
+      const py = it * it * y0 + 2 * it * u * my + u * u * ty;
+      const dx = 2 * it * (mx - x0) + 2 * u * (tx - mx);
+      const dy = 2 * it * (my - y0) + 2 * u * (ty - my);
+      // leaves shorten toward the tip, as they do on the branch
+      addPair(px, py, Math.atan2(dy, dx), u, rr(0.072, 0.112) * S * (1 - 0.26 * u));
+    }
+
+    // a side shoot off the middle of the longer sprays, so the tuft is not a star
+    if (len > 0.18 * S && rnd() > 0.18) {
+      const su = rr(0.38, 0.62), it = 1 - su;
+      const sx = it * it * x0 + 2 * it * su * mx + su * su * tx;
+      const sy = it * it * y0 + 2 * it * su * my + su * su * ty;
+      const sa = a0 + bend + rr(-1.15, 1.15);
+      const sl = len * rr(0.34, 0.52);
+      twig(sx, sy, sx + Math.cos(sa + 0.3) * sl * 0.55, sy + Math.sin(sa + 0.3) * sl * 0.55,
+        sx + Math.cos(sa) * sl, sy + Math.sin(sa) * sl, rr(0.8, 1.3));
+      const sn = 5 + Math.floor(rnd() * 4);
+      for (let k = 1; k <= sn; k++) {
+        const u = k / sn;
+        addPair(sx + Math.cos(sa) * sl * u, sy + Math.sin(sa) * sl * u,
+          sa, u, rr(0.066, 0.100) * S * (1 - 0.22 * u));
       }
     }
+
+    // a terminal leaf carries the tip past the last pair, so the edge breaks
+    const tl = rr(0.068, 0.100) * S;
+    leaves.push({
+      x: tx, y: ty, ang: a0 + bend + rr(-0.2, 0.2), len: tl,
+      hw: tl * rr(0.076, 0.108), lum: clamp(rr(0.30, 0.85)),
+      warm: rr(-0.4, 0.6), shade: rr(0.94, 1.10),
+      d: Math.hypot(tx - cx, ty - cy) + 1
+    });
   }
-  return c;
+
+  /* filler: short leaves through the middle of the disc, knotted at random
+     angles, so the gaps between the sprays read as felted leaf rather than sky */
+  for (let i = 0; i < 760; i++) {
+    const ang = rnd() * Math.PI * 2, rad = Math.pow(rnd(), 0.48) * S * 0.345;
+    const l = rr(0.052, 0.098) * S;
+    leaves.push({
+      x: cx + Math.cos(ang) * rad, y: cy + Math.sin(ang) * rad,
+      ang: rnd() * Math.PI * 2, len: l, hw: l * rr(0.07, 0.105),
+      lum: clamp(rr(0.24, 0.80)),
+      warm: rr(-0.5, 0.7), shade: rr(0.86, 1.08), d: rad * 0.6
+    });
+  }
+
+  // the heart: short, dark leaves packed at the knot, so the middle never holes
+  for (let i = 0; i < 90; i++) {
+    const ang = rnd() * Math.PI * 2, rad = Math.pow(rnd(), 0.6) * S * 0.075;
+    const l = rr(0.055, 0.095) * S;
+    leaves.push({
+      x: cx + Math.cos(ang) * rad, y: cy + Math.sin(ang) * rad,
+      ang: ang + rr(-0.5, 0.5), len: l, hw: l * rr(0.08, 0.11),
+      lum: rr(0.18, 0.55), warm: rr(-0.4, 0.5), shade: rr(0.84, 1.00),
+      d: rad * 0.5
+    });
+  }
+
+  // rim leaves on top of the heart, so the tuft reads shaded at its core
+  leaves.sort((A, B) => A.d - B.d);
+  for (const L of leaves) leaf(L.x, L.y, L.ang, L.len, L.hw, L.lum, L.warm, L.shade);
+  return { map: c, alpha: ac };
 }
 
 function makeBarkTextures() {
@@ -1407,13 +1495,18 @@ export async function createWalkthrough(container, options = {}) {
     let grassUniforms = null;   // assigned by the grass block
     let grassSetDensity = null;
 
-    function windify(mat, { amp = 0.05, freq = 1.0, height = 2.6, base = 0.4, soft = 0 } = {}) {
+    function windify(mat, { amp = 0.05, freq = 1.0, height = 2.6, base = 0.4, soft = 0,
+      fill = [0.085, 0.105, 0.062], trans = 0 } = {}) {
       mat.onBeforeCompile = (shader) => {
         shader.uniforms.uWindTime = WIND.time;
         shader.uniforms.uWindAmp = { value: amp };
         shader.uniforms.uWindFreq = { value: freq };
         shader.uniforms.uWindHeight = { value: height };
         shader.uniforms.uWindBase = { value: base };
+        if (trans > 0) {
+          shader.uniforms.uSunDir = { value: SUN_DIR };
+          shader.uniforms.uTrans = { value: trans };
+        }
         shader.vertexShader = shader.vertexShader
           .replace('#include <common>', `#include <common>
             uniform float uWindTime; uniform float uWindAmp; uniform float uWindFreq;
@@ -1451,11 +1544,27 @@ export async function createWalkthrough(container, options = {}) {
             .replace(
               '#include <lights_fragment_end>',
               `#include <lights_fragment_end>
-               totalEmissiveRadiance += diffuseColor.rgb * vec3(0.085, 0.105, 0.062);`
+               totalEmissiveRadiance += diffuseColor.rgb * vec3(${fill[0].toFixed(3)}, ${fill[1].toFixed(3)}, ${fill[2].toFixed(3)});`
             );
+          if (trans > 0) {
+            /* A leaf is a window, not a card: sunlight behind it comes through
+               the blade and the crown glows silver instead of going to a black
+               silhouette against the sky. */
+            shader.fragmentShader = shader.fragmentShader
+              .replace('#include <common>', `#include <common>
+                uniform vec3 uSunDir; uniform float uTrans;`)
+              .replace(
+                '#include <lights_fragment_end>',
+                `#include <lights_fragment_end>
+                 vec3 sunView = normalize((viewMatrix * vec4(uSunDir, 0.0)).xyz);
+                 float backLit = max(0.0, -dot(normal, sunView));
+                 float thru = pow(backLit, 1.3) * uTrans;
+                 totalEmissiveRadiance += diffuseColor.rgb * vec3(1.22, 1.16, 0.92) * thru * 1.10;`
+              );
+          }
         }
       };
-      mat.customProgramCacheKey = () => `wind${amp}${freq}${height}${base}${soft}`;
+      mat.customProgramCacheKey = () => `wind${amp}${freq}${height}${base}${soft}${fill.join('_')}${trans}`;
       return mat;
     }
 
@@ -1635,8 +1744,14 @@ export async function createWalkthrough(container, options = {}) {
         map: tex(bark.map, { srgb: true }),
         normalMap: tex(bark.normal),
         normalScale: new THREE.Vector2(1.35, 1.35),
-        color: 0xc9c4b4,
-        roughness: 1.0, metalness: 0.0, envMapIntensity: 0.55,
+        color: 0xa2a79f,
+        roughness: 1.0, metalness: 0.0, envMapIntensity: 0.35,
+        side: THREE.DoubleSide
+      }),
+      oliveTwig: new THREE.MeshStandardMaterial({
+        map: tex(bark.map, { srgb: true, repeat: [1, 2] }),
+        color: 0x6f6a5c,
+        roughness: 1.0, metalness: 0.0, envMapIntensity: 0.25,
         side: THREE.DoubleSide
       }),
       bark: new THREE.MeshStandardMaterial({
@@ -1656,11 +1771,16 @@ export async function createWalkthrough(container, options = {}) {
         normalScale: new THREE.Vector2(0.7, 0.7),
         color: 0x4f6d63, roughness: 0.55, metalness: 0.0, envMapIntensity: 0.45
       })),
-      leaf: windify(new THREE.MeshStandardMaterial({
-        map: tex(makeLeafCluster(), { srgb: true }),
-        alphaTest: 0.34, side: THREE.DoubleSide, color: 0xdfe4ca,
-        roughness: 0.9, metalness: 0.0, envMapIntensity: 0.5
-      }), { amp: 0.075, freq: 1.2, height: 3.2, soft: 0.58 }),
+      leaf: (() => {
+        const leafTex = makeLeafCluster();
+        return windify(new THREE.MeshStandardMaterial({
+          map: tex(leafTex.map, { srgb: true }),
+          alphaMap: tex(leafTex.alpha),
+          alphaTest: 0.34, side: THREE.DoubleSide, color: 0xdcdfca,
+          roughness: 0.9, metalness: 0.0, envMapIntensity: 0.62
+        }), { amp: 0.075, freq: 1.2, height: 3.2, soft: 0.72,
+          fill: [0.17, 0.19, 0.13], trans: 0.9 });
+      })(),
       glow: new THREE.MeshBasicMaterial({
         map: tex(makeGlowTexture(), { srgb: true }),
         transparent: true, opacity: 0.16, blending: THREE.AdditiveBlending,
@@ -3466,7 +3586,31 @@ export async function createWalkthrough(container, options = {}) {
       dummy.scale.set(s, s, s);
       dummy.updateMatrix();
       leafMatrices.push(dummy.matrix.clone());
-      tmpCol.setRGB(lit * rr(0.8, 1.06), lit * rr(0.88, 1.08), lit * rr(0.72, 0.94));
+      // silver, not green: the tint stays neutral so the card reads grey-sage
+      tmpCol.setRGB(lit * rr(0.92, 1.02), lit * rr(0.96, 1.04), lit * rr(0.92, 1.02));
+      leafColors.push(tmpCol.clone());
+    }
+
+    /* v6 put every card at a random 3D angle, so most stood edge-on to the
+       camera and the crown leaked light. A card in a canopy lies tangent to
+       its crown: the face turns outward along the crown radius, with a random
+       roll and a small tilt so the layers never line up into planes. */
+    const _cardN = new THREE.Vector3(), _cardQ = new THREE.Quaternion(),
+      _cardZ = new THREE.Vector3(0, 0, 1);
+    function faceAt(x, y, z, s, lit, nx, ny, nz) {
+      _cardN.set(nx, ny, nz);
+      if (_cardN.lengthSq() < 1e-6) _cardN.set(0, 1, 0);
+      _cardN.normalize();
+      _cardQ.setFromUnitVectors(_cardZ, _cardN);
+      dummy.position.set(x, y, z);
+      dummy.quaternion.copy(_cardQ);
+      dummy.rotateZ(rr(0, Math.PI * 2));
+      dummy.rotateX(rr(-0.40, 0.40));
+      dummy.rotateY(rr(-0.40, 0.40));
+      dummy.scale.set(s * rr(0.90, 1.10), s * rr(0.90, 1.10), s);
+      dummy.updateMatrix();
+      leafMatrices.push(dummy.matrix.clone());
+      tmpCol.setRGB(lit * rr(0.92, 1.02), lit * rr(0.96, 1.04), lit * rr(0.92, 1.02));
       leafColors.push(tmpCol.clone());
     }
 
@@ -3538,8 +3682,8 @@ export async function createWalkthrough(container, options = {}) {
         const c = new THREE.CatmullRomCurve3([start, mid, end], false, 'centripetal', 0.5);
         queue(limb(c, {
           r0: baseR * 0.44, r1: baseR * 0.17, radial: 8, tubular: 12, tile: 0.8
-        }), M.bark, true, false);
-        tips.push({ p: end, s: rr(0.85, 1.25) * scale });
+        }), M.oliveBark, true, false);
+        tips.push({ p: end, s: rr(0.85, 1.25) * scale, from: c.getPoint(0.45) });
 
         const twigs = MOBILE ? 2 : 2 + Math.floor(rnd() * 2);
         for (let k = 0; k < twigs; k++) {
@@ -3554,55 +3698,76 @@ export async function createWalkthrough(container, options = {}) {
           const tm = from.clone().lerp(tp, 0.5).add(new THREE.Vector3(rr(-0.08, 0.08), rr(0, 0.1), rr(-0.08, 0.08)));
           queue(limb(new THREE.CatmullRomCurve3([from, tm, tp], false, 'centripetal', 0.5), {
             r0: baseR * 0.17, r1: baseR * 0.05, radial: 6, tubular: 7, tile: 0.7
-          }), M.bark, true, false);
-          tips.push({ p: tp, s: rr(0.6, 0.95) * scale });
+          }), M.oliveTwig, true, false);
+          tips.push({ p: tp, s: rr(0.6, 0.95) * scale, from });
         }
       }
 
-      // crown: a small core clump for body, then cards for the silhouette
-      const cardsPer = MOBILE ? 22 : 34;
+      /* ── the crown ──────────────────────────────────────────────────────
+         An olive's crown is one broad, low, irregular mass, wider than it is
+         tall: a handful of overlapping lobes rather than a ball on a stick.
+         Every card lies tangent to its lobe and turns its face outward, with a
+         random roll and a small tilt, so the layers close into a felted silver
+         surface from every angle and the rim still breaks up ragged. Two
+         clumps sit deep in the core so the gaps between cards read as shadow
+         in the canopy rather than as sky. */
+      const ccx = x + lean * 0.95, ccz = z + leanZ * 0.95, ccy = h * 0.97;
+      const R = 1.60 * scale;
+      const lobes = [
+        [0.00, 0.06, 0.02, 1.00],
+        [-0.70, -0.08, 0.42, 0.74],
+        [0.72, 0.02, -0.36, 0.80],
+        [-0.30, 0.40, -0.60, 0.58],
+        [0.34, 0.34, 0.58, 0.56],
+        // a low lobe that rounds the underside and closes over the fork
+        [0.10, -0.56, 0.24, 0.62]
+      ];
+      for (const [ox, oy, oz, lr] of lobes) {
+        const lx = ccx + ox * scale, ly = ccy + oy * scale, lz = ccz + oz * scale;
+        const rx = R * lr, ry = R * lr * 0.76, rz = R * lr;
+        const n = Math.round((MOBILE ? 150 : 330) * lr);
+        for (let i = 0; i < n; i++) {
+          const a = rnd() * Math.PI * 2, b = Math.acos(rr(-1, 1));
+          const dx = Math.sin(b) * Math.cos(a), dy = Math.cos(b), dz = Math.sin(b) * Math.sin(a);
+          // most leaves on the surface, the rest filling a thickness behind it
+          const k = 0.54 + 0.46 * Math.pow(rnd(), 0.55);
+          const px = lx + dx * rx * k, py = ly + dy * ry * k, pz = lz + dz * rz * k;
+          const up = clamp((py - (ccy - R * 0.8)) / (R * 1.6));
+          const size = (0.16 + 0.11 * k) * scale * rr(0.84, 1.18);
+          faceAt(px, py, pz, size, 0.62 + 0.40 * up + rr(-0.05, 0.05), dx, dy * 1.7, dz);
+        }
+      }
+      // every limb and twig wears its own leaves out to its tip, so no bare
+      // olive wood is left standing out of the crown like straw
       for (const tip of tips) {
+        const cardsPer = MOBILE ? 16 : 28;
         for (let k = 0; k < cardsPer; k++) {
           const a = rnd() * Math.PI * 2, b = Math.acos(rr(-1, 1));
-          const rad = Math.pow(rnd(), 0.4) * tip.s * 0.78;
-          cardAt(
-            tip.p.x + Math.sin(b) * Math.cos(a) * rad,
-            tip.p.y + Math.cos(b) * rad * 0.66 + rr(0, 0.14) * tip.s,
-            tip.p.z + Math.sin(b) * Math.sin(a) * rad,
-            rr(0.26, 0.46) * scale, rr(0.82, 1.06) + 0.20 * clamp((tip.p.y - h * 0.7) / (h * 0.6))
-          );
+          const u = rr(0.42, 1.0);
+          const bx = lerp(tip.from.x, tip.p.x, u);
+          const by = lerp(tip.from.y, tip.p.y, u);
+          const bz = lerp(tip.from.z, tip.p.z, u);
+          const rad = Math.pow(rnd(), 0.45) * tip.s * (0.85 - 0.30 * u);
+          const px = bx + Math.sin(b) * Math.cos(a) * rad;
+          const py = by + Math.cos(b) * rad * 0.66 + rr(0, 0.08) * tip.s;
+          const pz = bz + Math.sin(b) * Math.sin(a) * rad;
+          faceAt(px, py, pz, rr(0.13, 0.24) * scale,
+            0.66 + 0.26 * clamp((py - h * 0.7) / (h * 0.6)) + rr(-0.05, 0.05),
+            px - ccx, py - ccy, pz - ccz);
         }
       }
-      /* the crown as a body: cards through an ellipsoid, densest in the middle
-         and thinner at the rim, so the canopy holds together from every angle
-         instead of hanging in lobes off the twig tips */
+      // the core: cards through the middle of the mass, turned every way, so
+      // the crown is a volume with shade in it rather than a shell round a hole
       {
-        const ccx = x + lean * 0.92, ccz = z + leanZ * 0.92, ccy = h * 1.02;
-        const rx = 1.55 * scale, ry = 0.78 * scale, rz = 1.55 * scale;
-        const body = MOBILE ? 120 : 220;
-        for (let i = 0; i < body; i++) {
-          const a = rnd() * Math.PI * 2;
-          const u = Math.pow(rnd(), 0.55);
-          const b = Math.acos(rr(-1, 1));
-          const rr2 = u;
-          const px = ccx + Math.sin(b) * Math.cos(a) * rx * rr2;
-          const py = ccy + Math.cos(b) * ry * rr2 + rr(-0.1, 0.16) * scale;
-          const pz = ccz + Math.sin(b) * Math.sin(a) * rz * rr2;
-          cardAt(px, py, pz, rr(0.20, 0.34) * scale,
-            0.80 + 0.24 * clamp((py - h * 0.7) / (h * 0.5)) + rr(-0.06, 0.06));
-        }
-      }
-
-      // a denser heart so the crown is not see-through at eye level
-      for (let i = 0; i < (MOBILE ? 3 : 5); i++) {
-        const a = rnd() * Math.PI * 2, rad = rr(0, 0.5) * scale;
-        for (let k = 0; k < (MOBILE ? 12 : 22); k++) {
-          cardAt(
-            x + lean * 0.9 + Math.cos(a) * rad + rr(-0.45, 0.45) * scale,
-            h * rr(0.9, 1.25) + rr(-0.2, 0.2) * scale,
-            z + leanZ * 0.9 + Math.sin(a) * rad + rr(-0.45, 0.45) * scale,
-            rr(0.22, 0.44) * scale, rr(0.82, 1.08)
-          );
+        const n = MOBILE ? 110 : 240;
+        for (let i = 0; i < n; i++) {
+          const a = rnd() * Math.PI * 2, b = Math.acos(rr(-1, 1));
+          const k = Math.pow(rnd(), 0.7) * 0.72;
+          const px = ccx + Math.sin(b) * Math.cos(a) * R * k;
+          const py = ccy + Math.cos(b) * R * 0.74 * k;
+          const pz = ccz + Math.sin(b) * Math.sin(a) * R * k;
+          const up = clamp((py - (ccy - R * 0.8)) / (R * 1.6));
+          cardAt(px, py, pz, rr(0.13, 0.24) * scale, 0.46 + 0.34 * up + rr(-0.04, 0.04));
         }
       }
       contactShadow(x, z, 2.1 * scale, 2.1 * scale, true, 0.03);
@@ -3926,7 +4091,10 @@ export async function createWalkthrough(container, options = {}) {
       leafMatrices.forEach((m, i) => { cards.setMatrixAt(i, m); cards.setColorAt(i, leafColors[i]); });
       cards.instanceMatrix.needsUpdate = true;
       if (cards.instanceColor) cards.instanceColor.needsUpdate = true;
-      cards.castShadow = true;
+      // a card casts on its neighbours, and the sun map is frozen after one
+      // pass: a dense crown would shadow itself solid. The tree's ground
+      // shadow is the soft contact ellipse beneath it instead.
+      cards.castShadow = false;
       cards.frustumCulled = false;
       world.add(cards);
 

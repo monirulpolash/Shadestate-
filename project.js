@@ -317,14 +317,12 @@
     var mapName = $('#mapProjectName'); if (mapName) mapName.textContent = p.name;
 
     var contact = 'contact.html?project=' + encodeURIComponent(slug);
-    ['enquireLink', 'enquiryAction', 'brochureLink', 'planEnquire', 'viewingEnquire', 'quickEnquire', 'orbitEnquire'].forEach(function (id) {
+    ['enquireLink', 'enquiryAction', 'brochureLink', 'planEnquire', 'viewingEnquire', 'quickEnquire'].forEach(function (id) {
       var a = document.getElementById(id);
       if (a) a.href = contact;
     });
     var oc = $('#enquireCopy');
     if (oc) oc.textContent = 'Walk ' + p.name + ' with the people who built it, in ' + (p.country === 'Saudi Arabia' ? 'Riyadh' : 'Dubai') + '. By appointment.';
-    var op = $('#orbitProject'); if (op) op.textContent = p.name;
-    var opc = $('#orbitProjectCopy'); if (opc) opc.textContent = p.name;
     var we = $('#walkEyebrow'); if (we) we.textContent = p.name + ' · ' + p.location;
 
     initCurrency();

@@ -1,7 +1,7 @@
 /* ==========================================================================
    SHADESTATE · shared shell
    Topbar (colour probe), clip menu, page transition, char-roll, magnetic,
-   cursor, footer, clocks, reveal, orbit CTA, enquiry form.
+   cursor, footer, clocks, reveal, enquiry form.
    No dependencies. Every set piece is guarded by prefers-reduced-motion.
    ========================================================================== */
 (function () {
@@ -351,27 +351,6 @@
     });
   }
 
-  /* ── orbit CTA: reveal at the end of the 360° take ───────────────────── */
-  function initOrbitCta() {
-    var section = document.querySelector('.walkthrough');
-    var cta = $('[data-orbit-cta]');
-    if (!section || !cta) return;
-    var ticking = false;
-    function sync() {
-      var r = section.getBoundingClientRect();
-      var total = section.offsetHeight - window.innerHeight;
-      var p = total <= 0 ? 0 : Math.min(1, Math.max(0, -r.top / total));
-      cta.classList.toggle('is-visible', p >= 0.88);
-      cta.setAttribute('aria-hidden', p >= 0.88 ? 'false' : 'true');
-      ticking = false;
-    }
-    window.addEventListener('scroll', function () {
-      if (!ticking) { ticking = true; requestAnimationFrame(sync); }
-    }, { passive: true });
-    window.addEventListener('resize', sync);
-    sync();
-  }
-
   /* ── enquiry form (client-side demonstration only) ───────────────────── */
   function initViewingForms() {
     $$('[data-viewing-form]').forEach(function (form) {
@@ -443,7 +422,6 @@
     initClocks();
     initReveal();
     initSplitReveal();
-    initOrbitCta();
     initViewingForms();
     initNewsletter();
     initAnchors();
@@ -453,5 +431,5 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();
 
-  window.ShadeShell = { roll: initRoll, reveal: initReveal, orbit: initOrbitCta };
+  window.ShadeShell = { roll: initRoll, reveal: initReveal };
 })();

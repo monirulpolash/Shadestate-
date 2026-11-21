@@ -526,38 +526,11 @@ body.project-page { background: var(--paper); color: var(--ink); font-family: va
 .viewing__steps span { font-size: 9px; letter-spacing: .16em; color: var(--bone-45); }
 .viewing__cta .btn { justify-self: start; }
 
-/* ---------- walkthrough + end-of-orbit CTA ---------- */
+/* ---------- walkthrough ---------- */
 .walkthrough { position: relative; background: var(--paper); }
 .walkthrough__head { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr); gap: clamp(24px, 5vw, 72px); align-items: end; padding-block: clamp(48px, 6vw, 88px) clamp(20px, 3vw, 36px); }
 .walkthrough__note { font-size: var(--fs-small); color: var(--ink-55); max-width: 38ch; }
 @media (max-width: 820px) { .walkthrough__head { grid-template-columns: 1fr; } }
-
-.orbit-cta {
-  position: absolute; left: 50%; bottom: clamp(24px, 5vh, 58px); z-index: 40;
-  width: min(560px, calc(100% - 32px)); transform: translate(-50%, 24px);
-  opacity: 0; pointer-events: none;
-  transition: opacity .8s var(--ease-secondary), transform .9s var(--ease-secondary);
-}
-.orbit-cta.is-visible { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
-.orbit-cta__card {
-  background: var(--glass-dark-strong); color: var(--bone);
-  -webkit-backdrop-filter: saturate(150%) blur(14px); backdrop-filter: saturate(150%) blur(14px);
-  border: var(--hair) solid var(--glass-rim-dark); border-radius: var(--r-panel);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .18), 0 20px 50px rgba(0, 0, 0, .35);
-  padding: clamp(22px, 3.2vw, 34px);
-  display: grid; gap: 10px;
-}
-.orbit-cta__eyebrow { font-size: 9px; letter-spacing: .2em; text-transform: uppercase; color: var(--bone-45); }
-.orbit-cta__title { font-family: var(--serif); font-weight: 600; font-size: clamp(1.6rem, 3vw, 2.4rem); line-height: 1; letter-spacing: -.02em; }
-.orbit-cta__text { font-size: 12px; line-height: 1.6; color: var(--bone-70); max-width: 42ch; }
-.orbit-cta__actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; }
-.orbit-cta__actions .btn { min-height: 42px; font-size: 10px; }
-@media (max-width: 640px) {
-  .orbit-cta { bottom: 14px; }
-  .orbit-cta__text { display: none; }
-  .orbit-cta__card { padding: 16px; }
-}
-
 
 /* ── glass on phones: in-flow chrome keeps its tint, loses the filter ─────── */
 @media (max-width: 768px) {
