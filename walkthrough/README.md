@@ -1,8 +1,15 @@
 # Casa da Luz — procedural 3D walkthrough
 
 A scroll-driven, cinematic walkthrough of a Shadestate villa. You start far out on a
-gravel drive, travel through the front door, glide through a double-height limestone hall,
-step out through the sliding rear wall onto the terrace, and end orbiting the house.
+gravel drive, travel through the front door, cross a double-height travertine hall with a
+gallery over it, step out through the sliding rear wall onto the pool terrace, and end
+orbiting a two-storey house with a city standing on the horizon behind it.
+
+The house is 18.7 m wide and 14.4 m deep over two floors: a recessed, entirely glazed
+ground floor under an upper storey that overhangs it by 1.8 m at the front and 1.6 m at
+the west, a loggia cut into that upper front, a floating oak stair in the void, a glass
+gallery around it, a bridge over the entry, a roof lantern over the hall skylight, and a
+roof deck with a pergola over the single-storey wing.
 
 **Everything is generated in code.** No `.glb`, no `.jpg`, no HDRI. Every texture is drawn
 into a `<canvas>` at runtime, every form is built from primitives, and one procedural
@@ -73,6 +80,7 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.m
 | bouclé | `makeBoucle()` — loop-pile arcs over a slubbed wool ground |
 | wool rug | `makeRug()` — weft ribs, warp threads, flecks, a fine 2048² weave |
 | framed work | `makeArtwork()` — warm paper, one ochre disc, one ink gesture |
+| the city | a 128 × 256 canvas of window bays (a few lamps left on) as map and emissive map, per-instance tint, and an aerial-haze mix in the fragment shader |
 | water | `makeWaterNormal()` — three interfering wave sets → tileable normal map, scrolled in the shader |
 | linen | fibre strokes |
 
@@ -167,21 +175,24 @@ independent, so it feels identical at 30, 60 or 144 fps. The canvas is `sticky` 
 
 | t | position | look-at | stage |
 |---|---|---|---|
-| 0.000 | 15.6, 5.2, 61 | 0, 4.5, 2.5 | wide establishing shot, 61 m out |
-| 0.075–0.150 | → 12.8, 4.2, 46 | house | slow dolly along the drive, trees parallax past |
-| 0.225–0.355 | → 8.6, 2.7, 30 | house | continues, camera drops toward eye height |
-| 0.400–0.472 | → 1.0, 1.70, 13.5 | 0, 2.05, 5.8 | straightens onto the entry axis |
-| 0.492–0.512 | 0, 1.66, 9.4 → 0, 1.65, 6.5 | 0, 1.90, 2.0 | **through the door** (exposure dips, vignette closes) |
-| 0.534–0.565 | → −0.2, 1.74, 2.3 | −2.4, 2.3, −3 | interior blooms warm, fov opens to 50 |
-| 0.610–0.660 | → −1.5, 2.02, −0.7 | −8.4, 3.2, 0.4 | stairwell + mezzanine |
-| 0.705–0.780 | → 0.6, 1.80, −5.4 | 3.4, 1.75, −12 | turns toward the rear glazing |
-| 0.808–0.830 | 1.2, 1.78, −7.0 → 1.4, 1.95, −9.2 | pool | **out through the open slider** |
-| 0.860 → 1.000 | orbital | house centre | **360° orbit**: radius 8.1 → 34 m, height 2.0 → 14 m |
+| 0.000 | 15.2, 3.3, 62 | 0, 4.6, 2.2 | the drive, whole villa and both palms in frame |
+| 0.075–0.150 | → 13.8, 2.9, 50 | house | slow dolly down the gravel |
+| 0.225–0.300 | → 11.2, 2.4, 38 | house | continues, camera at walking height |
+| 0.355–0.440 | → 3.2, 1.85, 17.4 | 0, 2.4, 5.6 | straightens onto the entry axis, under the porch |
+| 0.470–0.522 | 1.2, 1.74, 13.2 → 0, 1.66, 6.9 | 0, 1.95, 0.6 | **through the door** (exposure dips, vignette closes) |
+| 0.545–0.615 | → −1.5, 1.86, 1.6 | −6.4, 2.2, −3.4 | hall opens to 8 m, the stair and gallery above |
+| 0.655–0.705 | → −2.6, 1.96, 0.2 | −5.8, 2.15, −5.6 | the living room, the rear glass, the city beyond |
+| 0.745–0.800 | → −0.1, 1.84, −4.2 | 1.8, 2.1, −10.4 | turns toward the sliding wall |
+| 0.816–0.836 | 0.7, 1.80, −5.9 → 7.2, 1.58, −8.6 | pool | **out through the open bay**, a glide east along the terrace |
+| 0.845 | 10.4, 1.42, −11.2 | −3.0, 2.1, −15.0 | **the terrace**: the house corner, the pool, the skyline |
+| 0.858 → 1.000 | orbital | house centre | **360° orbit**: radius 15 → 48 m, height 1.9 → 14 m |
 
 The spline is a `CatmullRomCurve3` (centripetal) and each key owns an equal slice of the
-curve parameter, so the curve passes **exactly** through every authored point — which is
-what keeps the doorway framing precise at speed. At `t = 0.86` the path hands over to an
-analytic orbit (`ORBIT`), matched in position *and* direction, so there is no seam.
+curve parameter, so it passes **exactly** through every authored point.
+
+On a phone the take would crop a 30 m facade, so `applyCamera` backs the camera off along
+its own view ray on the exterior half (up to 6% at the door approach) and widens the fov by
+up to 46%; by t = 0.47 both return to normal, so the doorway framing is identical.
 
 ### Changing the shot
 
@@ -194,24 +205,34 @@ analytic orbit (`ORBIT`), matched in position *and* direction, so there is no se
 
 ## 4. Changing the house
 
-`A` and `B` are the two volumes; every wall, roof, floor and opening is derived from them:
+Four constants in section 6 carry the whole massing — every wall, roof, opening, slab and
+camera clearance is derived from them:
 
 ```js
-const A = { x0: -10, x1: 4, z0: -6, z1: 6, h: 6.8, t: 0.5 };  // stone, double height
-const B = { x0: 3.6, x1: 13, z0: -6, z1: 3.2, h: 3.9, t: 0.42 }; // timber wing
-const DOOR = { a: -1.15, b: 1.15, top: 2.95 };
-const REAR = { a: -6.0, b: 2.2, top: 3.35 };
-const POOL = { x0: -3.2, x1: 8.4, z0: -19.6, z1: -9.8 };
+const G    = { x0: -12.5, x1: 4.0, z0: -6.0, z1: 6.6, h: 4.05, t: 0.54 };  // glazed ground floor
+const S    = { x0: -14.1, x1: 4.6, z0: -6.0, z1: 8.4, y0: 4.05, y1: 8.15 }; // overhanging upper floor
+const WING = { x0: 4.0, x1: 16.2, z0: -6.0, z1: 3.4, h: 3.72 };            // one storey + roof deck
+const ATRIUM = { x0: -10.6, x1: 1.4, z0: -6.0, z1: 2.4 };                  // the void through both
+const DOOR = { a: -1.3, b: 1.3, top: 3.05 };
+const REAR = { a: -6.4, b: 1.6, top: 3.85 };
+const SKY  = { x0: -8.4, x1: -2.8, z0: -5.2, z1: 0.9 };                    // hall skylight / lantern
 ```
 
-- **Wider house:** change `x1` of `A`/`B` and the `REAR.a/b` opening to match.
-- **Taller/darker:** `h` on both volumes (the roof, plinth and parapet follow).
-- **New opening:** add `{ a, b, y0, y1 }` to the wall's `holes` array *and* call `glaze()`
-  with the same numbers if you want glass in it.
-- **The camera path must be re-checked** whenever you move a wall the camera passes
-  through: keep the door, the rear slider and the orbit radius clear.
+- **Wider:** change `G.x1` / `S.x1` and the wing's `x0`; the roof, porch soffit and slab
+  fascia follow the upper volume, the glazing must be re-listed with the same numbers.
+- **Taller:** `S.y1` (roof underside) lifts the upper storey, the parapet and the lantern.
+- **Bigger atrium:** `ATRIUM` moves the galleries, the stair landing, the glass rails and
+  the four ceiling strips together.
+- **A new opening:** add `{ a, b, y0, y1 }` to that wall's `holes` array *and* call `glaze()`
+  with the same numbers, or the hole stays empty.
+- **The camera path must be re-checked** whenever you move a wall it passes through: the
+  door (z = G.z1), the rear slider's open bay (x 0…1.6) and the orbit radius all depend on
+  it.
 
----
+The city is its own block, section 5c: `N` towers over x ±340 m at z −205…−450 m, heights
+8–26 m plus crowns, four landmarks to 56 m, then `setCity()` toggles both instanced meshes.
+The shader mixes each fragment toward `uHaze` below ~8 m of height, which is what keeps the
+bases from standing on the lawn; `cityMood()` re-tints it per sky preset.
 
 ## 5. Fold it into `real-estate-template/`
 
@@ -291,6 +312,11 @@ Controls, in plain words:
 
 | Group | Control | What it does |
 |---|---|---|
+| Copy | **Show copy** | The scroll copy over the scene, on/off. |
+| Copy | **Approach · headline / subtitle** | The line and note over the drive (default *Architecture with permanence.*). |
+| Copy | **Entry · headline / subtitle** | The large line at the door (default *Honest materials.*). |
+| Copy | **Interior · headline / subtitle** | The line in the hall (default *Room to breathe.*). |
+| Copy | **Terrace · headline / subtitle** | The line held from the terrace through the orbit (default *Built to stay.*). |
 | Camera | **Follow scroll** | The camera follows the page's scroll through the component. Off: it plays the take by itself. |
 | Camera | **Autoplay** | Start the walk on its own (shown when Follow scroll is off). |
 | Camera | **Open on** | Where it starts: Approach / Door / Inside / Terrace / Orbit. |
@@ -301,13 +327,14 @@ Controls, in plain words:
 | Look | **Grass** | Density of the meadow, 0.15–1. Lower is cheaper. |
 | Look | **Water ripples** | Strength of the pool's surface movement, 0–2. |
 | Look | **Corner palms** | The four date palms on the four sides of the house, on/off. |
+| Look | **City skyline** | The distant skyline beyond the pool, on/off. |
 | Performance | **Quality** | Auto (phones get the lite tier) / High / Lite. Changing this rebuilds the scene. |
 | Performance | **Pause off-screen** | Stops rendering when the section leaves the viewport. Leave it on. |
 | Performance | **Max pixel ratio** | Cap on the drawing buffer, 1–2. 1.5 is already crisp for this render. |
 | Performance | **Height (px)** | 0 fills the frame; set a height for a fixed-height section inside a scrolling page. |
 
-Defaults are the approved look: morning light, 55% cloud, full grass, ripples on, four
-palms, quality auto, pause off-screen on. Dropping the component in changes nothing until
+Defaults are the approved look: the Option C copy, morning light, 55% cloud, full grass,
+ripples on, four palms, the city on, quality auto, pause off-screen on. Dropping the component in changes nothing until
 you touch a control.
 
 Because it imports `three` from npm (the local build is r160), Framer resolves whatever
@@ -330,6 +357,7 @@ no imports, 1.2 MB (≈330 kB gzipped). Upload it next to the site (it is alread
      data-grass="1"       <!-- 0.15..1 -->
      data-water="1"       <!-- ripples 0..2 -->
      data-palms="1"
+     data-city="1"        <!-- 0 = open country behind the pool -->
      data-quality="auto"  <!-- auto|high|lite -->
      style="width:100%;height:640px"></div>
 <script src="https://shadestate.vercel.app/walkthrough/shadestate-walkthrough.min.js"></script>
