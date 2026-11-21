@@ -73,10 +73,13 @@ html.is-locked, body.is-locked { overflow: hidden; }
 .hero__logo {
   position: absolute; top: 50%; left: 50%; width: var(--wm-w); height: var(--wm-h);
   margin-top: calc(var(--wm-h) / -2); margin-left: calc(var(--wm-w) / -2);
-  z-index: 1; opacity: 0; color: rgba(255, 253, 248, .9);
+  /* above the house (1) and the clouds (2) so the hairline draw stays unbroken
+     as the building rises behind it */
+  z-index: 3; opacity: 0; color: rgba(255, 253, 248, .96);
+  filter: drop-shadow(0 1px 10px rgba(0, 0, 0, .18));
 }
 .hero__logo svg { display: block; width: 100%; height: 100%; overflow: visible; }
-.hero__logo path { fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linejoin: round; stroke-linecap: round; }
+.hero__logo path { fill: none; stroke: currentColor; stroke-width: 3; stroke-linejoin: round; stroke-linecap: round; }
 .hero__clouds { position: absolute; inset: 0; z-index: 2; }
 .hero__cloud { position: absolute; will-change: transform; }
 .hero__cloud img { width: 100%; height: 100%; object-fit: cover; }

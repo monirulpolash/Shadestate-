@@ -761,8 +761,8 @@
     /* Hero: one take over five viewports.
        0.00–1.00  the building rises and grows, the mist climbs, the clouds part
        0.00–0.20  the copy sinks and fades, going behind the building
-       0.10–0.40  the wordmark draws itself as a hairline, then fades
-       0.30–1.00  the building reappears inside the wordmark as the plain
+       0.08–0.34  the wordmark draws itself as a hairline, holds, then crossfades
+       0.32–1.00  the building reappears inside the wordmark as the plain
                   copy fades away                                                  */
     var heroPaths = $$('.hero__logo path');
     heroPaths.forEach(function (p) {
@@ -795,11 +795,11 @@
         .to('.hero__cloud--r', { xPercent: 15, duration: 1 }, 0)
         .to('.hero__content', { yPercent: 20, scale: 0.9, duration: 1 }, 0)
         .to('.hero__content', { autoAlpha: 0, duration: 0.2 }, 0)
-        .to('.hero__logo', { autoAlpha: 1, duration: 0.01 }, 0.1)
-        .to(heroPaths, { strokeDashoffset: 0, duration: 0.3 }, 0.1)
-        .to('.hero__logo', { autoAlpha: 0, duration: 0.2 }, 0.28)
-        .to('.hero__composite', { opacity: 1, duration: 0.1 }, 0.3)
-        .to('.hero__bg > .hero__house', { opacity: 0, duration: 0.1 }, 0.3)
+        .to('.hero__logo', { autoAlpha: 1, duration: 0.01 }, 0.08)
+        .to(heroPaths, { strokeDashoffset: 0, duration: 0.26, ease: 'none' }, 0.08)
+        .to('.hero__logo', { autoAlpha: 0, duration: 0.14 }, 0.34)
+        .to('.hero__composite', { opacity: 1, duration: 0.14 }, 0.32)
+        .to('.hero__bg > .hero__house', { opacity: 0, duration: 0.14 }, 0.32)
         .add(function () {}, 1);
 
       return function () {
