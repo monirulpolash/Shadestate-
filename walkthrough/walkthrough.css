@@ -24,7 +24,10 @@
   --w-ease:cubic-bezier(.22,.61,.24,1);
 
   position:relative;
-  height:600vh;
+  /* the scroll rail: 8.2 screens on a desktop, 6.2 on a phone, so a wheel
+     flick or a thumb swipe moves the camera a short way instead of a whole act */
+  height:820vh;
+  height:820svh;
   background:#111111;
   color:var(--alabaster);
   font-family:var(--sans);
@@ -269,6 +272,7 @@
 
 /* ════════════════════ RESPONSIVE ════════════════════ */
 @media (max-width:860px){
+  #walk{height:620vh;height:620svh}
   #walk .hud__stages{gap:8px}
   #walk .hud__stages li{font-size:7.5px;letter-spacing:.14em}
   #walk .hud__stages li span{display:none}
@@ -286,7 +290,7 @@
   #walk .copy__eyebrow{font-size:8px;letter-spacing:.2em}
   #walk .copy__note{font-size:12px}
   #walk .copy__item--end{top:clamp(72px,16vh,140px)}
-  #walk{height:520vh}
+  #walk{height:620vh;height:620svh}
 }
 
 @media (prefers-reduced-motion:reduce){

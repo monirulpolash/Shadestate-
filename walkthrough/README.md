@@ -1,9 +1,10 @@
 # Casa da Luz — procedural 3D walkthrough
 
-A scroll-driven, cinematic walkthrough of a Shadestate villa. You start far out on a
-gravel drive, travel through the front door, cross a double-height travertine hall with a
-gallery over it, step out through the sliding rear wall onto the pool terrace, and end
-orbiting a two-storey house with a city standing on the horizon behind it.
+A scroll-driven, cinematic walkthrough of a Shadestate villa. You start out on the
+boulevard that runs into the neighbourhood, travel through the front door, cross a
+double-height travertine hall with a gallery over it, step out through the sliding rear
+wall onto the pool terrace, and end orbiting a two-storey house with Dubai standing all
+around it — villas and apartment blocks across the street, the skyline behind them.
 
 The house is 18.7 m wide and 14.4 m deep over two floors: a recessed, entirely glazed
 ground floor under an upper storey that overhangs it by 1.8 m at the front and 1.6 m at
@@ -128,27 +129,52 @@ never repeats because it is driven by world position, not UV.
   a touch of emissive warmth and the same wind sway, with extra dense `mass()` fills where
   the vine is established.
 
-### The land beyond the wall
+### The land beyond the wall — the city round it
 
-The estate stands on a level pad; everything outside it is country. `terrainH(x, z)` is
-the whole of it: a coastal dune field whose long ridges run across the wind, crests narrow
-and troughs broad, built from four sine trains (`duneNoise`) shaped on the distance from
-the estate rectangle. It is zero on and around the pad, grows to 5–9 m by 200 m out, lifts
-the middle distance into a low ridge so the country has a horizon line above the low rear
-wall, and rises another 3 m toward the far horizon so the plain never ends on an edge.
+The estate stands in the middle of Dubai, not on a dune: the level pad runs out across a
+whole neighbourhood, and `terrainH(x, z)` is dead flat across the entire paved grid
+(`TOWN`, 344 × 356 m) before the dunes begin 70–420 m beyond its last street. That is what
+lets streets, plots and towers stand on the ground instead of floating over it.
 
 - **The ground is four quads** round the pool cut-out, each cut from the same two graded
   axes (`XS`, `ZS`: 4 m near the house, 120 m at 2.4 km), so a shared edge carries exactly
   the same vertices and no seam can open between them. One merged draw.
 - **One material carries it all.** `M.meadow` mixes a dune-sand map in by the vertex's own
-  height and a large-scale mottle, and darkens the ground into both faces of the boundary
+  height and by the distance outside the estate wall (a desert city is irrigated in
+  patches, not carpeted green), and darkens the ground into both faces of the boundary
   wall — so there is no line where the lawn hands over to sand, and no wall looks pasted on.
-- **The approach** keeps a level corridor cut through the dunes: the gravel drive to the
-  gate, then a tarmac lane with gravel shoulders curving out of sight (the same polyline,
-  `APPROACH`, is both the road and the corridor the land is shaped around).
+- **The approach** keeps a level corridor cut through whatever it crosses: gravel inside
+  the gate, then a full boulevard — asphalt, sidewalks and a dashed centre line — out
+  through the grid (the same polyline, `APPROACH`, is both the road and the corridor the
+  land is shaped around).
 - **Mid-ground planting:** 19 date palms at 40–160 m, each a leaning trunk and eleven
-  ribbon fronds (~250 triangles, silhouette only), and 78 scrub bushes tinted into the
-  dune tones — all merged into the palm and foliage batching that was already there.
+  ribbon fronds (~250 triangles, silhouette only), and scrub out past the city edge — all
+  merged into the palm and foliage batching that was already there.
+
+### The neighbourhood (section 10b)
+
+`STREETS` is the whole city grid in one table: four avenues round the estate, four cross
+streets, and for each one the asphalt half-width, the sidewalk width and whether it is a
+main street. Everything derives from it — the asphalt, the 15 cm kerbs, the sidewalks,
+the dashed centre line, the lamp and palm spacing, the zebra crossing at the villa's gate,
+and the `onStreet()` test that keeps grass off the paving.
+
+The grid's 25 cells are cut into ~30 m plots. Each plot gets a walled villa (`villaAt`: two
+storeys, a glass band, a roof terrace and parapet, a garden wall and its gate), or a
+low/mid-rise block (`towerAt`: a two-storey podium, a shaft with the procedural facade,
+roof plant and a corner fin), plus a palm or two. Rules:
+
+- **Nothing inside 74 m of the house.** Those plots keep their garden walls, gates and
+  palms but no house, so the orbit at 48 m never passes through a roof.
+- **Nothing on the boulevard** within 17 m of its centre line, and no lamp or palm in it.
+- **Heights fall as the distance does.** Inside 150 m it is almost all villas; blocks start
+  a street back, and the middle ground (190–330 m) is a ring of two-to-ten storey blocks
+  that carries the eye from the neighbourhood out to the towers.
+
+The blocks' windows are one procedural facade texture, four bays by four floors per tile
+(`1 / 14` world UV), in four tints — warm sand, white, terracotta and a cool office ribbon
+— so a hundred buildings share a handful of draws. All of it is merged into the batches
+that were already there; the whole neighbourhood is about a dozen draw calls.
 
 ### The estate line and the terrace planters
 
@@ -225,9 +251,12 @@ renders straight to the canvas) and the CSS grade takes over.
 
 ### Scroll
 
-Rendered progress eases with `p += (target - p) * (1 - exp(-11 * dt))` — frame-rate
-independent, so it feels identical at 30, 60 or 144 fps. The canvas is `sticky` inside a
-`600vh` section and is paused by `IntersectionObserver` when off-screen.
+Rendered progress eases with `p += (target - p) * (1 - exp(-3.8 * dt))` — frame-rate
+independent, so it feels identical at 30, 60 or 144 fps — and the canvas is `sticky`
+inside an `820vh` section (`620svh` on a phone) and is paused by `IntersectionObserver`
+when off-screen. The long rail is the point: one wheel flick or one thumb swipe carries
+the camera a short way down the boulevard instead of racing through a whole act, and the
+damping turns every jump in scroll position into a glide.
 
 ---
 
@@ -291,8 +320,11 @@ const SKY  = { x0: -8.4, x1: -2.8, z0: -5.2, z1: 0.9 };                    // ha
   door (z = G.z1), the rear slider's open bay (x 0…1.6) and the orbit radius all depend on
   it.
 
-The city is its own block, section 5c: `N` towers over x ±340 m at z −205…−450 m, heights
-8–26 m plus crowns, four landmarks to 56 m, then `setCity()` toggles both instanced meshes.
+The city is its own block, section 5c: three rings and a far band all the way round the
+house — 330–520 m, 580–880 m, 930–1450 m and 1550–2450 m — with a stepped Burj-shaped
+supertall off the approach axis, a pair of slim twins to the north-west, a 640 m landmark
+due west of the pool terrace and six more spires filling the bowl. `setCity()` toggles
+both instanced meshes (the far skyline); the neighbourhood itself always stands.
 The shader mixes each fragment toward `uHaze` below ~8 m of height, which is what keeps the
 bases from standing on the lawn; `cityMood()` re-tints it per sky preset.
 
@@ -334,7 +366,7 @@ When you are ready, this is the whole integration:
    `#9A7B56`, `#E6DFD3`), so no restyling is needed. If the template already loads those
    fonts from Google, delete `walkthrough/fonts.css` and skip step 2's second line.
 
-7. **Beware:** the section is `600vh` tall on purpose (the scroll rail). If the template's
+7. **Beware:** the section is `820vh` tall on purpose (the scroll rail). If the template's
    scroll snapping or smooth-scroll library re-writes `transform` on `body` or a wrapper,
    the sticky canvas will break — disable it for this section.
 
@@ -389,7 +421,7 @@ Controls, in plain words:
 | Look | **Grass** | Density of the meadow, 0.15–1. Lower is cheaper. |
 | Look | **Water ripples** | Strength of the pool's surface movement, 0–2. |
 | Look | **Corner palms** | The four date palms on the four sides of the house, on/off. |
-| Look | **City skyline** | The distant skyline beyond the pool, on/off. |
+| Look | **City skyline** | The far rings of towers all the way round, on/off. The neighbourhood the villa stands in always stays. |
 | Performance | **Quality** | Auto (phones get the lite tier) / High / Lite. Changing this rebuilds the scene. |
 | Performance | **Pause off-screen** | Stops rendering when the section leaves the viewport. Leave it on. |
 | Performance | **Max pixel ratio** | Cap on the drawing buffer, 1–2. 1.5 is already crisp for this render. |
