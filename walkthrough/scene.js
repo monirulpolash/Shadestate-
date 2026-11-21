@@ -1406,13 +1406,13 @@ export async function createWalkthrough(container, options = {}) {
     sun.position.copy(SUN_DIR).multiplyScalar(120);
     sun.target.position.set(-1, 0, -1);
     sun.castShadow = true;
-    const SM = MOBILE ? 1024 : (TABLET ? 1280 : 1536);
+    const SM = MOBILE ? 1024 : (TABLET ? 1536 : 2048);
     sun.shadow.mapSize.set(SM, SM);
-    sun.shadow.camera.left = -33;
-    sun.shadow.camera.right = 33;
-    sun.shadow.camera.top = 33;
-    sun.shadow.camera.bottom = -33;
-    sun.shadow.camera.near = 40;
+    sun.shadow.camera.left = -44;
+    sun.shadow.camera.right = 44;
+    sun.shadow.camera.top = 44;
+    sun.shadow.camera.bottom = -44;
+    sun.shadow.camera.near = 34;
     sun.shadow.camera.far = 220;
     sun.shadow.bias = -0.00035;
     sun.shadow.normalBias = 0.03;
@@ -2109,8 +2109,31 @@ export async function createWalkthrough(container, options = {}) {
        far country its shape; separate hill geometry only ever drew a bright
        rim above it or poked through it as a brown patch.                    */
 
+    /* ── the estate line ────────────────────────────────────────────────────
+       One rectangle holds the villa, its lawn, the pool terrace and the four
+       palms, with a single gate where the drive crosses it. The wall, its
+       planters and the grass it keeps off are all derived from these numbers.
+       ───────────────────────────────────────────────────────────────────── */
+    const ESTATE = {
+      x0: -27.5, x1: 31.0,        // west / east wall centre-lines
+      z0: -34.5, z1: 25.0,        // rear / front
+      t: 0.36,                    // panel thickness
+      h: 2.00,                    // front + side walls, to the top of the coping
+      hr: 1.35,                   // the rear rail, low enough for the skyline
+      gate: { a: -0.9, b: 10.1 }  // the clear entrance, centred on the drive
+    };
+
+    /** Inside the strip the wall stands on: keeps grass off its footprint. */
+    const estateBand = (x, z, pad = 0.52) => {
+      if (x < ESTATE.x0 - pad || x > ESTATE.x1 + pad || z < ESTATE.z0 - pad || z > ESTATE.z1 + pad) return false;
+      const edge = Math.min(Math.abs(x - ESTATE.x0), Math.abs(x - ESTATE.x1),
+                            Math.abs(z - ESTATE.z0), Math.abs(z - ESTATE.z1));
+      return edge < pad;
+    };
+
     // terrace + pool
     const POOL = { x0: -3.2, x1: 8.4, z0: -19.6, z1: -9.8, w: -0.34 };
+
     addBox(22, 0.4, 4.0, 1.5, -0.2, -7.9, M.stonePale, { uv: 0.42 });
     addBox(21, 0.42, 0.3, 1.5, -0.2, -6.05, M.stonePale, { uv: 0.42 });
     const pw = 0.34;
@@ -3041,6 +3064,191 @@ export async function createWalkthrough(container, options = {}) {
     addBox(0.5, 0.05, 0.5, 6.45, 0.36, -8.55, M.stonePale, { uv: 0.5 });
 
     /* ─────────────────────────────────────────────────────────────────────
+       6b · the estate wall and the terrace planters
+       A travertine boundary round the compound: a plinth, a warm ashlar panel
+       with recessed bronze louver bays, stepped piers and a crisp pale coping
+       on the three sides the eye comes in over, and a low, open-topped wall at
+       the rear so the pool terrace keeps its skyline. One gate opening where
+       the drive crosses it, framed by two stone piers with a warm light slot.
+
+       Everything is batched into the house's own materials, so the whole
+       estate wall costs a single extra draw call; the flowers in the terrace
+       troughs ride the bougainvillea's instanced cards further down.
+       ───────────────────────────────────────────────────────────────────── */
+    const PLANTERS = [
+      /* the deck edge facing the water, west of the loungers */
+      { x: -8.6, z: -9.06, y: 0, w: 1.55, d: 0.60, h: 0.62, spread: 0.92, pick: 0, count: 170 },
+      { x: -6.6, z: -9.06, y: 0, w: 1.55, d: 0.60, h: 0.62, spread: 0.92, pick: 2, count: 170 },
+      { x: -4.6, z: -9.06, y: 0, w: 1.55, d: 0.60, h: 0.62, spread: 0.92, pick: 4, count: 170 },
+      /* the deck's east end, turned across the plan */
+      { x: 10.9, z: -7.0, y: 0, w: 0.60, d: 1.60, h: 0.62, spread: 0.92, pick: 1, count: 170 },
+      /* the far edge of the pool, seen across the water from the terrace */
+      { x: -2.2, z: -20.35, y: -0.05, w: 1.55, d: 0.60, h: 0.62, spread: 0.90, pick: 3, count: 170 },
+      { x: 0.2, z: -20.35, y: -0.05, w: 1.55, d: 0.60, h: 0.62, spread: 0.90, pick: 5, count: 170 },
+      { x: 2.6, z: -20.35, y: -0.05, w: 1.55, d: 0.60, h: 0.62, spread: 0.90, pick: 0, count: 170 },
+      { x: 4.9, z: -20.35, y: -0.05, w: 1.75, d: 0.60, h: 0.62, spread: 0.90, pick: 2, count: 170 },
+      /* two drums at the pool's west end */
+      { kind: 'round', r: 0.48, x: -4.15, z: -13.4, y: -0.05, h: 0.66, spread: 0.86, pick: 1, count: 150 },
+      { kind: 'round', r: 0.40, x: -4.05, z: -17.2, y: -0.05, h: 0.58, spread: 0.78, pick: 4, count: 130 },
+      /* the rear balcony, over the terrace */
+      { x: -5.0, z: -7.24, y: F2, w: 2.55, d: 0.48, h: 0.46, spread: 0.58, pick: 3, count: 150 },
+      /* the roof deck: a trough on its south edge, and the two stone cubes
+         already on the deck, planted */
+      { x: 7.4, z: 3.0, y: DECK, w: 2.40, d: 0.55, h: 0.55, spread: 0.58, pick: 5, count: 170 },
+      { kind: 'existing', x: 5.2, z: 2.6, y: DECK, w: 0.66, d: 0.66, h: 0.50, spread: 0.44, pick: 0, count: 80 },
+      { kind: 'existing', x: 5.2, z: -5.2, y: DECK, w: 0.66, d: 0.66, h: 0.50, spread: 0.44, pick: 2, count: 80 }
+    ];
+
+    {
+      const T = ESTATE.t, PL = 0.30;
+      const CAP = 0.18, CAP_D = T + 0.26;              // the coping overhangs 0.13 a side
+      const REV = 0.06;                                 // the shadow reveal under it
+      const BAY = { y0: 0.94, y1: 1.74 };
+      const REAR_BAND = 1.30, REAR_TOP = 1.35;
+      const GA = ESTATE.gate.a, GB = ESTATE.gate.b;
+      const CORNER = 0.50;                              // half a corner pier
+
+      /* the wall's own stone: a shade warmer and deeper than the villa's, so
+         the boundary reads as an older wall round a pale new house */
+      const wallStone = weather(new THREE.MeshStandardMaterial({
+        map: tex(stoneA.map, { srgb: true }),
+        normalMap: tex(stoneA.normal),
+        roughnessMap: tex(stoneA.rough),
+        color: 0xeadfca,
+        roughness: 1.0, metalness: 0.0,
+        normalScale: new THREE.Vector2(1.55, 1.55),
+        envMapIntensity: 0.44
+      }), { grime: 0.10, streak: 0.18, base: 0.26, scale: 0.34 });
+
+      /* place a box in run coordinates: u along the run, y up, d across */
+      const put = (axis, at, u, y, lu, ly, ld, mat, opt) => {
+        if (axis === 'x') addBox(lu, ly, ld, u, y, at, mat, opt);
+        else addBox(ld, ly, lu, at, y, u, mat, opt);
+      };
+
+      /* the louver ribbon: one recessed band of bronze fins under the coping,
+         running the whole wall between the piers. A continuous slot reads as
+         architecture; individual bays read as windows.                     */
+      const ribbon = (axis, at, a, b, y0, y1) => {
+        const w = b - a, c = (a + b) / 2;
+        put(axis, at, c, (y0 + y1) / 2, w - 0.02, y1 - y0, T - 0.24, M.dark, { cast: false });
+        const n = Math.max(3, Math.floor(w / 0.128));
+        const span = (n - 1) * 0.128;
+        for (let i = 0; i < n; i++) {
+          put(axis, at, c - span / 2 + i * 0.128, (y0 + y1) / 2,
+            0.046, y1 - y0 - 0.03, T - 0.10, M.bronze, { uv: 0.5 });
+        }
+      };
+
+      /* a pier: a stepped vertical, its pale cap proud of the coping */
+      const pier = (axis, at, u, h, w = 0.62) => {
+        put(axis, at, u, h / 2, w, h, T + 0.22, wallStone, { uv: 0.4 });
+        put(axis, at, u, h + 0.05, w + 0.16, 0.10, T + 0.34, M.stonePale, { uv: 0.42 });
+      };
+
+      /* one straight run of the tall wall: plinth, panel, ribbon, coping */
+      function run(axis, at, from, to, h) {
+        const dir = to > from ? 1 : -1, L = Math.abs(to - from);
+        const mid = from + dir * L / 2;
+        const top = h - CAP - REV;                     // 1.76
+        put(axis, at, mid, (PL - 0.36) / 2, L, PL + 0.36, T + 0.20, M.stonePale, { uv: 0.42 });
+        put(axis, at, mid, (PL + top - 0.22) / 2, L, top - 0.22 - PL, T, wallStone, { uv: 0.4 });
+        put(axis, at, mid, top + REV / 2, L, REV, T - 0.15, wallStone, { uv: 0.4 });
+        put(axis, at, mid, top + REV + CAP / 2, L, CAP, CAP_D, M.stonePale, { uv: 0.42 });
+
+        const nSeg = Math.max(1, Math.round(L / 6.1)), segL = L / nSeg;
+        for (let i = 0; i < nSeg; i++) {
+          const a = from + dir * (segL * i + 0.33), b = from + dir * (segL * (i + 1) - 0.33);
+          if (Math.abs(b - a) > 0.5) ribbon(axis, at, Math.min(a, b), Math.max(a, b), top - 0.22, top);
+        }
+        for (let i = 1; i < nSeg; i++) pier(axis, at, from + dir * segL * i, h + 0.14);
+      }
+
+      /* the rear: a low stone wall with a bronze cap and tall piers, open to
+         the sky between them, so the water, the meadow and the city beyond
+         stay one view. A wall seen along its length reads solid whatever its
+         louvres do; only a real void keeps the horizon.                    */
+      function rearRun(from, to) {
+        const at = ESTATE.z0, L = Math.abs(to - from), mid = (from + to) / 2;
+        put('x', at, mid, (PL - 0.36) / 2, L, PL + 0.36, T + 0.20, M.stonePale, { uv: 0.42 });
+        put('x', at, mid, (PL + REAR_BAND) / 2, L, REAR_BAND - PL, T, M.stonePale, { uv: 0.42 });
+        // a bronze reveal runs the wall at waist height, and a thin cap on top
+        put('x', at, mid, 0.66, L, 0.05, T - 0.05, M.bronze, { cast: false });
+        put('x', at, mid, REAR_TOP - 0.025, L, 0.05, T + 0.02, M.bronze, { cast: false });
+
+        const nSeg = Math.max(1, Math.round(L / 6.1)), segL = L / nSeg;
+        for (let i = 1; i < nSeg; i++) pier('x', at, from + segL * i, 1.50, 0.55);
+      }
+
+      /* a corner pier reconciles the 2.06 m side with the low rear */
+      function cornerPier(x, z) {
+        addBox(1.00, 2.58, 1.00, x, 0.99, z, wallStone, { uv: 0.4 });
+        addBox(1.02, 0.03, 1.02, x, 1.80, z, M.bronze, { cast: false });
+        addBox(1.14, 0.10, 1.14, x, 2.33, z, M.stonePale, { uv: 0.42 });
+      }
+
+      /* the gate piers: 2.9 m of stone, a bronze joint, a warm slot inside */
+      const gateGlow = M.glow.clone();
+      gateGlow.opacity = 0.20;
+      function gatePier(x, s) {
+        addBox(1.42, 0.80, 1.22, x, -0.06, ESTATE.z1, M.stonePale, { uv: 0.42 });
+        addBox(1.30, 2.34, 1.10, x, 1.61, ESTATE.z1, wallStone, { uv: 0.4 });
+        addBox(1.32, 0.025, 1.12, x, 1.10, ESTATE.z1, M.bronze, { cast: false });
+        addBox(1.32, 0.025, 1.12, x, 2.28, ESTATE.z1, M.bronze, { cast: false });
+        addBox(1.48, 0.14, 1.28, x, 2.85, ESTATE.z1, M.stonePale, { uv: 0.42 });
+        const fx = x + s * 0.66;
+        addBox(0.035, 1.54, 0.19, fx, 1.62, ESTATE.z1, M.bronze, { uv: 0.5 });
+        addBox(0.03, 1.38, 0.075, fx + s * 0.026, 1.62, ESTATE.z1, warmLamp, { cast: false, receive: false });
+        const q = new THREE.PlaneGeometry(0.64, 2.0);
+        q.rotateY(s > 0 ? Math.PI / 2 : -Math.PI / 2);
+        q.translate(fx + s * 0.05, 1.62, ESTATE.z1);
+        queue(q, gateGlow, false, false, 4);
+      }
+
+      /* travertine troughs: a bronze reveal under the rim, soil just below it */
+      function planterHard(P) {
+        if (P.kind === 'existing') return;
+        const y0 = P.y, h = P.h;
+        if (P.kind === 'round') {
+          const body = new THREE.CylinderGeometry(P.r, P.r, h, 26);
+          body.translate(P.x, y0 + h / 2, P.z);
+          queue(body, wallStone, true, true);
+          const lip = new THREE.CylinderGeometry(P.r, P.r, 0.07, 26);
+          lip.translate(P.x, y0 + h - 0.035, P.z);
+          queue(lip, M.stonePale, true, true);
+          const groove = new THREE.CylinderGeometry(P.r + 0.002, P.r + 0.002, 0.018, 26);
+          groove.translate(P.x, y0 + h - 0.079, P.z);
+          queue(groove, M.dark, true, true);
+          const soil = new THREE.CylinderGeometry(P.r - 0.055, P.r - 0.055, 0.05, 22);
+          soil.translate(P.x, y0 + h - 0.045, P.z);
+          queue(soil, M.dark, false, true);
+        } else {
+          addBox(P.w, h, P.d, P.x, y0 + h / 2, P.z, wallStone, { uv: 0.5 });
+          addBox(P.w, 0.07, P.d, P.x, y0 + h - 0.035, P.z, M.stonePale, { uv: 0.5 });
+          addBox(P.w + 0.004, 0.018, P.d + 0.004, P.x, y0 + h - 0.079, P.z, M.dark, { uv: 0.5 });
+          addBox(P.w - 0.12, 0.05, P.d - 0.12, P.x, y0 + h - 0.045, P.z, M.dark, { cast: false });
+        }
+      }
+
+      /* the four sides, a gate pier at each side of the entrance */
+      run('x', ESTATE.z1, ESTATE.x0 + CORNER, GA, ESTATE.h);
+      run('x', ESTATE.z1, GB, ESTATE.x1 - CORNER, ESTATE.h);
+      run('z', ESTATE.x0, ESTATE.z0 + CORNER, ESTATE.z1 - CORNER, ESTATE.h);
+      run('z', ESTATE.x1, ESTATE.z0 + CORNER, ESTATE.z1 - CORNER, ESTATE.h);
+      rearRun(ESTATE.x0 + CORNER, ESTATE.x1 - CORNER);
+
+      cornerPier(ESTATE.x0, ESTATE.z0);
+      cornerPier(ESTATE.x0, ESTATE.z1);
+      cornerPier(ESTATE.x1, ESTATE.z0);
+      cornerPier(ESTATE.x1, ESTATE.z1);
+
+      gatePier(GA - 0.65, 1);
+      gatePier(GB + 0.65, -1);
+
+      PLANTERS.forEach(planterHard);
+    }
+
+    /* ─────────────────────────────────────────────────────────────────────
        7 · interior
        Ground floor: one oak plain from the entry to the rear glass, the hall
        open the full 8 m to a skylight, the stair hanging in that void, and the
@@ -3521,9 +3729,9 @@ export async function createWalkthrough(container, options = {}) {
       }
 
       /** One woody runner: thickness taper, leaves along it, bracts hanging off. */
-      function runner(pts, { r = 0.038, density = 1, droop = 0.55, spread = 0.34, pick = 0 } = {}) {
+      function runner(pts, { r = 0.038, density = 1, droop = 0.55, spread = 0.34, pick = 0, mat = M.bark } = {}) {
         const curve = new THREE.CatmullRomCurve3(pts.map(p => new THREE.Vector3(p[0], p[1], p[2])), false, 'centripetal', 0.5);
-        queue(limb(curve, { r0: r, r1: r * 0.4, radial: 6, tubular: 18, tile: 0.45 }), M.bark, true, false);
+        queue(limb(curve, { r0: r, r1: r * 0.4, radial: 6, tubular: 18, tile: 0.45 }), mat, true, false);
         const len = curve.getLength();
         const n = Math.max(5, Math.round(len * 9 * density));
         for (let i = 0; i <= n; i++) {
@@ -3621,6 +3829,61 @@ export async function createWalkthrough(container, options = {}) {
       mass(2.12, 2.5, 0.4, 3.7, -6.42, -6.2, MOBILE ? 80 : 200, 1);       // rear wall
       mass(-7.2, -6.7, 0.4, 3.7, -6.42, -6.2, MOBILE ? 70 : 180, 5);      // rear wall, west
 
+      /* ── the terrace and roof-deck planters, planted ──────────────────────
+         A green body of leaves fills each trough, and the flowers arrive as
+         racemes: tight balls of bracts over the crown and the outer shoulder,
+         the way bougainvillea actually flowers, plus two canes spilling over
+         the stone. Same instanced cards as the house, so fifteen planted
+         troughs cost no new draw.                                          */
+      const pf = (a, b) => a + (b - a) * rnd();
+      for (const P of PLANTERS) {
+        const rim = P.y + P.h;
+        const rx = (P.kind === 'round' ? P.r * 1.55 : P.w) * 0.5;
+        const rz = (P.kind === 'round' ? P.r * 1.55 : P.d) * 0.5;
+        const k = MOBILE ? 0.5 : 1;
+        /* the dome of the planting: high at the centre, low at the stone */
+        const dome = (q) => rim + (0.10 + 0.90 * (1 - q * q)) * P.spread;
+
+        /* the green body */
+        const nl = Math.round(P.count * 0.9 * k);
+        for (let i = 0; i < nl; i++) {
+          const a = rnd() * 6.283, q = Math.pow(rnd(), 0.62);
+          vleaf(P.x + Math.cos(a) * q * rx, dome(q) * pf(0.32, 1),
+                P.z + Math.sin(a) * q * rz, pf(0.075, 0.155));
+        }
+
+        /* racemes: tight balls of bracts, denser on the sunny shoulder */
+        const nc = Math.max(5, Math.round((P.w || P.r * 2) * 3.6));
+        for (let c = 0; c < nc; c++) {
+          const a = rnd() * 6.283, q = Math.pow(rnd(), 0.45);
+          const cx = P.x + Math.cos(a) * q * rx * 0.94;
+          const cz = P.z + Math.sin(a) * q * rz * 0.94;
+          const cy = dome(q) * pf(0.66, 1.0);
+          const n = Math.round(pf(17, 30) * k) + 6;
+          for (let i = 0; i < n; i++) {
+            const th = rnd() * 6.283, ph = Math.acos(pf(-0.7, 1));
+            const rad = pf(0.012, 0.115);
+            bract(cx + Math.sin(ph) * Math.cos(th) * rad * 1.2,
+                  cy + Math.cos(ph) * rad * 0.8,
+                  cz + Math.sin(ph) * Math.sin(th) * rad * 1.2,
+                  pf(0.055, 0.108), P.pick + i + c);
+          }
+          if (c % 2 === 0) vleaf(cx, cy - 0.05, cz, pf(0.08, 0.15));
+        }
+
+        /* two canes arching out of the soil and spilling over the rim */
+        for (let k2 = 0; k2 < 2; k2++) {
+          const a = rnd() * 6.283, sx = Math.cos(a), sz = Math.sin(a);
+          const r0 = pf(0.06, 0.22);
+          runner([
+            [P.x + sx * r0, rim - 0.18, P.z + sz * r0],
+            [P.x + sx * rx * 0.58, rim + P.spread * 0.70, P.z + sz * rz * 0.58],
+            [P.x + sx * rx * 1.22, rim + P.spread * 0.48, P.z + sz * rz * 1.22],
+            [P.x + sx * rx * 1.66, rim - 0.08, P.z + sz * rz * 1.66]
+          ], { r: 0.016, density: 0.9, droop: 0.28, spread: 0.14, pick: P.pick + 3, mat: M.oakDark });
+        }
+      }
+
       const bracts = new THREE.InstancedMesh(bGeo, bractMat, bMats.length);
       bMats.forEach((m, i) => { bracts.setMatrixAt(i, m); bracts.setColorAt(i, bCols[i]); });
       bracts.instanceMatrix.needsUpdate = true;
@@ -3679,6 +3942,7 @@ export async function createWalkthrough(container, options = {}) {
 
       const paved = (x, z) => {
         if (driveDist(x, z) < 0.22) return true;
+        if (estateBand(x, z)) return true;                                   // the wall's footprint
         if (x > G.x0 - 1.2 && x < WING.x1 + 1.2 && z > G.z0 - 1.2 && z < S.z1 + 1.3) return true;
         if (x > -4.4 && x < 4.2 && z > S.z1 && z < 12.2) return true;   // the entrance walk
         if (x > -9.8 && x < 12.8 && z > -10.4 && z < -5.5) return true;
@@ -5187,6 +5451,8 @@ const handle = {
     return true;
   },
   camera, scene, renderer, section, sun, waterMat, dust, THREE, materials: M, build: BUILD,
+  /* the site, for the checks that have to know where the walls are */
+  site: { estate: ESTATE, planters: PLANTERS },
   get stats() {
     return {
       calls: renderer.info.render.calls,

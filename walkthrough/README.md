@@ -128,6 +128,36 @@ never repeats because it is driven by world position, not UV.
   a touch of emissive warmth and the same wind sway, with extra dense `mass()` fills where
   the vine is established.
 
+### The estate line and the terrace planters
+
+`ESTATE` (section 5) is one rectangle round the villa, its lawn, the pool terrace and the
+four palms — `x0 −27.5, x1 31.0, z0 −34.5, z1 25.0` — with a single gate opening where
+the gravel drive crosses the front, `gate: { a: −0.9, b: 10.1 }`, 11 m clear and centred on
+the drive. Everything the boundary needs is derived from those numbers: the wall runs, the
+grass it keeps off (`estateBand`), the shot check.
+
+The wall itself (section 6b) is travertine on a sunken pale plinth: a solid ashlar panel
+with a **continuous recessed bronze louver ribbon** under the coping (individual bays read
+as windows; one long slot reads as architecture), a deeper pale coping with a shadow
+reveal, and stepped piers every ~6.1 m whose caps stand proud of the coping line. The
+front and sides finish at 2.00 m, the piers at 2.24 m. The gate is framed by two 2.9 m
+stone piers with a warm light slot on the inner face.
+
+The rear is deliberately different: a 1.35 m stone wall with a bronze cap and 1.65 m piers,
+open to the sky between them. A wall seen along its length reads solid whatever its
+louvres do, so only a real void keeps the horizon — this is what lets the pool terrace and
+the interior's rear glass hold the city beyond.
+
+Fourteen travertine troughs and drums (`PLANTERS`) sit on the deck edge, along the far
+side of the pool, on the rear balcony and on the roof deck, planted with a green body and
+racemes of bracts from the same instanced bougainvillea cards as the house — so fifteen
+planted troughs cost no new draw call.
+
+The whole boundary adds **one** draw call (its own warmer stone) and about 5k triangles.
+`window.__shade.site` exposes `{ estate, planters }` for the sweep in
+`scratch/bounds/camcheck.py`, which walks the take at 2,000 steps on desktop and phone and
+reports the closest approach to every wall and planter (currently 2.67 m).
+
 ### Geometry that you can actually walk through
 
 `addWall()` splits a wall on every hole edge, so the door, the windows and the clerestories
