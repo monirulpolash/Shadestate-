@@ -3991,6 +3991,228 @@ scene.background = null;
     addBox(0.46, 0.34, 0.46, 6.45, 0.17, -8.55, M.stonePale, { uv: 0.5 });
     addBox(0.5, 0.05, 0.5, 6.45, 0.36, -8.55, M.stonePale, { uv: 0.5 });
 
+    /* ── the parking court: a cantilevered carport beside the drive ───────
+       Two bays on a paved apron east of the drive's last bend, under a thin
+       travertine slab that cantilevers off two bronze columns at its rear
+       edge. Bronze louver fins under the slab, recessed warm downlights in
+       it, pale kerbs at the bay heads. Everything rides the house's own
+       materials, so the whole court costs no extra draw call.              */
+    {
+      const CX = 9.6, CZ = 14.5, CW = 6.6, CD = 5.6;
+      // paved apron with a pale border, on the lawn between drive and wall
+      addPlane(CW + 0.9, CD + 0.9, CX, 0.045, CZ, M.gravel, { uv: 0.5 });
+      addPlane(CW, CD, CX, 0.075, CZ, M.pave, { uv: 0.5 });
+      // crisp bronze border strips
+      addBox(CW + 0.12, 0.05, 0.09, CX, 0.095, CZ - CD / 2 - 0.03, M.bronze, { cast: false });
+      addBox(CW + 0.12, 0.05, 0.09, CX, 0.095, CZ + CD / 2 + 0.03, M.bronze, { cast: false });
+      addBox(0.09, 0.05, CD + 0.12, CX - CW / 2 - 0.03, 0.095, CZ, M.bronze, { cast: false });
+      addBox(0.09, 0.05, CD + 0.12, CX + CW / 2 + 0.03, 0.095, CZ, M.bronze, { cast: false });
+      // the centre line and the two bay marks
+      addBox(0.08, 0.012, CD - 0.6, CX, 0.088, CZ, M.line, { cast: false });
+      addBox(0.08, 0.012, CD - 0.6, CX - CW / 4, 0.088, CZ, M.line, { cast: false });
+      addBox(0.08, 0.012, CD - 0.6, CX + CW / 4, 0.088, CZ, M.line, { cast: false });
+      // wheel-stop kerbs at the north bay heads
+      for (const kx of [CX - CW / 4, CX + CW / 4]) {
+        addBox(1.7, 0.13, 0.16, kx, 0.145, CZ - CD / 2 + 0.35, M.stonePale, { uv: 0.5 });
+      }
+      // two bronze columns at the south edge, the slab cantilevers north
+      for (const cxx of [CX - CW / 2 + 0.55, CX + CW / 2 - 0.55]) {
+        addBox(0.17, 2.9, 0.17, cxx, 1.45, CZ + CD / 2 - 0.35, M.bronze, { uv: 0.5 });
+        contactShadow(cxx, CZ + CD / 2 - 0.35, 0.8, 0.8, true, 0.05);
+      }
+      // the slab, its fascia, and the louver fins under it
+      addBox(CW + 0.8, 0.16, CD + 0.6, CX, 3.02, CZ, M.stonePale, { uv: 0.42 });
+      addBox(CW + 0.86, 0.07, CD + 0.66, CX, 2.90, CZ, M.bronze, { cast: false });
+      for (let zz = CZ - CD / 2 + 0.35; zz <= CZ + CD / 2 - 0.3; zz += 0.16) {
+        addBox(CW + 0.4, 0.045, 0.07, CX, 2.80, zz, M.bronze, { cast: false });
+      }
+      // recessed warm downlights in the soffit
+      for (const lx of [CX - CW / 4, CX + CW / 4]) {
+        addBox(0.14, 0.02, 0.14, lx, 2.925, CZ - 0.6, warmLamp, { cast: false, receive: false });
+      }
+      const carGlow = M.glow.clone();
+      carGlow.opacity = 0.14;
+      const cg = new THREE.PlaneGeometry(CW, CD);
+      cg.rotateX(-Math.PI / 2);
+      cg.translate(CX, 2.88, CZ);
+      queue(cg, carGlow, false, false, 4);
+      contactShadow(CX, CZ, CW + 1, CD + 1, true, 0.03);
+    }
+
+    /* ── the wellness pavilion west of the pool ──────────────────────────
+       One low glass-and-travertine volume: the west half a cedar-slatted
+       sauna with an amber interior glow, the east half a glass-walled gym
+       with dark-bronze equipment silhouettes. A stone slab roof, a pale
+       apron, and stepping stones back to the terrace.                      */
+    {
+      const PX = -11.4, PZ = -11.9, PW = 5.4, PD = 3.8, PH = 2.75;
+      addPlane(PW + 1.3, PD + 1.5, PX, 0.04, PZ, M.pave, { uv: 0.5 });
+      addPlane(PW + 1.34, PD + 1.54, PX, 0.022, PZ, M.gravel, { uv: 0.5 });
+      // travertine end walls, glazed long sides, slab roof on a bronze reveal
+      addWall({ axis: 'z', at: PX - PW / 2, from: PZ - PD / 2, to: PZ + PD / 2, y0: 0.06, y1: PH, thick: 0.22, mat: M.stone, uv: 0.45 });
+      addWall({ axis: 'z', at: PX + PW / 2, from: PZ - PD / 2, to: PZ + PD / 2, y0: 0.06, y1: PH, thick: 0.22, mat: M.stone, uv: 0.45 });
+      // the dividing pier between sauna and gym
+      addBox(0.24, PH, 0.24, PX, PH / 2, PZ - PD / 2 + 0.3, M.stone, { uv: 0.45 });
+      addBox(0.24, PH, 0.24, PX, PH / 2, PZ + PD / 2 - 0.3, M.stone, { uv: 0.45 });
+      // glazed sides, bronze frames, on both long faces
+      for (const sgn of [-1, 1]) {
+        const zz = PZ + sgn * PD / 2;
+        const g = new THREE.Mesh(new THREE.PlaneGeometry(PW - 0.5, PH - 0.35), M.glass);
+        g.position.set(PX, (0.06 + PH) / 2 + 0.08, zz);
+        g.renderOrder = 3;
+        world.add(g);
+        addBox(PW - 0.5, 0.07, 0.12, PX, PH - 0.05, zz, M.bronze, { uv: 0.5 });
+        addBox(PW - 0.5, 0.07, 0.12, PX, 0.10, zz, M.bronze, { uv: 0.5 });
+        for (const fx of [PX - (PW - 0.5) / 2, PX, PX + (PW - 0.5) / 2]) {
+          addBox(0.07, PH - 0.2, 0.10, fx, (PH + 0.1) / 2, zz, M.bronze, { uv: 0.5 });
+        }
+      }
+      addBox(PW + 0.5, 0.14, PD + 0.5, PX, PH + 0.07, PZ, M.stonePale, { uv: 0.42 });
+      addBox(PW + 0.56, 0.05, PD + 0.56, PX, PH - 0.02, PZ, M.bronze, { cast: false });
+
+      // the sauna half: cedar slats inside the west cell, an amber glow
+      {
+        const sx = PX - PW / 4;
+        for (let zz = PZ - PD / 2 + 0.45; zz <= PZ + PD / 2 - 0.35; zz += 0.13) {
+          addBox(PW / 2 - 0.5, PH - 0.4, 0.05, sx, (PH + 0.1) / 2, zz, M.oakVert, { uv: 0.7, cast: false });
+        }
+        // the bench tier
+        addBox(PW / 2 - 0.6, 0.09, 0.55, sx - 0.35, 0.62, PZ, M.oakDark, { uv: 0.6 });
+        addBox(PW / 2 - 0.6, 0.09, 0.55, sx - 0.35, 1.06, PZ, M.oakDark, { uv: 0.6 });
+        for (const bz of [PZ - 0.24, PZ + 0.24]) {
+          addBox(0.06, 0.62, 0.06, sx - 0.9, 0.31, bz, M.bronze, { cast: false });
+        }
+        addBox(0.30, 0.02, 0.30, sx + 0.6, PH - 0.30, PZ, warmLamp, { cast: false, receive: false });
+        const sg = M.glow.clone();
+        sg.opacity = 0.30;
+        const sq = new THREE.PlaneGeometry(PW / 2, PD);
+        sq.rotateX(-Math.PI / 2);
+        sq.translate(sx, PH - 0.16, PZ);
+        queue(sq, sg, false, false, 4);
+      }
+      // the gym half: rack, bench and treadmill as bronze/dark silhouettes
+      {
+        const gx = PX + PW / 4;
+        // the rack: two uprights and a pull-up bar
+        for (const rx of [gx - 0.85, gx + 0.85]) {
+          addBox(0.07, 1.72, 0.07, rx, 0.92, PZ - PD / 2 + 0.45, M.bronze, { uv: 0.5 });
+        }
+        addBox(1.78, 0.06, 0.06, gx, 1.80, PZ - PD / 2 + 0.45, M.bronze, { cast: false });
+        for (const ry of [0.78, 1.16]) {
+          addBox(1.7, 0.045, 0.045, gx, ry, PZ - PD / 2 + 0.45, M.bronze, { cast: false });
+        }
+        // the bench
+        addSoft(1.30, 0.20, 0.34, 0.05, gx + 0.15, 0.48, PZ + 0.55, M.oakDark, { uv: 0.6 });
+        for (const [bx2, bz2] of [[-0.55, -0.12], [0.55, -0.12], [-0.55, 0.12], [0.55, 0.12]]) {
+          addBox(0.05, 0.38, 0.05, gx + 0.15 + bx2, 0.19, PZ + 0.55 + bz2, M.bronze, { cast: false });
+        }
+        // the treadmill
+        addBox(1.55, 0.10, 0.62, gx - 0.15, 0.16, PZ + 1.25, M.dark, { uv: 0.5 });
+        addBox(1.45, 0.015, 0.5, gx - 0.15, 0.225, PZ + 1.25, M.dark, { cast: false });
+        addBox(0.05, 0.95, 0.05, gx - 0.75, 0.62, PZ + 1.55, M.bronze, { cast: false });
+        addBox(0.05, 0.95, 0.05, gx + 0.45, 0.62, PZ + 1.55, M.bronze, { cast: false });
+        addBox(0.05, 0.05, 0.62, gx - 0.15, 1.10, PZ + 1.55, M.bronze, { cast: false });
+      }
+      contactShadow(PX, PZ, PW + 1.2, PD + 1.2, true, 0.03);
+
+      // stepping stones from the terrace's west end to the pavilion door
+      for (let i = 0; i < 7; i++) {
+        const t = i / 6;
+        addBox(0.58, 0.07, 0.44,
+          lerp(-7.6, PX + PW / 2 - 0.2, t) + rr(-0.15, 0.15),
+          0.05,
+          lerp(-8.4, PZ + PD / 2 + 0.75, t) + rr(-0.12, 0.12),
+          M.stonePale, { uv: 0.5 });
+      }
+    }
+
+    /* ── the landscape garden along the west lawn ─────────────────────────
+       Low clipped hedges framing gravel beds, ornamental grass tufts already
+       in the lawn, and a stepping-stone spur off the pavilion path. All of it
+       under the orbit's low west pass, so nothing new is flown through.    */
+    {
+      // two hedge runs framing the west lawn
+      addBox(4.4, 0.52, 0.42, -15.2, 0.30, -4.6, M.meadow, { uv: 0.55 });
+      addBox(4.4, 0.52, 0.42, -15.2, 0.30, -2.6, M.meadow, { uv: 0.55 });
+      addBox(0.42, 0.52, 3.6, -17.2, 0.30, -5.4, M.meadow, { uv: 0.55 });
+      // a bronze-trimmed gravel bed between them, with three stone orbs
+      addPlane(3.9, 2.3, -15.2, 0.035, -3.6, M.gravel, { uv: 0.5 });
+      addBox(4.0, 0.05, 0.07, -15.2, 0.075, -4.78, M.bronze, { cast: false });
+      addBox(4.0, 0.05, 0.07, -15.2, 0.075, -2.42, M.bronze, { cast: false });
+      for (const [ox, oz, orr] of [[-16.1, -3.1, 0.26], [-15.0, -4.1, 0.33], [-14.2, -3.3, 0.22]]) {
+        addLathe([[0.001, 0], [orr * 0.9, 0.02], [orr, orr * 0.72], [orr * 0.94, orr * 1.28], [0.05, orr * 1.5]],
+          ox, 0.05, oz, M.stoneVessel, 18);
+      }
+      // a second, smaller bed nearer the house's west corner
+      addPlane(2.6, 1.8, -16.0, 0.035, -8.2, M.gravel, { uv: 0.5 });
+      addBox(0.42, 0.46, 2.2, -17.4, 0.26, -8.2, M.meadow, { uv: 0.55 });
+      addLathe([[0.001, 0], [0.2, 0.02], [0.26, 0.2], [0.2, 0.34]], -15.4, 0.05, -8.2, M.stoneVessel, 16);
+    }
+
+    /* ── the children's court in the east side yard ───────────────────────
+       Soft sand turf inside a pale kerf, a timber swing frame on bronze
+       pivots, and a low climbing frame with a slide. Oak and bronze only;
+       nothing bright, nothing plastic-looking.                            */
+    {
+      const CX2 = 22.2, CZ2 = 1.2, CW2 = 7.0, CD2 = 8.4;
+      addPlane(CW2 + 1.0, CD2 + 1.0, CX2, 0.032, CZ2, M.gravel, { uv: 0.5 });
+      // soft sand turf for the court: the dune sand's own surface, kept pale
+      const courtSand = new THREE.MeshStandardMaterial({
+        map: tex(sand.map, { srgb: true }),
+        normalMap: tex(sand.normal),
+        color: 0xe8ddc4, roughness: 1.0, metalness: 0.0, envMapIntensity: 0.5
+      });
+      addPlane(CW2, CD2, CX2, 0.058, CZ2, courtSand, { uv: 0.55 });
+      // pale kerf round the court
+      addBox(CW2 + 0.2, 0.10, 0.14, CX2, 0.08, CZ2 - CD2 / 2 - 0.05, M.stonePale, { uv: 0.5 });
+      addBox(CW2 + 0.2, 0.10, 0.14, CX2, 0.08, CZ2 + CD2 / 2 + 0.05, M.stonePale, { uv: 0.5 });
+      addBox(0.14, 0.10, CD2 + 0.2, CX2 - CW2 / 2 - 0.05, 0.08, CZ2, M.stonePale, { uv: 0.5 });
+      addBox(0.14, 0.10, CD2 + 0.2, CX2 + CW2 / 2 + 0.05, 0.08, CZ2, M.stonePale, { uv: 0.5 });
+
+      // the swing frame: two oak A-frames, an oak beam, two swings on bronze
+      {
+        const sx = CX2 - 1.4, sz = CZ2 - 1.6;
+        for (const s2 of [-1, 1]) {
+          addSoft(0.12, 2.0, 0.12, 0.02, sx + s2 * 0.85, 1.0, sz - 0.5, M.oakVert, { uv: 0.6, rz: s2 * -0.24 });
+          addSoft(0.12, 2.0, 0.12, 0.02, sx + s2 * 0.85, 1.0, sz + 0.5, M.oakVert, { uv: 0.6, rz: s2 * -0.24 });
+          contactShadow(sx + s2 * 0.85, sz, 1.6, 1.4, true, 0.045);
+        }
+        addBox(2.5, 0.13, 0.13, sx, 2.02, sz, M.oakDark, { uv: 0.6 });
+        for (const sw of [-0.55, 0.55]) {
+          for (const dz of [-0.05, 0.05]) {
+            addBox(0.02, 1.32, 0.02, sx + sw, 1.36, sz + dz, M.bronze, { cast: false });
+          }
+          addSoft(0.42, 0.05, 0.18, 0.02, sx + sw, 0.70, sz, M.oak, { uv: 0.6 });
+        }
+      }
+      // the climbing frame with a slide
+      {
+        const cx2 = CX2 + 1.7, cz2 = CZ2 + 1.9;
+        for (const [dx, dz] of [[-0.65, -0.55], [0.65, -0.55], [-0.65, 0.55], [0.65, 0.55]]) {
+          addBox(0.10, 1.30, 0.10, cx2 + dx, 0.65, cz2 + dz, M.oakVert, { uv: 0.6 });
+        }
+        addBox(1.5, 0.09, 1.3, cx2, 1.32, cz2, M.oakDark, { uv: 0.6 });
+        // bronze rungs up the south face
+        for (let ry = 0.28; ry <= 1.2; ry += 0.23) {
+          addBox(1.1, 0.04, 0.04, cx2, ry, cz2 + 0.62, M.bronze, { cast: false });
+        }
+        // the slide: an angled oak deck with bronze rails, landing on the sand
+        addSoft(0.62, 0.07, 2.1, 0.02, cx2 - 0.02, 0.82, cz2 + 1.75, M.oakDark, { uv: 0.6, rx: 0.52 });
+        for (const s2 of [-1, 1]) {
+          addSoft(0.04, 0.05, 2.0, 0.015, cx2 - 0.02 + s2 * 0.31, 1.02, cz2 + 1.75, M.bronze, { cast: false, rx: 0.52 });
+        }
+        contactShadow(cx2, cz2, 2.6, 3.4, true, 0.045);
+      }
+      // a low bronze hoop on the court's east edge, standing on an oak post
+      {
+        addBox(0.09, 1.55, 0.09, CX2 + CW2 / 2 - 0.6, 0.78, CZ2 - 2.4, M.oakVert, { uv: 0.6 });
+        const hoop = new THREE.TorusGeometry(0.36, 0.028, 8, 20);
+        hoop.rotateY(Math.PI / 2);
+        hoop.translate(CX2 + CW2 / 2 - 0.6 + 0.38, 1.58, CZ2 - 2.4);
+        queue(hoop, M.bronze, true, false);
+      }
+    }
+
     /* ─────────────────────────────────────────────────────────────────────
        6b · the estate wall and the terrace planters
        A travertine boundary round the compound: a plinth, a warm ashlar panel
@@ -4022,9 +4244,29 @@ scene.background = null;
       { x: -5.0, z: -7.24, y: F2, w: 2.55, d: 0.48, h: 0.46, spread: 0.58, pick: 3, count: 150 },
       /* the roof deck: a trough on its south edge, and the two stone cubes
          already on the deck, planted */
+      /* the roof-deck trough on its south edge, a second on its north edge by
+         the pergola, and the two stone cubes already on the deck, planted */
       { x: 7.4, z: 3.0, y: DECK, w: 2.40, d: 0.55, h: 0.55, spread: 0.58, pick: 5, count: 170 },
+      { x: 12.4, z: -5.45, y: DECK, w: 2.20, d: 0.55, h: 0.50, spread: 0.52, pick: 0, count: 150 },
       { kind: 'existing', x: 5.2, z: 2.6, y: DECK, w: 0.66, d: 0.66, h: 0.50, spread: 0.44, pick: 0, count: 80 },
-      { kind: 'existing', x: 5.2, z: -5.2, y: DECK, w: 0.66, d: 0.66, h: 0.50, spread: 0.44, pick: 2, count: 80 }
+      { kind: 'existing', x: 5.2, z: -5.2, y: DECK, w: 0.66, d: 0.66, h: 0.50, spread: 0.44, pick: 2, count: 80 },
+      /* the main roof's perimeter: travertine troughs inside the parapet on
+         all four edges, planted with the same instanced bougainvillea. They
+         ring the roof in flower in the approach and the orbit.             */
+      { x: -13.5, z: -6.95, y: ROOF, w: 2.30, d: 0.55, h: 0.50, spread: 0.50, pick: 1, count: 110 },
+      { x: -8.6, z: -6.95, y: ROOF, w: 2.30, d: 0.55, h: 0.50, spread: 0.50, pick: 4, count: 110 },
+      { x: -1.0, z: -6.95, y: ROOF, w: 2.30, d: 0.55, h: 0.50, spread: 0.50, pick: 2, count: 110 },
+      { x: 3.4, z: -6.95, y: ROOF, w: 2.30, d: 0.55, h: 0.50, spread: 0.50, pick: 0, count: 110 },
+      { x: -12.8, z: 9.45, y: ROOF, w: 2.30, d: 0.55, h: 0.50, spread: 0.50, pick: 3, count: 110 },
+      { x: -7.4, z: 9.45, y: ROOF, w: 2.30, d: 0.55, h: 0.50, spread: 0.50, pick: 5, count: 110 },
+      { x: -1.6, z: 9.45, y: ROOF, w: 2.30, d: 0.55, h: 0.50, spread: 0.50, pick: 1, count: 110 },
+      { x: 3.6, z: 9.45, y: ROOF, w: 2.30, d: 0.55, h: 0.50, spread: 0.50, pick: 2, count: 110 },
+      { x: -15.03, z: -4.6, y: ROOF, w: 0.55, d: 2.30, h: 0.50, spread: 0.50, pick: 0, count: 110 },
+      { x: -15.03, z: 0.4, y: ROOF, w: 0.55, d: 2.30, h: 0.50, spread: 0.50, pick: 3, count: 110 },
+      { x: -15.03, z: 5.4, y: ROOF, w: 0.55, d: 2.30, h: 0.50, spread: 0.50, pick: 5, count: 110 },
+      { x: 5.67, z: -4.6, y: ROOF, w: 0.55, d: 2.30, h: 0.50, spread: 0.50, pick: 4, count: 110 },
+      { x: 5.67, z: 0.4, y: ROOF, w: 0.55, d: 2.30, h: 0.50, spread: 0.50, pick: 1, count: 110 },
+      { x: 5.67, z: 5.4, y: ROOF, w: 0.55, d: 2.30, h: 0.50, spread: 0.50, pick: 2, count: 110 }
     ];
 
     {
@@ -4177,6 +4419,43 @@ scene.background = null;
 
       gatePier(GA - 0.65, 1);
       gatePier(GB + 0.65, -1);
+
+      /* architectural CCTV: matte dark-bronze housings with a lens glass and
+         a small status LED, aimed down over the court and the corners. One
+         housing builder, six mounts; everything batched into existing
+         materials except the tiny LED, which is one shared emissive.       */
+      const cctvLed = new THREE.MeshBasicMaterial({ color: new THREE.Color(2.4, 0.30, 0.22) });
+      const cctv = (x, y, z, ry, rx) => {
+        const g = new THREE.BoxGeometry(0.30, 0.13, 0.15);
+        if (rx) g.rotateX(rx);
+        g.rotateY(ry);
+        g.translate(x, y, z);
+        queue(g, M.dark, true, true);
+        // the lens ring, facing the camera's look direction
+        const lg = new THREE.CylinderGeometry(0.055, 0.062, 0.05, 14);
+        lg.rotateX(Math.PI / 2 + (rx || 0));
+        lg.rotateY(ry);
+        lg.translate(x + Math.sin(ry) * 0.15 * Math.cos(rx || 0), y - Math.sin(rx || 0) * 0.15, z + Math.cos(ry) * 0.15 * Math.cos(rx || 0));
+        queue(lg, M.glassDark, true, false);
+        // a small mounting arm back to the wall
+        const arm = new THREE.BoxGeometry(0.05, 0.05, 0.14);
+        arm.rotateY(ry);
+        arm.translate(x - Math.sin(ry) * 0.09, y + 0.02, z - Math.cos(ry) * 0.09);
+        queue(arm, M.bronze, true, true);
+        // the status LED on the housing's side
+        const led = new THREE.BoxGeometry(0.018, 0.018, 0.012);
+        led.rotateY(ry);
+        led.translate(x - Math.sin(ry) * 0.14, y + 0.045, z - Math.cos(ry) * 0.14 + 0.05);
+        queue(led, cctvLed, false, false);
+      };
+      // on the inner faces of both gate piers, aimed down the drive court
+      cctv(-1.55 + 0.42, 2.58, ESTATE.z1 - 0.62, -0.55, -0.38);
+      cctv(GB + 0.65 - 0.42, 2.58, ESTATE.z1 - 0.62, 0.55, -0.38);
+      // on the villa's upper front corners, covering the porch and the wing
+      cctv(S.x0 + 0.30, 7.52, S.z1 + 0.30, -2.35, -0.42);
+      cctv(S.x1 - 0.30, 7.52, S.z1 + 0.30, 2.35, -0.42);
+      // the wing's outer corner, over the east yard and the play court
+      cctv(WING.x1 - 0.28, 3.42, WING.z1 - 0.30, 2.75, -0.45);
 
       PLANTERS.forEach(planterHard);
 
@@ -4944,6 +5223,13 @@ scene.background = null;
         if (x > -4.4 && x < 4.2 && z > S.z1 && z < 12.2) return true;   // the entrance walk
         if (x > -9.8 && x < 12.8 && z > -10.4 && z < -5.5) return true;
         if (x > POOL.x0 - 1.1 && x < POOL.x1 + 1.1 && z > POOL.z0 - 1.1 && z < POOL.z1 + 1.1) return true;
+        // the carport court, the wellness pavilion, the play court and the
+        // garden beds keep their own surfaces; no lawn tufts on them
+        if (x > 5.6 && x < 13.6 && z > 11.2 && z < 17.8) return true;
+        if (x > -15.0 && x < -7.9 && z > -14.7 && z < -9.1) return true;
+        if (x > 17.9 && x < 26.5 && z > -3.8 && z < 6.2) return true;
+        if (x > -17.4 && x < -13.0 && z > -5.0 && z < -2.2) return true;
+        if (x > -17.5 && x < -14.6 && z > -9.2 && z < -7.2) return true;
         return false;
       };
 
