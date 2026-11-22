@@ -2,632 +2,165 @@
 <html lang="en" class="no-js">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Shadestate · Architecture built to endure · Dubai &amp; Saudi Arabia</title>
-<meta name="description" content="Shadestate is a developer of enduring residences in Dubai and Saudi Arabia. Completed, ongoing and upcoming developments in Dubai Hills, Palm Jumeirah, Business Bay, Diriyah, Riyadh, Jeddah and AlUla.">
-<meta name="theme-color" content="#FFFFFF">
-<meta name="color-scheme" content="light">
-<meta property="og:title" content="Shadestate · Architecture built to endure">
-<meta property="og:description" content="Dubai &amp; Saudi Arabia · Completed, ongoing and upcoming residences.">
-<meta property="og:image" content="assets/ksa/arbour-townhomes.jpg">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%23111111'/%3E%3Ctext x='32' y='45' font-family='Inter,Helvetica,Arial,sans-serif' font-weight='500' font-size='34' fill='%23FFFFFF' text-anchor='middle'%3ES%3C/text%3E%3C/svg%3E">
-<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-<link rel="preload" as="image" fetchpriority="high" sizes="100vw"
-      imagesrcset="assets/hero-find/house-640.webp 640w, assets/hero-find/house-1080.webp 1080w, assets/hero-find/house-1440.webp 1440w, assets/hero-find/house-1920.webp 1920w">
-<link rel="preload" as="image" fetchpriority="high" sizes="100vw"
-      imagesrcset="assets/hero-find/back-640.webp 640w, assets/hero-find/back-1080.webp 1080w, assets/hero-find/back-1440.webp 1440w, assets/hero-find/back-1920.webp 1920w">
-<link rel="preload" as="font" type="font/woff2" crossorigin href="assets/fonts/TimelessSansVF.woff2">
-<link rel="stylesheet" href="assets/css/fonts.css">
-<link rel="stylesheet" href="styles.css">
-<link rel="stylesheet" href="site.css">
-<link rel="stylesheet" href="walkthrough/walkthrough.css">
-<script>
-  document.documentElement.classList.replace('no-js','js');
-  try { if (sessionStorage.getItem('shade-nav')) { document.documentElement.classList.add('is-arriving'); sessionStorage.removeItem('shade-nav'); } } catch (e) {}
-</script>
-<noscript><style>.curtain,.cursor,.page-transition{display:none!important}.js [data-reveal]{opacity:1!important}</style></noscript>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Shadestate · Casa da Luz, a walkthrough</title>
+<meta name="description" content="A procedural 3D walkthrough of Casa da Luz, a limestone villa by Shadestate. Approach, step inside, and step out over the pool.">
+<meta name="theme-color" content="#1C1A17">
+<meta name="color-scheme" content="dark light">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%231C1A17'/%3E%3Ctext x='32' y='46' font-family='Georgia,serif' font-size='36' fill='%23E6DFD3' text-anchor='middle'%3ES%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="fonts.css">
+<link rel="stylesheet" href="style.css">
+<script>document.documentElement.classList.replace('no-js','js');</script>
 </head>
 <body>
 
-<a class="skip-link" href="#main">Skip to content</a>
-<div class="page-transition" aria-hidden="true"><span class="page-transition__word">Shadestate</span></div>
-<div class="cursor" id="cursor" aria-hidden="true"><span class="cursor__dot"></span><span class="cursor__label"></span></div>
+<div class="grain" aria-hidden="true"></div>
 
-<!-- intro curtain -->
-<div class="curtain" id="curtain" aria-hidden="true">
-  <div class="curtain__cover">
-    <span class="curtain__side curtain__side--l"></span>
-    <span class="curtain__side curtain__side--r"></span>
-    <span class="curtain__crown"></span>
-  </div>
-  <div class="curtain__inner">
-    <p class="curtain__word"><span>Shade</span><em>state</em></p>
-    <div class="curtain__row">
-      <span class="curtain__caption">Dubai &amp; Saudi Arabia · Est. 2008</span>
-      <span class="curtain__count"><span id="curtainCount">00</span><i>%</i></span>
-    </div>
-    <div class="curtain__track"><i id="curtainBar"></i></div>
-  </div>
-</div>
+<a class="skip-link" href="#walk">Skip to the walkthrough</a>
 
-<!-- ─────────────── topbar ─────────────── -->
-<header class="topbar" id="topbar" data-topbar>
-  <div class="topbar__inner">
-    <a class="wordmark" href="index.html" aria-label="Shadestate home">
-      <span class="wordmark__name"><b>SHADE</b>STATE</span>
-      <span class="wordmark__sub">Dubai · Riyadh</span>
+<!-- ══════════════════════════ INTRO ══════════════════════════ -->
+<section class="intro" id="top">
+  <header class="site-header">
+    <a class="brand" href="#top" aria-label="Shadestate · top">
+      <span class="brand__mark" aria-hidden="true">S</span>
+      <span class="brand__type"><span class="brand__name">Shadestate</span><span class="brand__sub">Developments</span></span>
     </a>
-    <div class="topbar__actions">
-      <a class="btn-pill btn-pill--dark magnetic" href="contact.html" data-cursor="Enquire">
-        <span data-roll="Enquire •">Enquire •</span>
+    <nav class="header__nav" aria-label="Secondary">
+      <span>Comporta · Portugal</span>
+      <span aria-hidden="true" class="header__sep"></span>
+      <span>Est. 1998</span>
+    </nav>
+  </header>
+
+  <div class="intro__body">
+    <p class="eyebrow"><i class="rule" aria-hidden="true"></i>Casa da Luz · a walkthrough</p>
+    <h1 class="intro__title">Houses made<br>to be <em>inherited</em>.</h1>
+    <p class="intro__lede">A hundred metres of gravel, one front door, a double-height hall of limestone and oak, and a pool at the far end of it — with a city standing on the horizon behind. Walk the whole house.</p>
+    <div class="intro__foot">
+      <a class="cue" href="#walk">
+        <span class="cue__ring" aria-hidden="true"><span></span></span>
+        <span class="cue__label">Scroll to walk</span>
       </a>
-      <button class="btn-pill btn-pill--line" type="button" id="menuBtn" data-menu-toggle aria-expanded="false" aria-controls="menu">
-        <span data-roll="Menu ••">Menu ••</span>
-      </button>
+      <p class="intro__meta"><span>01</span> Location · Exterior · Interior · Amenities · Pricing</p>
     </div>
   </div>
-</header>
 
-<!-- ─────────────── full-screen menu ─────────────── -->
-<div class="menu" id="menu" hidden>
-  <div class="menu__inner">
-    <div class="menu__head">
-      <a class="wordmark" href="index.html"><span class="wordmark__name"><b>SHADE</b>STATE</span><span class="wordmark__sub">Dubai · Riyadh</span></a>
-      <button class="menu__close" type="button" data-menu-close>Close <span aria-hidden="true">✕</span></button>
+  <div class="intro__horizon" aria-hidden="true"></div>
+</section>
+
+<!-- ══════════════════════════ WALKTHROUGH ══════════════════════════ -->
+<section class="walk" id="walk" aria-label="Interactive 3D walkthrough of Casa da Luz">
+  <div class="walk__sticky">
+    <canvas id="scene" class="walk__canvas" aria-label="Procedural three-dimensional view of Casa da Luz"></canvas>
+
+    <!-- cinematic grading layers (CSS, no post-processing cost) -->
+    <div class="walk__grade" aria-hidden="true"></div>
+    <div class="walk__bloom" aria-hidden="true"></div>
+    <div class="walk__veil" aria-hidden="true"></div>
+
+    <!-- HUD -->
+    <div class="hud" aria-hidden="true">
+      <div class="hud__brand">Casa da Luz <i>Walkthrough</i></div>
+      <ol class="hud__stages" id="hudStages">
+        <li data-stage="0"><span>01</span>Location</li>
+        <li data-stage="1"><span>02</span>Exterior</li>
+        <li data-stage="2"><span>03</span>Interior</li>
+        <li data-stage="3"><span>04</span>Amenities</li>
+        <li data-stage="4"><span>05</span>Developments</li>
+      </ol>
+      <div class="hud__bar"><i id="hudBar"></i></div>
+      <div class="hud__num"><span id="hudPct">00</span><i>%</i></div>
     </div>
-    <div class="menu__body">
-      <nav class="menu__nav" aria-label="Menu">
-        <a href="index.html"><span class="menu__num">01</span><span class="menu__word" data-roll="Home">Home</span></a>
-        <a href="projects.html"><span class="menu__num">02</span><span class="menu__word" data-roll="Projects">Projects</span></a>
-        <a href="about.html"><span class="menu__num">03</span><span class="menu__word" data-roll="Studio &amp; legacy">Studio &amp; legacy</span></a>
-        <a href="project.html?project=arbour-townhomes"><span class="menu__num">04</span><span class="menu__word" data-roll="Arbour Townhomes">Arbour Townhomes</span></a>
-        <a href="blog.html"><span class="menu__num">05</span><span class="menu__word" data-roll="Journal">Journal</span></a>
-        <a href="#walkthrough"><span class="menu__num">06</span><span class="menu__word" data-roll="Walkthrough">Walkthrough</span></a>
-        <a href="contact.html"><span class="menu__num">07</span><span class="menu__word" data-roll="Contact">Contact</span></a>
-      </nav>
-      <aside class="menu__aside">
-        <div>
-          <h2>Dubai</h2>
-          <p>Office 1204, Bay Square 7<br>Business Bay<br>Dubai, United Arab Emirates</p>
-          <p><a href="tel:+97140000000">+971 4 000 0000</a></p>
-        </div>
-        <div>
-          <h2>Riyadh</h2>
-          <p>Villa 12, Al Nakheel<br>Riyadh 12381<br>Saudi Arabia</p>
-          <p><a href="tel:+966110000000">+966 11 000 0000</a></p>
-        </div>
-        <div>
-          <h2>Enquiries</h2>
-          <p><a href="mailto:hello@shadestate.com">hello@shadestate.com</a></p>
-          <p><span data-clock="dubai">--:--</span> Dubai · <span data-clock="riyadh">--:--</span> Riyadh</p>
-        </div>
-      </aside>
+
+    <!-- editorial overlays -->
+    <div class="copy" id="copy">
+      <!-- 01 · Location -->
+      <figure class="copy__item" data-in="0.005" data-out="0.355">
+        <p class="copy__eyebrow">01 · Location</p>
+        <h2 class="copy__line">Architecture<br>with permanence.</h2>
+        <p class="copy__note">Set within a quiet residential enclave, framed by skyline views and direct city access.</p>
+        <p class="copy__spec">Prime District · 12 min to Center</p>
+      </figure>
+
+      <!-- 02 · Exterior -->
+      <figure class="copy__item copy__item--center" data-in="0.415" data-out="0.565">
+        <p class="copy__eyebrow">02 · Exterior</p>
+        <h2 class="copy__line copy__line--xl">Honest materials.</h2>
+        <p class="copy__note">Natural stone, weathered oak, and architectural bronze proportioned to outlast trends.</p>
+        <p class="copy__spec">Custom Estate · Stone, Bronze &amp; Oak</p>
+      </figure>
+
+      <!-- 03 · Interior -->
+      <figure class="copy__item" data-in="0.585" data-out="0.712">
+        <p class="copy__eyebrow">03 · Interior</p>
+        <h2 class="copy__line">Room to breathe.</h2>
+        <p class="copy__note">Double-height living volumes, gallery sightlines, and floor-to-ceiling glass at both ends.</p>
+        <p class="copy__spec">Double-Height Hall · Indoor–Outdoor Flow</p>
+      </figure>
+
+      <!-- 04 · Amenities -->
+      <figure class="copy__item" data-in="0.72" data-out="0.85">
+        <p class="copy__eyebrow">04 · Amenities</p>
+        <h2 class="copy__line">Built for stillness.</h2>
+        <p class="copy__note">A sunlit infinity pool, shaded pergola terrace, and private garden courtyard.</p>
+        <p class="copy__spec">Infinity Pool · Rooftop Terrace</p>
+      </figure>
+
+      <!-- 05 · Developments -->
+      <figure class="copy__item" data-in="0.86" data-out="0.98">
+        <p class="copy__eyebrow">05 · Developments</p>
+        <h2 class="copy__line">Delivered to order.</h2>
+        <p class="copy__note">Tailored handover schedules, transparent milestones, and private studio viewings.</p>
+        <p class="copy__spec">Private Viewings · Tailored Handover</p>
+      </figure>
     </div>
-    <div class="menu__foot"><span>Shadestate Developments</span><span>Dubai · Riyadh · Jeddah</span><span>Est. 2008</span></div>
+
+    <div class="walk__scrollhint" aria-hidden="true"><span>Scroll</span><i></i></div>
+
+    <!-- non-WebGL / failure poster: pure CSS, same typography -->
+    <div class="fallback" id="fallback" role="img" aria-label="Illustration of Casa da Luz: a limestone villa with olive trees, a grass meadow and a reflecting pool at golden hour.">
+      <div class="fallback__sky"></div>
+      <div class="fallback__sun"></div>
+      <div class="fallback__hills"></div>
+      <div class="fallback__trees"><i></i><i></i><i></i><i></i></div>
+      <div class="fallback__house"><span class="fallback__glass"></span><span class="fallback__door"></span><span class="fallback__slats"></span><span class="fallback__wing"></span></div>
+      <div class="fallback__field"></div>
+      <div class="fallback__pool"></div>
+      <div class="fallback__copy">
+        <p class="copy__eyebrow">Casa da Luz · Comporta</p>
+        <h2 class="copy__line">Houses made<br>to be <em>inherited</em>.</h2>
+        <p class="copy__note">Your browser cannot display the 3D walkthrough. The house is a limestone and timber villa with deep window reveals, olive trees and a reflecting pool.</p>
+      </div>
+    </div>
   </div>
-</div>
+</section>
 
-<main id="main">
-
-  <!-- ═════════════ HERO · the FIND take, kept intact ═════════════ -->
-  <section class="hero" id="top">
-    <div class="hero__stage">
-      <div class="hero__bg" aria-hidden="true">
-        <div class="hero__back">
-          <img srcset="assets/hero-find/back-640.webp 640w, assets/hero-find/back-1080.webp 1080w, assets/hero-find/back-1440.webp 1440w, assets/hero-find/back-1920.webp 1920w" sizes="100vw" src="assets/hero-find/back-1080.webp" alt="" width="1920" height="1306" fetchpriority="high" decoding="async">
-        </div>
-        <div class="hero__house">
-          <img srcset="assets/hero-find/house-640.webp 640w, assets/hero-find/house-1080.webp 1080w, assets/hero-find/house-1440.webp 1440w, assets/hero-find/house-1920.webp 1920w" sizes="100vw" src="assets/hero-find/house-1080.webp" alt="A modern residence of pale brick and floor-to-ceiling glass, its planted terraces catching the first warm light of the day." width="1920" height="1708" fetchpriority="high" decoding="async">
-        </div>
-        <div class="hero__composite">
-          <div class="hero__house">
-            <img srcset="assets/hero-find/house-640.webp 640w, assets/hero-find/house-1080.webp 1080w, assets/hero-find/house-1440.webp 1440w, assets/hero-find/house-1920.webp 1920w" sizes="100vw" src="assets/hero-find/house-1080.webp" alt="" width="1920" height="1708" loading="eager" decoding="async">
-          </div>
-        </div>
-        <div class="hero__clouds">
-          <div class="hero__cloud hero__cloud--l"><img srcset="assets/hero-find/cloud-640.webp 640w, assets/hero-find/cloud-1024.webp 1024w, assets/hero-find/cloud-1600.webp 1600w" sizes="100vw" src="assets/hero-find/cloud-1024.webp" alt="" width="1600" height="679" decoding="async"></div>
-          <div class="hero__cloud hero__cloud--r"><img srcset="assets/hero-find/cloud-640.webp 640w, assets/hero-find/cloud-1024.webp 1024w, assets/hero-find/cloud-1600.webp 1600w" sizes="100vw" src="assets/hero-find/cloud-1024.webp" alt="" width="1600" height="679" decoding="async"></div>
-        </div>
-        <div class="hero__logo"><svg viewBox="0 -10 1830.1 360" aria-hidden="true" focusable="false">
-          <g fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" >
-          <path d="M90.5 211.2Q71.7 211.2 55.2 204.4Q38.7 197.5 26.7 184.9Q14.8 172.3 8.9 155.1L43 139.8Q50.5 156.2 63.8 165.6Q77 175 93.2 175Q101.7 175 107.9 172.3Q114.1 169.6 117.6 164.9Q121.1 160.2 121.1 153.8Q121.1 146.8 116.8 141.8Q112.5 136.9 103.4 133.9L64.2 121Q40.3 113.2 28.2 98.9Q16.1 84.5 16.1 64.4Q16.1 46.7 24.8 33.2Q33.6 19.8 49.3 12.3Q65 4.8 85.4 4.8Q103.4 4.8 118.7 11Q134 17.1 145.1 28.4Q156.2 39.7 161.9 55.5L128.1 70.8Q122.4 56.9 111.1 48.9Q99.9 41 85.4 41Q77 41 70.6 43.7Q64.2 46.4 60.7 51.4Q57.2 56.3 57.2 62.8Q57.2 69.7 61.7 75Q66.3 80.2 75.4 83.2L113.8 95.5Q138 103.3 149.9 117.3Q161.9 131.2 161.9 151.4Q161.9 168.8 152.8 182.4Q143.6 195.9 127.7 203.6Q111.7 211.2 90.5 211.2Z"/>
-          <path d="M200.5 208V8H242.1V94.4H320V8H361.6V208H320V130.7H242.1V208Z"/>
-          <path d="M391.4 208 459.1 8H514.4L582 208H536.6L523.2 167.2H449.9L436.5 208ZM461.5 131H511.7L481.1 36.5H492.3Z"/>
-          <path d="M611.8 208V8H677Q709.5 8 733.4 20.9Q757.3 33.8 770.5 56.3Q783.6 78.9 783.6 107.9Q783.6 136.9 770.5 159.5Q757.3 182.2 733.4 195.1Q709.5 208 677 208ZM653.4 171.8H678.1Q697.7 171.8 711.9 163.8Q726.2 155.9 734.1 141.6Q742 127.2 742 107.9Q742 88.3 734.1 74Q726.2 59.8 711.9 52Q697.7 44.2 678.1 44.2H653.4Z"/>
-          <path d="M819.3 208V8H953.8V44.2H860.9V89.6H948.5V125.9H860.9V171.8H953.8V208Z"/>
-          <path d="M1059.3 211.2Q1040.5 211.2 1024 204.4Q1007.5 197.5 995.6 184.9Q983.6 172.3 977.7 155.1L1011.8 139.8Q1019.3 156.2 1032.6 165.6Q1045.9 175 1062 175Q1070.6 175 1076.8 172.3Q1083 169.6 1086.4 164.9Q1089.9 160.2 1089.9 153.8Q1089.9 146.8 1085.6 141.8Q1081.3 136.9 1072.2 133.9L1033 121Q1009.1 113.2 997 98.9Q985 84.5 985 64.4Q985 46.7 993.7 33.2Q1002.4 19.8 1018.1 12.3Q1033.8 4.8 1054.2 4.8Q1072.2 4.8 1087.5 11Q1102.8 17.1 1114 28.4Q1125.1 39.7 1130.7 55.5L1096.9 70.8Q1091.3 56.9 1080 48.9Q1068.7 41 1054.2 41Q1045.9 41 1039.5 43.7Q1033 46.4 1029.5 51.4Q1026 56.3 1026 62.8Q1026 69.7 1030.6 75Q1035.2 80.2 1044.3 83.2L1082.7 95.5Q1106.8 103.3 1118.8 117.3Q1130.7 131.2 1130.7 151.4Q1130.7 168.8 1121.6 182.4Q1112.5 195.9 1096.5 203.6Q1080.5 211.2 1059.3 211.2Z"/>
-          <path d="M1205.4 208V44.2H1154.6V8H1296.9V44.2H1247V208Z"/>
-          <path d="M1311.9 208 1379.6 8H1434.9L1502.6 208H1457.2L1443.8 167.2H1370.5L1357 208ZM1382 131H1432.2L1401.6 36.5H1412.9Z"/>
-          <path d="M1568.3 208V44.2H1517.6V8H1659.9V44.2H1609.9V208Z"/>
-          <path d="M1689.7 208V8H1824.2V44.2H1731.3V89.6H1818.8V125.9H1731.3V171.8H1824.2V208Z"/>
-          <path d="M5.5 342V280H25.7Q35.8 280 43.2 284Q50.6 288 54.7 295Q58.8 302 58.8 311Q58.8 319.9 54.7 327Q50.6 334 43.2 338Q35.8 342 25.7 342ZM18.4 330.8H26Q32.1 330.8 36.5 328.3Q40.9 325.9 43.4 321.4Q45.9 317 45.9 311Q45.9 304.9 43.4 300.5Q40.9 296.1 36.5 293.6Q32.1 291.2 26 291.2H18.4Z"/>
-          <path d="M171.7 342V280H213.4V291.2H184.6V305.3H211.8V316.5H184.6V330.8H213.4V342Z"/>
-          <path d="M342.2 342 320.9 280H335.1L351.1 329.8H348.2L364.2 280H378.4L357.1 342Z"/>
-          <path d="M489.5 342V280H531.2V291.2H502.4V305.3H529.5V316.5H502.4V330.8H531.2V342Z"/>
-          <path d="M643.3 342V280H656.2V330.8H682.4V342Z"/>
-          <path d="M824.6 343Q817.6 343 811.6 340.6Q805.6 338.2 801.2 333.8Q796.7 329.4 794.2 323.6Q791.7 317.8 791.7 311Q791.7 304.1 794.2 298.3Q796.6 292.5 801.1 288.2Q805.5 283.8 811.5 281.4Q817.5 279 824.6 279Q831.7 279 837.7 281.4Q843.6 283.8 848.1 288.2Q852.5 292.5 855 298.3Q857.5 304.1 857.5 311Q857.5 317.8 855 323.6Q852.5 329.4 848 333.8Q843.6 338.2 837.6 340.6Q831.6 343 824.6 343ZM824.6 331.3Q828.8 331.3 832.5 329.8Q836.1 328.4 838.8 325.6Q841.6 322.9 843.1 319.2Q844.6 315.5 844.6 311Q844.6 306.5 843.1 302.8Q841.6 299.1 838.8 296.3Q836.1 293.6 832.5 292.1Q828.8 290.7 824.6 290.7Q820.3 290.7 816.7 292.1Q813.1 293.6 810.4 296.3Q807.6 299.1 806.1 302.8Q804.6 306.5 804.6 311Q804.6 315.5 806.1 319.2Q807.6 322.9 810.4 325.6Q813.1 328.4 816.7 329.8Q820.3 331.3 824.6 331.3Z"/>
-          <path d="M971.4 342V280H995.2Q1001.6 280 1006.5 282.2Q1011.5 284.5 1014.3 288.9Q1017.1 293.3 1017.1 299.8Q1017.1 306.1 1014.3 310.5Q1011.4 315 1006.4 317.2Q1001.5 319.5 995.2 319.5H984.3V342ZM984.3 308.3H995.2Q998 308.3 1000 307.2Q1002 306.1 1003.1 304.2Q1004.2 302.3 1004.2 299.8Q1004.2 297.2 1003.1 295.3Q1002 293.4 1000 292.3Q998 291.2 995.2 291.2H984.3Z"/>
-          <path d="M1130.1 342V280H1142.6L1165.8 310.8H1160L1182.5 280H1195V342H1182.1V294.2L1187.3 295.4L1163.4 326.2H1161.7L1138.7 295.4L1143 294.2V342Z"/>
-          <path d="M1310.8 342V280H1352.5V291.2H1323.7V305.3H1350.8V316.5H1323.7V330.8H1352.5V342Z"/>
-          <path d="M1464.5 342V280H1474.4L1507.7 323.9L1502.4 325.1V280H1515.3V342H1505.3L1472.6 297.8L1477.4 296.6V342Z"/>
-          <path d="M1642.2 342V291.2H1626.5V280H1670.6V291.2H1655.1V342Z"/>
-          <path d="M1804.3 343Q1798.4 343 1793.3 340.9Q1788.2 338.8 1784.5 334.8Q1780.8 330.9 1779 325.6L1789.5 320.9Q1791.9 325.9 1796 328.9Q1800.1 331.8 1805.1 331.8Q1807.8 331.8 1809.7 330.9Q1811.6 330.1 1812.7 328.6Q1813.8 327.2 1813.8 325.2Q1813.8 323 1812.4 321.5Q1811.1 319.9 1808.3 319L1796.1 315Q1788.7 312.6 1785 308.2Q1781.2 303.7 1781.2 297.5Q1781.2 292 1783.9 287.8Q1786.6 283.7 1791.5 281.3Q1796.4 279 1802.7 279Q1808.3 279 1813 280.9Q1817.8 282.8 1821.2 286.3Q1824.7 289.8 1826.4 294.7L1815.9 299.5Q1814.2 295.1 1810.7 292.7Q1807.2 290.2 1802.7 290.2Q1800.1 290.2 1798.1 291.1Q1796.1 291.9 1795 293.4Q1793.9 295 1793.9 297Q1793.9 299.1 1795.4 300.8Q1796.8 302.4 1799.6 303.3L1811.5 307.1Q1819 309.5 1822.7 313.9Q1826.4 318.2 1826.4 324.4Q1826.4 329.8 1823.6 334.1Q1820.7 338.3 1815.8 340.6Q1810.8 343 1804.3 343Z"/>
-          </g>
-          </svg></div>
-        <div class="hero__smoke">
-          <img srcset="assets/hero-find/smoke-640.webp 640w, assets/hero-find/smoke-1024.webp 1024w, assets/hero-find/smoke-1920.webp 1920w" sizes="100vw" src="assets/hero-find/smoke-1024.webp" alt="" width="1920" height="620" decoding="async">
-        </div>
-        <div class="hero__overlay"></div>
+<!-- ══════════════════════════ OUTRO ══════════════════════════ -->
+<section class="outro" id="enquire">
+  <div class="outro__inner">
+    <p class="eyebrow"><i class="rule" aria-hidden="true"></i>Enquire</p>
+    <h2 class="outro__title">A house you can<br>walk through twice.</h2>
+    <div class="outro__grid">
+      <div>
+        <p class="outro__body">Casa da Luz sits on a hectare of cork oak and olive above the rice fields of Comporta. Six bedrooms, a double-height hall, and a twelve-metre reflecting pool that the west wind keeps moving.</p>
+        <a class="btn btn--dark" href="#top">Walk it again<span aria-hidden="true">↺</span></a>
       </div>
-
-      <div class="hero__content wrap">
-        <h1 class="hero__title"><span class="hw">Architecture</span> <span class="hw">built</span> <span class="hw">to</span> <em class="hw">endure</em></h1>
-        <p class="hero__sub" data-hero-fade>
-          Dubai &amp; Saudi Arabia · <span class="em">Completed, ongoing &amp; upcoming residences.</span>
-        </p>
-        <div class="hero__actions" data-hero-fade>
-          <a class="hero__pill" href="projects.html" data-cursor="Projects">
-            <span>Explore the residences</span>
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h14M12.5 6.5 18 12l-5.5 5.5"/></svg>
-          </a>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ═════════════ 01 · THE STUDIO, rebuilt ═════════════ -->
-  <section class="studio section" id="philosophy">
-    <div class="wrap">
-      <div class="studio__head" data-reveal>
-        <p class="eyebrow"><span class="rule" aria-hidden="true"></span>01 · The studio</p>
-        <p class="studio__meta">Est. 2008 · Dubai &amp; Riyadh</p>
-      </div>
-
-      <div class="studio__grid">
-        <h2 class="display studio__title" data-split>A developer of few buildings, across <em>two countries.</em></h2>
-
-        <div class="studio__note">
-          <p class="studio__line" data-reveal>A few sites a year, in stone, lime and bronze, from first survey to keys.</p>
-          <p class="studio__link" data-reveal style="--d:1">
-            <a class="tlink" href="about.html"><span>Studio &amp; legacy</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h14M12.5 6.5 18 12l-5.5 5.5"/></svg></a>
-          </p>
-        </div>
-
-        <figure class="studio__figure">
-          <div class="studio__frame" data-curtain>
-            <img srcset="assets/ksa/diriyah-courtyard-villas-640.webp 640w, assets/ksa/diriyah-courtyard-villas-1000.webp 1000w, assets/ksa/diriyah-courtyard-villas-1586.webp 1586w" sizes="(max-width: 900px) 100vw, 50vw" src="assets/ksa/diriyah-courtyard-villas-1000.webp" alt="A shaded courtyard in a Diriyah villa: rammed-earth walls, triangular openings, date palms and a stone floor in late light." width="1586" height="992" loading="lazy" decoding="async">
-          </div>
-          <figcaption class="studio__cap">
-            <span class="studio__cap-l"><span>Diriyah Courtyard Villas</span> · the inner court, 2027</span>
-            <em aria-hidden="true">Fig. 01</em>
-          </figcaption>
-        </figure>
-      </div>
-
-      <dl class="studio__metrics">
-        <div class="metric" data-reveal>
-          <dt>Delivered value</dt>
-          <dd><span class="fig-currency">AED</span> <span data-count="4.6" data-decimals="1">4.6</span><span class="fig-unit">B</span></dd>
-          <p>Since 2008</p>
-        </div>
-        <div class="metric" data-reveal style="--d:1">
-          <dt>Under development</dt>
-          <dd><span class="fig-currency">SAR</span> <span data-count="2.1" data-decimals="1">2.1</span><span class="fig-unit">B</span></dd>
-          <p>Riyadh · Jeddah · AlUla</p>
-        </div>
-        <div class="metric" data-reveal style="--d:2">
-          <dt>Residences</dt>
-          <dd><span data-count="2400">2,400</span></dd>
-          <p>640 in build</p>
-        </div>
-        <div class="metric" data-reveal style="--d:3">
-          <dt>Years</dt>
-          <dd><span data-count="18">18</span></dd>
-          <p>In the Gulf</p>
-        </div>
+      <dl class="outro__facts">
+        <div><dt>Location</dt><dd>Comporta, Alcácer do Sal</dd></div>
+        <div><dt>Completed</dt><dd>2019</dd></div>
+        <div><dt>Interior</dt><dd>720 m² · 6 bedrooms</dd></div>
+        <div><dt>Land</dt><dd>1.2 hectares</dd></div>
+        <div><dt>Brochure</dt><dd><a class="link" href="#" data-brochure>Download the brochure <span aria-hidden="true">PDF</span></a></dd></div>
       </dl>
     </div>
-  </section>
-
-  <!-- ═════════════ SELECTED WORK · flagship developments ═════════════ -->
-  <section class="featured section" id="featured" aria-labelledby="featured-title">
-    <div class="works-head">
-      <div class="works-head__l">
-        <span class="works-head__num" aria-hidden="true">02</span>
-        <h2 class="works-head__title" id="featured-title">Selected work</h2>
-      </div>
-      <span class="works-head__num works-head__num--mid" aria-hidden="true">02</span>
-      <div class="works-head__r">2023 - 2029</div>
-    </div>
-
-    <div class="works-list">
-
-      <a class="work" href="project.html?project=arbour-townhomes" data-cursor="Open project">
-        <div class="work__head">
-          <i class="work__tick work__tick--l" aria-hidden="true"></i>
-          <i class="work__tick work__tick--r" aria-hidden="true"></i>
-          <span class="work__br work__br--l" aria-hidden="true">[</span>
-          <h3 class="work__title" data-split>Arbour <em>Townhomes</em></h3>
-          <span class="work__br work__br--r" aria-hidden="true">]</span>
-        </div>
-        <div class="work__body">
-          <div class="work__col">
-            <div class="work__media" data-work-media>
-              <img srcset="assets/ksa/arbour-townhomes-640.webp 640w, assets/ksa/arbour-townhomes-1000.webp 1000w, assets/ksa/arbour-townhomes-1586.webp 1586w" sizes="(max-width: 900px) 100vw, 50vw" src="assets/ksa/arbour-townhomes-1000.webp" alt="Arbour Townhomes: pale limestone townhouses with deep loggias beneath mature ghaf trees in Dubai Hills." width="1586" height="992" loading="lazy" decoding="async" data-work-img>
-            </div>
-            <p class="work__meta">
-              <span class="work__loc">Dubai Hills, Dubai</span>
-              <span class="work__state"><i aria-hidden="true"></i>Ongoing<span class="work__sep">·</span>From AED 2.45M</span>
-            </p>
-          </div>
-        </div>
-      </a>
-
-      <a class="work" href="project.html?project=diriyah-courtyard-villas" data-cursor="Open project">
-        <div class="work__head">
-          <i class="work__tick work__tick--l" aria-hidden="true"></i>
-          <i class="work__tick work__tick--r" aria-hidden="true"></i>
-          <span class="work__br work__br--l" aria-hidden="true">[</span>
-          <h3 class="work__title" data-split>Diriyah <em>Courtyard Villas</em></h3>
-          <span class="work__br work__br--r" aria-hidden="true">]</span>
-        </div>
-        <div class="work__body">
-          <div class="work__col">
-            <div class="work__media" data-work-media>
-              <img srcset="assets/ksa/diriyah-courtyard-villas-640.webp 640w, assets/ksa/diriyah-courtyard-villas-1000.webp 1000w, assets/ksa/diriyah-courtyard-villas-1586.webp 1586w" sizes="(max-width: 900px) 100vw, 50vw" src="assets/ksa/diriyah-courtyard-villas-1000.webp" alt="Diriyah Courtyard Villas: rammed-earth walls, triangular openings and date palms around a stone courtyard." width="1586" height="992" loading="lazy" decoding="async" data-work-img>
-            </div>
-            <p class="work__meta">
-              <span class="work__loc">Diriyah, Riyadh</span>
-              <span class="work__state"><i aria-hidden="true"></i>Ongoing<span class="work__sep">·</span>From SAR 4.2M</span>
-            </p>
-          </div>
-        </div>
-      </a>
-
-      <a class="work" href="project.html?project=sun-bliss-residence" data-cursor="Open project">
-        <div class="work__head">
-          <i class="work__tick work__tick--l" aria-hidden="true"></i>
-          <i class="work__tick work__tick--r" aria-hidden="true"></i>
-          <span class="work__br work__br--l" aria-hidden="true">[</span>
-          <h3 class="work__title" data-split>Sun-Bliss <em>Residence</em></h3>
-          <span class="work__br work__br--r" aria-hidden="true">]</span>
-        </div>
-        <div class="work__body">
-          <div class="work__col">
-            <div class="work__media" data-work-media>
-              <img srcset="assets/ksa/sun-bliss-residence-640.webp 640w, assets/ksa/sun-bliss-residence-1000.webp 1000w, assets/ksa/sun-bliss-residence-1586.webp 1586w" sizes="(max-width: 900px) 100vw, 50vw" src="assets/ksa/sun-bliss-residence-1000.webp" alt="Sun-Bliss Residence: a limestone beach villa with an infinity pool and the Dubai skyline across the water." width="1586" height="992" loading="lazy" decoding="async" data-work-img>
-            </div>
-            <p class="work__meta">
-              <span class="work__loc">Palm Jumeirah, Dubai</span>
-              <span class="work__state work__state--done"><i aria-hidden="true"></i>Completed<span class="work__sep">·</span>From AED 18.5M</span>
-            </p>
-          </div>
-        </div>
-      </a>
-
-      <a class="work" href="project.html?project=red-sea-horizon" data-cursor="Open project">
-        <div class="work__head">
-          <i class="work__tick work__tick--l" aria-hidden="true"></i>
-          <i class="work__tick work__tick--r" aria-hidden="true"></i>
-          <span class="work__br work__br--l" aria-hidden="true">[</span>
-          <h3 class="work__title" data-split>Red Sea <em>Horizon</em></h3>
-          <span class="work__br work__br--r" aria-hidden="true">]</span>
-        </div>
-        <div class="work__body">
-          <div class="work__col">
-            <div class="work__media" data-work-media>
-              <img srcset="assets/ksa/red-sea-horizon-640.webp 640w, assets/ksa/red-sea-horizon-1000.webp 1000w, assets/ksa/red-sea-horizon-1586.webp 1586w" sizes="(max-width: 900px) 100vw, 50vw" src="assets/ksa/red-sea-horizon-1000.webp" alt="Red Sea Horizon: coral-stone waterfront residences with an infinity pool meeting the Red Sea at dusk." width="1586" height="992" loading="lazy" decoding="async" data-work-img>
-            </div>
-            <p class="work__meta">
-              <span class="work__loc">Jeddah, Saudi Arabia</span>
-              <span class="work__state work__state--soon"><i aria-hidden="true"></i>Upcoming<span class="work__sep">·</span>From SAR 6.8M</span>
-            </p>
-          </div>
-        </div>
-      </a>
-
-    </div>
-
-    <div class="wrap">
-      <div class="featured__more">
-        <p class="note">Nine developments, Dubai and Saudi Arabia.</p>
-        <a class="tlink" href="projects.html" data-cursor="All projects"><span>View all projects</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h14M12.5 6.5 18 12l-5.5 5.5"/></svg></a>
-      </div>
-    </div>
-  </section>
-
-  <!-- ═════════════ AREAS OF EXPERTISE ═════════════ -->
-  <section class="expertise section" id="expertise">
-    <div class="wrap">
-      <div class="section-head section-head--split">
-        <div>
-          <p class="eyebrow" data-reveal><span class="rule" aria-hidden="true"></span>03 · What we do</p>
-          <h2 class="display section-title" data-split>Four disciplines, <em>one developer.</em></h2>
-        </div>
-        <p class="section-note" data-reveal>Four disciplines, one roof.</p>
-      </div>
-
-      <details class="exp" open>
-        <summary class="exp__head">
-          <span class="exp__num">01</span>
-          <span class="exp__title">Development</span>
-          <span class="exp__note">Land, feasibility, masterplan, delivery</span>
-          <span class="exp__ico" aria-hidden="true"></span>
-        </summary>
-        <div class="exp__body"><div>
-          <p>We acquire, entitle and master-plan the site, then stay as developer through handover.</p>
-          <div class="exp__services"><span>Site acquisition</span><span>Feasibility</span><span>Masterplanning</span><span>Entitlements</span><span>Delivery</span></div>
-        </div></div>
-      </details>
-
-      <details class="exp">
-        <summary class="exp__head">
-          <span class="exp__num">02</span>
-          <span class="exp__title">Construction</span>
-          <span class="exp__note">Concrete, stone, joinery, handover</span>
-          <span class="exp__ico" aria-hidden="true"></span>
-        </summary>
-        <div class="exp__body"><div>
-          <p>Our own site teams and a few long-term trades. Stone cut to full-size drawings, joinery mocked up in the workshop.</p>
-          <div class="exp__services"><span>Main contracting</span><span>Stone &amp; lime</span><span>Joinery</span><span>MEP</span><span>Handover</span></div>
-        </div></div>
-      </details>
-
-      <details class="exp">
-        <summary class="exp__head">
-          <span class="exp__num">03</span>
-          <span class="exp__title">Advisory &amp; Consultation</span>
-          <span class="exp__note">Feasibility, design review, sales strategy</span>
-          <span class="exp__ico" aria-hidden="true"></span>
-        </summary>
-        <div class="exp__body"><div>
-          <p>For landowners and family offices: what can be built, what it will cost, what the market will absorb.</p>
-          <div class="exp__services"><span>Highest &amp; best use</span><span>Design review</span><span>Cost planning</span><span>Sales strategy</span></div>
-        </div></div>
-      </details>
-
-      <details class="exp">
-        <summary class="exp__head">
-          <span class="exp__num">04</span>
-          <span class="exp__title">Asset Stewardship</span>
-          <span class="exp__note">Management, leasing, long-term care</span>
-          <span class="exp__ico" aria-hidden="true"></span>
-        </summary>
-        <div class="exp__body"><div>
-          <p>We keep a stake in most of what we build, and manage it: service charges, maintenance, leasing.</p>
-          <div class="exp__services"><span>Property management</span><span>Leasing</span><span>Service charge</span><span>Planned maintenance</span></div>
-        </div></div>
-      </details>
-    </div>
-  </section>
-
-  <!-- ═════════════ 3D PRESENCE MAP ═════════════ -->
-  <section class="presence section" id="presence-map" data-navbar-dark>
-    <div class="wrap">
-      <div class="presence__head">
-        <div>
-          <p class="eyebrow" data-reveal><span class="rule" aria-hidden="true"></span>04 · Where we build</p>
-          <h2 class="display section-title" data-split>Dubai &amp; Saudi Arabia, <em>in relief.</em></h2>
-        </div>
-        <p class="section-note" data-reveal>Nine addresses across Dubai and Saudi Arabia. Select a pin.</p>
-      </div>
-
-      <div class="presence__stage" id="presenceStage">
-        <canvas id="presenceCanvas" aria-label="Interactive three-dimensional relief map of Dubai and Saudi Arabia with nine development pins"></canvas>
-        <div class="presence__pins" id="mapPins"></div>
-        <div class="presence__ui">
-          <div class="presence__legend" aria-hidden="true">
-            <span><i style="background:#F5F5F5"></i>Completed</span>
-            <span><i style="background:#C9A55A"></i>Ongoing</span>
-            <span><i style="border:1px solid #F5F5F5"></i>Upcoming</span>
-          </div>
-          <p class="presence__hint">Drag to orbit · Scroll to zoom</p>
-          <div class="mapcard" id="mapCard" aria-live="polite">
-            <button class="mapcard__close" type="button" id="mapCardClose" aria-label="Close project card">✕</button>
-            <div class="mapcard__img"><img srcset="assets/ksa/arbour-townhomes-640.webp 640w, assets/ksa/arbour-townhomes-1000.webp 1000w, assets/ksa/arbour-townhomes-1586.webp 1586w" sizes="(max-width: 900px) 100vw, 50vw" id="mapCardImg" loading="lazy" src="assets/ksa/arbour-townhomes-1000.webp" alt="" width="1586" height="992" decoding="async"></div>
-            <div class="mapcard__status"><span id="mapCardStatus">Ongoing</span><span id="mapCardCity">Dubai</span></div>
-            <h3 class="mapcard__name" id="mapCardName">Arbour Townhomes</h3>
-            <p class="mapcard__loc" id="mapCardLoc">Dubai Hills, Dubai</p>
-            <p class="mapcard__price"><span>Starting from</span><b id="mapCardPrice">AED 2.45M</b></p>
-            <a class="mapcard__link" id="mapCardLink" href="project.html?project=arbour-townhomes">View project <span aria-hidden="true">→</span></a>
-          </div>
-        </div>
-      </div>
-
-      <noscript>
-        <ul class="presence__fallback" style="margin-top:1px">
-          <li><a href="project.html?project=arbour-townhomes"><b>Arbour Townhomes</b>Dubai Hills · Ongoing</a></li>
-          <li><a href="project.html?project=diriyah-courtyard-villas"><b>Diriyah Courtyard Villas</b>Riyadh · Ongoing</a></li>
-          <li><a href="project.html?project=sun-bliss-residence"><b>Sun-Bliss Residence</b>Palm Jumeirah · Completed</a></li>
-        </ul>
-      </noscript>
-    </div>
-  </section>
-
-  <!-- ═════════════ 3D WALKTHROUGH ═════════════ -->
-  <section class="walkthrough" id="walkthrough" aria-label="3D walkthrough">
-    <div class="wrap">
-      <div class="walkthrough__head">
-        <div>
-          <p class="eyebrow" data-reveal><span class="rule" aria-hidden="true"></span>05 · Walkthrough</p>
-          <h2 class="display section-title" data-split>Step <em>inside.</em></h2>
-        </div>
-        <p class="walkthrough__note" data-reveal>One continuous take: location, exterior, interior, amenities, pricing.</p>
-      </div>
-    </div>
-
-    <section class="walk" id="walk" aria-label="Interactive 3D walkthrough of the Shadestate House">
-      <div class="walk__sticky">
-        <canvas id="scene" class="walk__canvas" aria-label="Procedural three-dimensional view of the Shadestate House"></canvas>
-        <div class="walk__grade" aria-hidden="true"></div>
-        <div class="walk__bloom" aria-hidden="true"></div>
-        <div class="walk__veil" aria-hidden="true"></div>
-
-        <div class="hud" aria-hidden="true">
-          <div class="hud__brand">Shadestate House <i>Walkthrough</i></div>
-          <ol class="hud__stages" id="hudStages">
-            <li data-stage="0"><span>01</span>Location</li>
-            <li data-stage="1"><span>02</span>Exterior</li>
-            <li data-stage="2"><span>03</span>Interior</li>
-            <li data-stage="3"><span>04</span>Amenities</li>
-            <li data-stage="4"><span>05</span>Pricing</li>
-          </ol>
-          <div class="hud__bar"><i id="hudBar"></i></div>
-          <div class="hud__num"><span id="hudPct">00</span><i>%</i></div>
-        </div>
-
-        <div class="copy" id="copy">
-          <!-- 01 · Location -->
-          <figure class="copy__item" data-in="0.005" data-out="0.355">
-            <p class="copy__eyebrow">01 · Location</p>
-            <h2 class="copy__line">Architecture with permanence.</h2>
-            <p class="copy__note">A walled compound in Dubai Hills, with the Burj Khalifa standing on the horizon behind the pool.</p>
-            <p class="copy__spec">Dubai Hills · 12 min to Downtown</p>
-          </figure>
-          <!-- 02 · Exterior -->
-          <figure class="copy__item copy__item--center" data-in="0.415" data-out="0.565">
-            <p class="copy__eyebrow">02 · Exterior</p>
-            <h2 class="copy__line copy__line--xl">Honest materials.</h2>
-            <p class="copy__note">Travertine laid as it was quarried, oak left to weather, bronze that will only darken.</p>
-            <p class="copy__spec">720 m² · Travertine, bronze &amp; oak</p>
-          </figure>
-          <!-- 03 · Interior -->
-          <figure class="copy__item" data-in="0.585" data-out="0.712">
-            <p class="copy__eyebrow">03 · Interior</p>
-            <h2 class="copy__line">Room to breathe.</h2>
-            <p class="copy__note">A double-height hall with a gallery above it, five bedrooms and glass from floor to sky at both ends.</p>
-            <p class="copy__spec">8 m hall · 5 bedrooms · 6 baths</p>
-          </figure>
-          <!-- 04 · Amenities -->
-          <figure class="copy__item" data-in="0.72" data-out="0.85">
-            <p class="copy__eyebrow">04 · Amenities</p>
-            <h2 class="copy__line">A private resort.</h2>
-            <p class="copy__note">An infinity pool against the rear glass, a pergola deck for the sunset, and shade wherever the sun lands.</p>
-            <p class="copy__spec">Infinity pool · Rooftop pergola deck</p>
-          </figure>
-          <!-- 05 · Pricing & handover -->
-          <figure class="copy__item" data-in="0.86" data-out="0.98">
-            <p class="copy__eyebrow">05 · Pricing &amp; handover</p>
-            <h2 class="copy__line">Yours by Q4 2026.</h2>
-            <p class="copy__note">A 60/40 payment plan with the balance on handover, and private viewings in Dubai and Riyadh.</p>
-            <p class="copy__spec">From AED 18.5M · 60/40 plan · Q4 2026</p>
-          </figure>
-        </div>
-
-        <div class="walk__scrollhint" aria-hidden="true"><span>Scroll</span><i></i></div>
-
-        <div class="fallback" id="fallback" role="img" aria-label="Illustration of the Shadestate House: a limestone villa with ghaf trees, a grass meadow and a reflecting pool at golden hour.">
-          <div class="fallback__sky"></div>
-          <div class="fallback__sun"></div>
-          <div class="fallback__hills"></div>
-          <div class="fallback__trees"><i></i><i></i><i></i><i></i></div>
-          <div class="fallback__house"><span class="fallback__glass"></span><span class="fallback__door"></span><span class="fallback__slats"></span><span class="fallback__wing"></span></div>
-          <div class="fallback__field"></div>
-          <div class="fallback__pool"></div>
-          <div class="fallback__copy">
-            <p class="copy__eyebrow">The Shadestate House · Dubai Hills</p>
-            <h2 class="copy__line">Architecture built<br>to <em>endure</em>.</h2>
-            <p class="copy__note">Your browser cannot display the 3D walkthrough. The house is a limestone and timber villa with deep window reveals, ghaf trees and a reflecting pool.</p>
-          </div>
-        </div>
-      </div>
-    </section>
-  </section>
-
-  <!-- ═════════════ PRIVATE VIEWING / ENQUIRE ═════════════ -->
-  <section class="viewing" id="inquire" data-navbar-dark>
-    <div class="wrap viewing__grid">
-      <div>
-        <p class="eyebrow eyebrow--dark"><span class="rule" aria-hidden="true"></span>06 · Private viewings</p>
-        <h2 class="viewing__title" data-split>Come and stand <em>in the shade.</em></h2>
-        <p class="viewing__lede">Tell us which address interests you and we will send the full presentation before you travel.</p>
-        <div class="viewing__meta">
-          <p><strong>Dubai</strong> · Office 1204, Bay Square 7, Business Bay · <a href="tel:+97140000000">+971 4 000 0000</a></p>
-          <p><strong>Riyadh</strong> · Villa 12, Al Nakheel, Riyadh 12381 · <a href="tel:+966110000000">+966 11 000 0000</a></p>
-          <p><a href="mailto:hello@shadestate.com">hello@shadestate.com</a> · <span data-clock="dubai">--:--</span> Dubai · <span data-clock="riyadh">--:--</span> Riyadh</p>
-        </div>
-      </div>
-
-      <div class="viewing__cta">
-        <p class="viewing__cta-kicker">Three short steps</p>
-        <h3 class="viewing__cta-title">Tell us where you are looking. We will do the rest.</h3>
-        <ol class="viewing__steps">
-          <li><span>01</span>Interest &amp; project</li>
-          <li><span>02</span>Your details &amp; timeline</li>
-          <li><span>03</span>Viewing date &amp; summary</li>
-        </ol>
-        <a class="btn btn--gold btn--lg magnetic" href="contact.html">Start an enquiry <span aria-hidden="true">→</span></a>
-        <p class="viewing__note">Or write to <a href="mailto:hello@shadestate.com">hello@shadestate.com</a> · reply within one working day.</p>
-      </div>
-    </div>
-  </section>
-</main>
-
-<!-- ═════════════ FOOTER ═════════════ -->
-<footer class="footer" data-navbar-dark>
-  <div class="wrap">
-    <div class="footer__top">
-      <nav class="footer__nav" aria-label="Footer">
-        <a href="index.html">Home</a>
-        <a href="projects.html">Projects</a>
-        <a href="about.html">Studio &amp; legacy</a>
-        <a href="index.html#expertise">Expertise</a>
-        <a href="index.html#presence-map">Where we build</a>
-        <a href="blog.html">Journal</a>
-        <a href="contact.html">Contact</a>
-      </nav>
-      <form class="news" data-news novalidate>
-        <label for="newsEmail">New residences, four times a year</label>
-        <input id="newsEmail" name="email" type="email" placeholder="Your email" autocomplete="email" required>
-        <button type="submit">Subscribe</button>
-        <p class="news__msg" data-news-msg role="status"></p>
-      </form>
-    </div>
-
-    <div class="footer__offices">
-      <div class="footer__office">
-        <h2>Office · Dubai</h2>
-        <p>Office 1204, Bay Square 7<br>Business Bay<br>Dubai, United Arab Emirates</p>
-        <p><a href="tel:+97140000000">+971 4 000 0000</a></p>
-      </div>
-      <div class="footer__office">
-        <h2>Office · Riyadh</h2>
-        <p>Villa 12, Al Nakheel<br>Riyadh 12381<br>Saudi Arabia</p>
-        <p><a href="tel:+966110000000">+966 11 000 0000</a></p>
-      </div>
-      <div class="footer__office">
-        <h2>Enquiries</h2>
-        <p><a href="mailto:hello@shadestate.com">hello@shadestate.com</a></p>
-        <p>Sunday – Thursday<br>09:00 – 18:00 GST</p>
-      </div>
-    </div>
-
-    <div class="footer__word">
-      <div class="footer__letters" data-footer-letters="SHADESTATE" aria-hidden="true">SHADESTATE</div>
-    </div>
-    <div class="footer__skyline" data-skyline aria-hidden="true"></div>
-
-    <div class="footer__legal">
-      <p>© <span id="year">2026</span> Shadestate. All rights reserved.</p>
-      <nav aria-label="Legal">
-        <a href="privacy.html">Privacy</a>
-        <a href="terms.html">Terms</a>
-        <a href="terms.html#agency">Agency disclosure</a>
-        <button type="button" onclick="window.scrollTo({top:0,behavior:'smooth'})">Back to top ↑</button>
-      </nav>
-      <p>Demonstration template. Nothing entered is transmitted or stored.</p>
-    </div>
+    <footer class="site-footer">
+      <span>Shadestate Developments</span>
+      <span>Lisbon · Comporta · Cascais</span>
+      <span>Shadestate is a fictional studio created for this template.</span>
+    </footer>
   </div>
-</footer>
+</section>
 
-<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js" defer></script>
-<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/ScrollTrigger.min.js" defer></script>
-<script src="https://cdn.jsdelivr.net/npm/lenis@1.3.11/dist/lenis.min.js" defer></script>
-<script src="assets/js/img-manifest.js" defer></script>
-<script src="assets/js/projects-data.js" defer></script>
-<script src="site.js" defer></script>
-<script src="script.js" defer></script>
-<script type="module" src="map/presence.js"></script>
-<script type="module" src="walkthrough/scene.js"></script>
+<script type="module" src="scene.js"></script>
 </body>
 </html>
