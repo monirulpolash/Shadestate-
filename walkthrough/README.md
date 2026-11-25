@@ -12,10 +12,21 @@ the west, a loggia cut into that upper front, a floating oak stair in the void, 
 gallery around it, a bridge over the entry, a roof lantern over the hall skylight, and a
 roof deck with a pergola over the single-storey wing.
 
-**Everything is generated in code.** No `.glb`, no `.jpg`, no HDRI. Every texture is drawn
-into a `<canvas>` at runtime, every form is built from primitives, and one procedural
-equirect sky is both the visible background *and* the PMREM environment map — so a window
-mullion, the pool and the horizon always reflect the same sun.
+**Structure is generated in code, surfaces are drawn or scanned.** No `.glb`, no HDRI.
+Every form is built from primitives, every texture is composed into a `<canvas>` at
+runtime, and one procedural equirect sky is both the visible background *and* the PMREM
+environment map — so a window mullion, the pool and the horizon always reflect the same
+sun.
+
+Four CC0 photo sets from **ambientCG** are laid under the drawings as grain:
+Travertine009 (facade courses, estate wall, pool coping, paving), Asphalt031 (the
+boulevard and the lane), WoodFloor051 (the oak floors) and Grass004 (the lawn mat).
+They are optional at runtime — each set is fetched with a 2.5 s deadline and a failure
+path, and a surface whose photo does not arrive keeps the procedural map it always had.
+Colour maps are 1k/768 on desktop and 512 on a phone; normal and roughness maps are 512
+everywhere. The whole set is ~500 kB on desktop and ~240 kB on a phone, and it is served
+from `textures/` beside `scene.js`, with `access-control-allow-origin: *` from Vercel so
+the Framer component can load the same files.
 
 ```
 shadestate-3d/
@@ -24,6 +35,7 @@ shadestate-3d/
 ├── scene.js                the whole experience (ES module, ~3,000 lines)
 ├── fonts.css               @font-face for the two local webfonts
 ├── fonts/                  Cormorant Garamond + Plus Jakarta Sans (latin woff2)
+├── textures/               CC0 WebP maps: asphalt, travertine, oak, grass
 ├── vendor/three.module.js  three.js r160, vendored (see "Three.js" below)
 ├── ShadestateWalkthrough.tsx  self-contained Framer Code Component
 ├── previews/               captured frames of each stage

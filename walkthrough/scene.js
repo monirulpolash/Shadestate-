@@ -22,7 +22,7 @@
 /* three.js is imported inside createWalkthrough() so a page view above the fold
    never downloads or parses it. */
 
-const BUILD = 'shadestate-3d/2.0';
+const BUILD = 'shadestate-3d/2.1';
 
 /* ─────────────────────────────────────────────────────────────────────────────
    0 · the public entry point
@@ -63,7 +63,23 @@ const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
 const smoothstep = (a, b, x) => { const t = clamp((x - a) / (b - a)); return t * t * (3 - 2 * t); };
 const lerp = (a, b, t) => a + (b - a) * t;
 
-const cv = (w, h = w) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; };
+/* Every one of these canvases is drawn into once and then uploaded as a texture,
+   and several are read back pixel by pixel (the height maps that become normal
+   maps). Asking for a CPU-backed 2d context up front is what keeps that read
+   cheap on a real device, where a GPU-backed canvas has to be copied back. */
+/* Set per tier when the scene boots: the normal maps (and the one 2k weave)
+   are the textures whose resolution a phone cannot afford, so the lite tier
+   builds them at half size. Everything else keeps its authored resolution. */
+let NRM_CAP = 0;
+let LITE_TEX = false;
+
+const cv = (w, h = w) => {
+  const c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  const get = c.getContext.bind(c);
+  c.getContext = (type, opts) => get(type, type === '2d' ? { willReadFrequently: true, ...(opts || {}) } : opts);
+  return c;
+};
 
 function tex(canvasEl, { repeat = [1, 1], srgb = false } = {}) {
   const t = new THREE.CanvasTexture(canvasEl);
@@ -75,34 +91,154 @@ function tex(canvasEl, { repeat = [1, 1], srgb = false } = {}) {
   return t;
 }
 
-/** Tangent-space normal map from a greyscale height canvas. */
-function normalFromHeight(src, strength = 2.0) {
-  const w = src.width, h = src.height;
+/** Tangent-space normal map from a greyscale height canvas.
+
+    This is the single most expensive thing the scene does at boot: every pixel
+    of every map reads its four neighbours and normalises. Written as a flat
+    loop over typed arrays with the row offsets hoisted and the wrap handled
+    inline, it is the same image for a fraction of the time (the closure-and-
+    modulo version cost ~18 s of the 20 s boot on a 2-vCPU box). */
+function normalFromHeight(src, strength = 2.0, maxSize = 0) {
+  let w = src.width, h = src.height;
+  const cap = maxSize || NRM_CAP;
+  if (cap > 0 && w > cap) {
+    /* a smaller working copy: normal maps carry medium detail, and the value
+       is re-normalised anyway, so half resolution is nearly free visually */
+    const c = cv(cap, Math.round(cap * h / w));
+    c.getContext('2d').drawImage(src, 0, 0, c.width, c.height);
+    src = c; w = c.width; h = c.height;
+  }
   const sd = src.getContext('2d').getImageData(0, 0, w, h).data;
   const out = cv(w, h);
   const octx = out.getContext('2d');
   const od = octx.createImageData(w, h);
-  const H = (x, y) => sd[(((y + h) % h) * w + ((x + w) % w)) * 4] / 255;
+  const dst = od.data;
+  const k = strength / 255;
+  const wm1 = w - 1, hm1 = h - 1;
+  let rowPrev = hm1 * w, row = 0, rowNext = w;
   for (let y = 0; y < h; y++) {
+    const p0 = rowPrev * 4, p1 = row * 4, p2 = rowNext * 4;
     for (let x = 0; x < w; x++) {
-      const dx = (H(x + 1, y) - H(x - 1, y)) * strength;
-      const dy = (H(x, y + 1) - H(x, y - 1)) * strength;
-      let nx = -dx, ny = -dy, nz = 1;
-      const l = Math.hypot(nx, ny, nz);
-      nx /= l; ny /= l; nz /= l;
-      const i = (y * w + x) * 4;
-      od.data[i] = (nx * 0.5 + 0.5) * 255;
-      od.data[i + 1] = (ny * 0.5 + 0.5) * 255;
-      od.data[i + 2] = (nz * 0.5 + 0.5) * 255;
-      od.data[i + 3] = 255;
+      const xl = x === 0 ? wm1 : x - 1, xr = x === wm1 ? 0 : x + 1;
+      const dx = (sd[p1 + xr * 4] - sd[p1 + xl * 4]) * k;
+      const dy = (sd[p2 + x * 4] - sd[p0 + x * 4]) * k;
+      const il = 1 / Math.sqrt(dx * dx + dy * dy + 1);
+      const i = p1 + x * 4;
+      dst[i] = (-dx * il * 0.5 + 0.5) * 255;
+      dst[i + 1] = (-dy * il * 0.5 + 0.5) * 255;
+      dst[i + 2] = (il * 0.5 + 0.5) * 255;
+      dst[i + 3] = 255;
     }
+    rowPrev = row; row = rowNext;
+    rowNext = y + 2 > hm1 ? 0 : rowNext + w;
   }
   octx.putImageData(od, 0, 0);
   return out;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   2 · procedural textures
+   2 · photo scans laid under the drawings (ambientCG, CC0)
+
+   The surfaces here are still drawn by this file; four photo sets are laid
+   under the drawings as grain (travertine, asphalt, oak, lawn). They are all
+   optional: each request has a deadline and a failure path, and a surface with
+   no photo keeps the drawing it always had. That matters because the same
+   scene runs on a Vercel page, inside a Framer component and in a bare test
+   harness, and only the first of those is guaranteed to share an origin.
+
+   Sizes are tiered: 1k/768 colour on desktop, 512 on a phone; normal and
+   roughness maps are 512 everywhere because they are sampled through a tiled,
+   high-frequency UV.
+   ───────────────────────────────────────────────────────────────────────────── */
+const PHOTO = { asphalt: null, travertine: null, oak: null, grass: null };
+const PHOTO_MANIFEST = {
+  asphalt: { color: ['@768', '@512'], normal: ['@512', '@512'] },
+  travertine: { color: ['@1k', '@512'], normal: ['@512', '@512'], rough: ['@512', '@512'] },
+  oak: { color: ['@1k', '@512'], normal: ['@512', '@512'], rough: ['@512', '@512'] },
+  grass: { color: ['@768', '@512'] }
+};
+
+function loadPhoto(url, timeout = 5000) {
+  return new Promise((resolve) => {
+    if (typeof Image === 'undefined') { resolve(null); return; }
+    const img = new Image();
+    let settled = false;
+    const done = (v) => { if (!settled) { settled = true; resolve(v); } };
+    img.crossOrigin = 'anonymous';
+    img.decoding = 'async';
+    img.onload = () => done(img.naturalWidth > 0 ? img : null);
+    img.onerror = () => done(null);
+    setTimeout(() => done(null), timeout);
+    img.src = url;
+  });
+}
+
+/** Fetch every set at once; a set without a colour map is dropped whole. */
+async function loadPhotos(base, lite) {
+  if (!base) return;
+  const tier = lite ? 1 : 0;
+  const jobs = [];
+  for (const [key, kinds] of Object.entries(PHOTO_MANIFEST)) {
+    jobs.push((async () => {
+      const out = {};
+      await Promise.all(Object.entries(kinds).map(async ([kind, sizes]) => {
+        out[kind] = await loadPhoto(base + key + '-' + kind + sizes[tier] + '.webp');
+      }));
+      if (out.color) PHOTO[key] = out;
+    })());
+  }
+  await Promise.all(jobs);
+}
+
+/**
+ * Lay a photo into a square canvas as surface grain. `mode` picks how much of
+ * the drawing underneath survives: multiply keeps the drawn structure and
+ * borrows the photo's figure, soft-light only borrows its contrast.
+ */
+function photoUnder(ctx, img, size, { tiles = 1, mode = 'multiply', alpha = 1, dx = 0, dy = 0 } = {}) {
+  if (!img) return;
+  ctx.save();
+  ctx.globalCompositeOperation = mode;
+  ctx.globalAlpha = alpha;
+  const step = size / tiles;
+  for (let ty = 0; ty < tiles; ty++) {
+    for (let tx = 0; tx < tiles; tx++) {
+      ctx.drawImage(img, dx + tx * step, dy + ty * step, step, step);
+    }
+  }
+  ctx.restore();
+}
+
+/** The same, but each cell takes a different crop, so a 4×4 deck of pavers is
+    sixteen different pieces of stone rather than the same one repeated. */
+function photoCrops(ctx, img, size, n, { mode = 'multiply', alpha = 1, srcTiles = 3 } = {}) {
+  if (!img) return;
+  const step = size / n;
+  const sw = img.naturalWidth / srcTiles, sh = img.naturalHeight / srcTiles;
+  ctx.save();
+  ctx.globalCompositeOperation = mode;
+  ctx.globalAlpha = alpha;
+  let k = 0;
+  for (let ty = 0; ty < n; ty++) {
+    for (let tx = 0; tx < n; tx++) {
+      const sx = (k * 0.37 % srcTiles) * sw;
+      const sy = (Math.floor(k * 0.61) % srcTiles) * sh;
+      ctx.drawImage(img, sx, sy, sw, sh, tx * step, ty * step, step, step);
+      k++;
+    }
+  }
+  ctx.restore();
+}
+
+/** A photo map (normal, roughness) as a texture canvas, cap-aware. */
+function photoCanvas(img, size = 512) {
+  const c = cv(size);
+  c.getContext('2d').drawImage(img, 0, 0, size, size);
+  return c;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   3 · procedural textures
    ───────────────────────────────────────────────────────────────────────────── */
 function makeStone(base = '#e7dfd0', poreRGB = '124,110,90') {
   const S = 1024;
@@ -149,6 +285,12 @@ function makeStone(base = '#e7dfd0', poreRGB = '124,110,90') {
     grd.addColorStop(0, `rgba(${v},${v},${v},.5)`);
     grd.addColorStop(1, 'rgba(180,180,180,0)');
     rg.fillStyle = grd; rg.beginPath(); rg.arc(x, y, r, 0, 7); rg.fill();
+  }
+  /* the same scanned stone, finer, for the large plain fields: estate wall,
+     pool coping, kerbs, roof fascia */
+  if (PHOTO.travertine) {
+    photoUnder(g, PHOTO.travertine.color, S, { tiles: 3, mode: 'luminosity', alpha: 0.42 });
+    photoUnder(g, PHOTO.travertine.color, S, { tiles: 3, mode: 'soft-light', alpha: 0.20 });
   }
   return { map: c, normal: normalFromHeight(hc, 1.45), rough: rc };
 }
@@ -222,6 +364,19 @@ function makeAshlar(base = [233, 225, 210], courses = 5) {
     hg.fillStyle = 'rgba(40,40,40,.95)'; hg.fillRect(0, y0 + ch - 2.4, S, 2.8);
   }
 
+  /* the drawn courses carry the architecture; the scan carries the stone.
+     Multiply keeps every joint and block tone and lets the travertine's own
+     sediment bands and pores show through; the small screen pass puts back the
+     light the multiply took out. */
+  const trav = PHOTO.travertine;
+  if (trav) {
+    /* Luminosity rather than multiply: the scan keeps its figure (bands,
+       pores, block-to-block variation) but borrows the drawn stone's own hue
+       instead of pushing the whole facade orange. */
+    photoUnder(g, trav.color, S, { tiles: 2, mode: 'luminosity', alpha: 0.55 });
+    photoUnder(g, trav.color, S, { tiles: 2, mode: 'soft-light', alpha: 0.28 });
+  }
+
   // whole-surface dust and weather
   for (let i = 0; i < 20000; i++) {
     g.fillStyle = rnd() > 0.5 ? 'rgba(255,255,250,.05)' : 'rgba(146,132,110,.05)';
@@ -287,6 +442,28 @@ function makePoolTile() {
 
 function makeOakFloor() {
   const S = 1024, c = cv(S), g = c.getContext('2d');
+  /* the scanned board floor, warmed toward the interior's oak grade. Its own
+     plank seams and grain do the work; the drawing below stays as the
+     fallback when the scan is not reachable. */
+  const oakPhoto = PHOTO.oak;
+  if (oakPhoto) {
+    g.fillStyle = '#a98a62';
+    g.fillRect(0, 0, S, S);
+    g.save();
+    g.globalCompositeOperation = 'luminosity';
+    g.globalAlpha = 0.88;
+    g.drawImage(oakPhoto.color, 0, 0, S, S);
+    g.globalCompositeOperation = 'multiply';
+    g.globalAlpha = 0.22;
+    g.fillStyle = 'rgba(206,178,134,1)';
+    g.fillRect(0, 0, S, S);
+    g.restore();
+    return {
+      map: c,
+      normal: oakPhoto.normal ? photoCanvas(oakPhoto.normal, 512) : null,
+      rough: oakPhoto.rough ? photoCanvas(oakPhoto.rough, 512) : null
+    };
+  }
   const hc = cv(S), hg = hc.getContext('2d');
   g.fillStyle = '#6f4a2c'; g.fillRect(0, 0, S, S);
   hg.fillStyle = '#808080'; hg.fillRect(0, 0, S, S);
@@ -332,6 +509,43 @@ function makeOakFloor() {
   return { map: c, normal: normalFromHeight(hc, 0.9) };
 }
 
+function makeAsphalt() {
+  const S = 512, c = cv(S), g = c.getContext('2d');
+  const hc = cv(S), hg = hc.getContext('2d');
+  const a = PHOTO.asphalt;
+  if (a) {
+    /* Luminosity over a warm mid-grey: the scan supplies the aggregate and the
+       patched, oil-stained figure; the base supplies Dubai tarmac's tone, so
+       the street does not go either blue-grey or soot-black. */
+    g.fillStyle = '#5c5b58';
+    g.fillRect(0, 0, S, S);
+    g.save();
+    g.globalCompositeOperation = 'luminosity';
+    g.globalAlpha = 0.78;
+    g.drawImage(a.color, 0, 0, S, S);
+    g.globalCompositeOperation = 'soft-light';
+    g.globalAlpha = 0.34;
+    g.drawImage(a.color, 0, 0, S, S);
+    g.restore();
+    hg.fillStyle = '#7a7a7a'; hg.fillRect(0, 0, S, S);
+    return {
+      map: c,
+      normal: a.normal ? photoCanvas(a.normal, 512) : null,
+      rough: a.rough ? photoCanvas(a.rough, 512) : null
+    };
+  }
+  g.fillStyle = '#5c5854'; g.fillRect(0, 0, S, S);
+  hg.fillStyle = '#7a7a7a'; hg.fillRect(0, 0, S, S);
+  for (let i = 0; i < 24000; i++) {
+    const v = rnd();
+    g.fillStyle = v > 0.55 ? `rgba(190,186,178,${rr(0.03, 0.10).toFixed(3)})` : `rgba(24,22,20,${rr(0.03, 0.11).toFixed(3)})`;
+    const s = rr(0.8, 2.2);
+    g.fillRect(rnd() * S, rnd() * S, s, s);
+    if (v > 0.7) hg.fillStyle = `rgba(${rnd() > 0.5 ? 190 : 60},${rnd() > 0.5 ? 190 : 60},${rnd() > 0.5 ? 190 : 60},.18)`;
+  }
+  return { map: c, normal: normalFromHeight(hc, 0.55) };
+}
+
 function makeConcrete() {
   const S = 512, c = cv(S), g = c.getContext('2d');
   const hc = cv(S), hg = hc.getContext('2d');
@@ -371,13 +585,28 @@ function makePaving() {
       g.fillRect(i * t + 1.2, j * t + 1.2, t - 2.4, t - 2.4);
       hg.fillStyle = `rgb(${168 + l},168,168)`;
       hg.fillRect(i * t + 1.2, j * t + 1.2, t - 2.4, t - 2.4);
-      // a little sand drifted into the corner of each paver
-      const grd = g.createRadialGradient(i * t + t * 0.5, j * t + t * 0.5, 0,
-                                        i * t + t * 0.5, j * t + t * 0.5, t * 0.7);
-      grd.addColorStop(0, `rgba(196,184,160,${rr(0.02, 0.10).toFixed(3)})`);
-      grd.addColorStop(1, 'rgba(196,184,160,0)');
-      g.fillStyle = grd; g.fillRect(i * t, j * t, t, t);
     }
+  }
+  /* a different crop of real travertine into each of the sixteen pavers, so a
+     deck never repeats one piece of stone sixteen times */
+  const trav = PHOTO.travertine;
+  if (trav) {
+    photoCrops(g, trav.color, S, n, { mode: 'luminosity', alpha: 0.62, srcTiles: 3 });
+    photoCrops(g, trav.color, S, n, { mode: 'soft-light', alpha: 0.25, srcTiles: 3 });
+    /* the joints survive the photo: re-cut the recess line and its lit edge */
+    g.save();
+    for (let j = 0; j < n; j++) {
+      g.fillStyle = 'rgba(150,138,116,.55)';
+      g.fillRect(0, j * t - 1.1, S, 2.2);
+      g.fillRect(j * t - 1.1, 0, 2.2, S);
+      g.fillStyle = 'rgba(255,252,244,.30)';
+      g.fillRect(0, j * t + 1.1, S, 0.9);
+      g.fillRect(j * t + 1.1, 0, 0.9, S);
+      hg.fillStyle = 'rgba(46,46,46,.9)';
+      hg.fillRect(0, j * t - 1.1, S, 2.2);
+      hg.fillRect(j * t - 1.1, 0, 2.2, S);
+    }
+    g.restore();
   }
   for (let i = 0; i < 9000; i++) {
     g.fillStyle = rnd() > 0.5 ? `rgba(255,252,242,${rr(0.02, 0.07).toFixed(3)})` : `rgba(120,112,96,${rr(0.02, 0.08).toFixed(3)})`;
@@ -637,8 +866,25 @@ function makeGrassTuft() {
    one draw call, and the tufts merge into a lawn. */
 function makeLawnMat() {
   const S = 1024, c = cv(S), g = c.getContext('2d');
-  g.fillStyle = '#5d6b30';
-  g.fillRect(0, 0, S, S);
+  /* a real mown lawn under the instanced blades: the scan gives the thatch and
+     soil shadow between tufts that a flat fill cannot, and the drawn blades
+     below give the depth the camera reads at the pool edge */
+  const grassPhoto = PHOTO.grass;
+  if (grassPhoto) {
+    g.fillStyle = '#4b5527';
+    g.fillRect(0, 0, S, S);
+    g.save();
+    g.globalCompositeOperation = 'luminosity';
+    g.globalAlpha = 0.50;
+    g.drawImage(grassPhoto.color, 0, 0, S, S);
+    g.globalCompositeOperation = 'soft-light';
+    g.globalAlpha = 0.16;
+    g.drawImage(grassPhoto.color, 0, 0, S, S);
+    g.restore();
+  } else {
+    g.fillStyle = '#5d6b30';
+    g.fillRect(0, 0, S, S);
+  }
 
   // broad mottling, first: light and shade across the mat
   for (let i = 0; i < 260; i++) {
@@ -700,7 +946,7 @@ function makeLeafCluster() {
   const S = 512, C = 256;
   const c = cv(S), g = c.getContext('2d');
   const ac = cv(S), a = ac.getContext('2d');
-  g.fillStyle = '#6a7359';
+  g.fillStyle = '#4e583c';
   g.fillRect(0, 0, S, S);
   a.fillStyle = '#000';
   a.fillRect(0, 0, S, S);
@@ -710,9 +956,12 @@ function makeLeafCluster() {
   /* one olive leaf: base at the origin, pointing along +x, a narrow lanceolate
      blade with a pale midrib. lum 0 = shaded heart, 1 = sunlit rim. */
   const leaf = (bx, by, ang, len, hw, lum, warm, shade, alpha) => {
-    const R = 138 + 84 * lum + 10 * warm;
-    const G = 148 + 84 * lum + 3 * warm;
-    const B = 140 + 78 * lum - 6 * warm;
+    /* silver-sage, not mint: the blue of the old ramp came from G and B
+       travelling together, which reads as a worn plastic leaf at any light.
+       A real olive is grey-green with a warm edge and a pale underside. */
+    const R = 88 + 78 * lum + 14 * warm;
+    const G = 100 + 74 * lum + 6 * warm;
+    const B = 66 + 48 * lum - 12 * warm;
     for (const [ctx, a2] of [[g, 1], [a, alpha]]) {
       ctx.save();
       ctx.translate(bx, by);
@@ -958,7 +1207,7 @@ function makeBoucle(tint = [238, 230, 216]) {
 
 /** A chunky hand-woven wool rug: warp, weft, a darker border, sun-faded flecks. */
 function makeRug() {
-  const S = 2048, c = cv(S), g = c.getContext('2d');
+  const S = LITE_TEX ? 1024 : 2048, c = cv(S), g = c.getContext('2d');
   const hc = cv(S), hg = hc.getContext('2d');
   g.fillStyle = '#cbc4b6'; g.fillRect(0, 0, S, S);
   hg.fillStyle = '#808080'; hg.fillRect(0, 0, S, S);
@@ -1279,6 +1528,25 @@ let THREE = null;   /* the namespace, loaded once and shared by every instance *
    few matchMedia results: no three.js download, no shader compile, no
    procedural texture, no render loop.
    ───────────────────────────────────────────────────────────────────────────── */
+
+/* A breathing point between build stages. The scene is one long synchronous
+   construction — textures, geometry, the sky, the first shader compile — and
+   without these the whole of it lands in a single task, so the page cannot
+   paint or answer a scroll while it runs. Each stage now ends on an idle
+   callback (a rAF fallback), which keeps the longest task short without
+   adding to the total: the same work, split into slices the browser can
+   schedule around the user. */
+const nextTick = (timeout = 90) => new Promise((resolve) => {
+  if (typeof requestIdleCallback === 'function') {
+    const t = setTimeout(resolve, timeout);
+    requestIdleCallback(() => { clearTimeout(t); resolve(); }, { timeout });
+  } else if (typeof requestAnimationFrame === 'function') {
+    requestAnimationFrame(() => resolve());
+  } else {
+    setTimeout(resolve, 0);
+  }
+});
+
 export async function createWalkthrough(container, options = {}) {
   if (!container || !container.nodeType) throw new Error('createWalkthrough: a container element is required');
   const opts = { ...DEFAULTS, ...options };
@@ -1310,7 +1578,28 @@ export async function createWalkthrough(container, options = {}) {
   /* the drawing buffer is never larger than this, whatever the device reports:
      1.25× is already retina-crisp for this soft, painterly render and costs a
      quarter of the fragments of a 2× buffer. */
-  const DPR_MAX = opts.dprMax != null ? opts.dprMax : (MOBILE ? 1.25 : (TABLET ? 1.35 : 1.5));
+  /* the panel's Max pixel ratio is a ceiling, never a floor for a weaker tier:
+     a 1.5 setting on a phone still caps at the lite tier's 1.25 */
+  const TIER_DPR = MOBILE ? 1.25 : (TABLET ? 1.4 : 1.75);
+  const DPR_MAX = opts.dprMax != null ? Math.min(opts.dprMax, TIER_DPR) : TIER_DPR;
+  /* a phone gets half-size normal maps: four times fewer pixels to derive, and
+     four times less texture memory for the same look at a 390 px canvas */
+  LITE_TEX = MOBILE;
+  NRM_CAP = MOBILE ? 512 : (TABLET ? 768 : 0);
+
+  /* Photo scans start downloading now, in parallel with three.js, the renderer
+     and the procedural canvases. They are only awaited just before the
+     materials are built, and never for longer than 2.5 s: a phone on a slow
+     connection gets the all-procedural scene rather than a blank canvas. */
+  let photos = null;
+  {
+    let base = opts.textureBase;
+    if (!base) {
+      try { base = new URL('./textures/', import.meta.url).href; }
+      catch (_) { base = './textures/'; }
+    }
+    photos = loadPhotos(base, MOBILE).catch(() => null);
+  }
 
   const section = container;
   /* A host may drive progress from a taller element than the box the canvas
@@ -1385,6 +1674,8 @@ export async function createWalkthrough(container, options = {}) {
     let setCity = () => {};
     let cityMood = null;
     const camera = new THREE.PerspectiveCamera(35, 1, 0.1, 4200);   /* the skyline sits a kilometre out */
+
+    await nextTick();
 
     /* ── sky + environment ───────────────────────────────────────────────
        One equirect canvas: v 0 is the zenith, v 0.5 the horizon. Stops are
@@ -1528,7 +1819,7 @@ export async function createWalkthrough(container, options = {}) {
             const f = field[y * CW + x];
             const gx = field[y * CW + Math.min(CW - 1, x + 1)] - field[y * CW + Math.max(0, x - 1)];
             const gy = field[Math.min(bandH - 1, y + 1) * CW + x] - field[Math.max(0, y - 1) * CW + x];
-            let dens = smoothstep(base - 0.04, base + 0.24, f) * band;
+            let dens = smoothstep(base - 0.10, base + 0.30, f) * band;
             if (dens <= 0.001) continue;
             // shade from the field's own gradient, lit from the sun's azimuth
             const az = (x / CW) * Math.PI * 2;
@@ -1547,9 +1838,15 @@ export async function createWalkthrough(container, options = {}) {
           }
         }
         cctx.putImageData(img, 0, 0);
+        /* one soft pass before it becomes sky: a cumulus edge is a gradient,
+           not a cut line, and the field's own threshold leaves it crisp */
+        const soft = cv(CW, bandH);
+        const sctx = soft.getContext('2d');
+        sctx.filter = 'blur(1.8px)';
+        sctx.drawImage(cloudCanvas, 0, 0);
         // scaled up by the canvas itself: soft, and no half-res grid
         g.imageSmoothingEnabled = true;
-        g.drawImage(cloudCanvas, 0, y0Full, W, bandH * 2);
+        g.drawImage(soft, 0, y0Full, W, bandH * 2);
       }
 
       /* ── the sun ───────────────────────────────────────────────────────── */
@@ -1982,7 +2279,12 @@ scene.background = null;
       return mat;
     }
 
+    await nextTick();
+
     /* ── materials ─────────────────────────────────────────────────────── */
+    if (photos && !PHOTO.asphalt) {
+      await Promise.race([photos, new Promise((r) => setTimeout(r, 2500))]);
+    }
     const stoneA = makeAshlar([221, 211, 194], 5);
     const stoneB = makeStone('#ded4c1', '118,104,86');
     const poolTile = makePoolTile();
@@ -1990,6 +2292,7 @@ scene.background = null;
     const conc = makeConcrete();
     const grav = makeGravel();
     const pave = makePaving();
+    const asph = makeAsphalt();
     const facWarm = makeFacade({ wall: [217, 207, 189], glass: [40, 52, 64], balcony: true });
     const facCool = makeFacade({ wall: [196, 194, 186], glass: [34, 46, 60], balcony: false });
     const facWhite = makeFacade({ wall: [231, 228, 219], glass: [46, 58, 70], balcony: true });
@@ -2041,9 +2344,10 @@ scene.background = null;
       }), { grime: 0.2, streak: 0.3, base: 0.3, scale: 0.5 }),
       oakFloor: new THREE.MeshStandardMaterial({
         map: tex(oak.map, { srgb: true }),
-        normalMap: tex(oak.normal),
-        roughness: 0.5, metalness: 0.0,
-        normalScale: new THREE.Vector2(0.35, 0.35),
+        normalMap: oak.normal ? tex(oak.normal) : null,
+        roughnessMap: oak.rough ? tex(oak.rough) : null,
+        roughness: oak.rough ? 1.0 : 0.5, metalness: 0.0,
+        normalScale: new THREE.Vector2(oak.normal ? 0.7 : 0.35, oak.normal ? 0.7 : 0.35),
         envMapIntensity: 0.7
       }),
       oak: new THREE.MeshStandardMaterial({
@@ -2133,10 +2437,12 @@ scene.background = null;
         envMapIntensity: 0.55
       }),
       asphalt: new THREE.MeshStandardMaterial({
-        map: tex(conc.map, { srgb: true }),
-        normalMap: tex(conc.normal),
-        color: 0x66615c, roughness: 0.95, metalness: 0.0,
-        normalScale: new THREE.Vector2(0.7, 0.7),
+        map: tex(asph.map, { srgb: true }),
+        normalMap: asph.normal ? tex(asph.normal) : null,
+        roughnessMap: asph.rough ? tex(asph.rough) : null,
+        color: 0xffffff,
+        roughness: asph.rough ? 1.0 : 0.95, metalness: 0.0,
+        normalScale: new THREE.Vector2(1.5, 1.5),
         envMapIntensity: 0.34
       }),
       pave: new THREE.MeshStandardMaterial({
@@ -2221,8 +2527,8 @@ scene.background = null;
         const mat = windify(new THREE.MeshStandardMaterial({
           map: tex(leafTex.map, { srgb: true }),
           alphaMap: tex(leafTex.alpha),
-          alphaTest: 0.30, side: THREE.DoubleSide, color: 0xeef1dc,
-          roughness: 0.9, metalness: 0.0, envMapIntensity: 0.62
+          alphaTest: 0.30, side: THREE.DoubleSide, color: 0xe6e4cf,
+          roughness: 0.94, metalness: 0.0, envMapIntensity: 0.42
         }), { amp: 0.075, freq: 1.2, height: 3.2, soft: 0.72,
           fill: [0.17, 0.19, 0.13], trans: 0.9 });
         /* which of the four sprays this card wears: a per-instance UV cell,
@@ -2609,6 +2915,8 @@ scene.background = null;
 
     const POOLG = { x0: -3.2, x1: 8.4, z0: -19.6, z1: -9.8 };
 
+    await nextTick();
+
     /* ── the land ───────────────────────────────────────────────────────────
        The estate stands on a level pad; everything outside the wall is a
        coastal dune field. Long ridges run roughly east–west the way wind-built
@@ -2803,9 +3111,13 @@ scene.background = null;
        sight. It is what tells the eye the estate is somewhere rather than
        nowhere: a line of travel, a pair of pale shoulders, a dry verge.  */
     {
-      /* one ribbon builder, used for the lane and its two shoulders */
-      const ribbon = (curve, mats, w, lift, vScale, segs = 150) => {
+      /* one ribbon builder, used for the lane and its two shoulders.
+         `uvScale` switches the run to world-space UVs (metres × scale), which
+         is what a scanned surface needs: the old 0..1 across / t·vScale along
+         mapping stretched any bitmap into stripes. */
+      const ribbon = (curve, mats, w, lift, vScale, segs = 150, uvScale = 0) => {
         const pos = [], uv = [], idx = [];
+        const lens = curve.getLength ? curve.getLength() : 0;
         for (let i = 0; i <= segs; i++) {
           const t = i / segs, p = curve.getPoint(t), tan = curve.getTangent(t);
           const nx = -tan.z, nz = tan.x;
@@ -2813,7 +3125,8 @@ scene.background = null;
           const y = terrainH(p.x, p.z) + lift;
           for (const s of [-1, 1]) {
             pos.push(p.x + (nx / l) * w * s, y, p.z + (nz / l) * w * s);
-            uv.push(s * 0.5 + 0.5, t * vScale);
+            if (uvScale) uv.push((s * w + w) * uvScale, t * lens * uvScale);
+            else uv.push(s * 0.5 + 0.5, t * vScale);
           }
           if (i < segs) { const a = i * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
         }
@@ -2829,8 +3142,8 @@ scene.background = null;
       const road = new THREE.CatmullRomCurve3(roadPts, false, 'centripetal', 0.5);
       const asphalt = M.asphalt;
       // a gravel shoulder first, so the tarmac has an edge to sit in
-      ribbon(road, M.gravel, 2.35, 0.03, 120);
-      ribbon(road, asphalt, 1.72, 0.055, 120);
+      ribbon(road, M.gravel, 2.35, 0.03, 120, 150, 0.42);
+      ribbon(road, asphalt, 1.72, 0.055, 120, 150, 0.40);
 
       /* the kerb stones either side of the gravel drive, from the gate to the
          entry court: two thin pale ribbons laid on the shoulder */
@@ -3016,7 +3329,7 @@ scene.background = null;
           float dist = length(vToEye);
           /* ripples flatten with distance, or the far end of the pool boils */
           float nearK = 1.0 - smoothstep(9.0, 34.0, dist) * 0.66;
-          vec3 N = normalize(vec3(slope.x * 0.20, 1.0, slope.y * 0.20));
+          vec3 N = normalize(vec3(slope.x * 0.26, 1.0, slope.y * 0.26));
           N = normalize(mix(vec3(0.0, 1.0, 0.0), N, nearK * 0.85 + 0.15));
 
           /* exact unpolarised Fresnel for air into water (n = 1.333) instead of
@@ -3072,7 +3385,7 @@ scene.background = null;
              turns into a hard white sheet */
           vec3 skyRefl = mix(uSkyCol, uFogCol, 0.25);
           refl = mix(refl, skyRefl, 0.34);
-          vec3 col = mix(body, refl, clamp(fres * 1.25, 0.0, 0.70));
+          vec3 col = mix(body, refl, clamp(fres * 1.45, 0.0, 0.84));
 
           /* the waterline: a soft darkening where the surface meets the
              coping, and a hair of light right against it */
@@ -3092,13 +3405,17 @@ scene.background = null;
           /* the water surface sits on top of the floor as a real surface layer
              of colour: the basin reads blue-green straight down, the floor's
              caustics still ghost through, and the mirror takes over at the
-             grazing angles */
-          vec3 tinted = mix(vec3(0.115, 0.860, 0.920), col, clamp(fres * 1.6, 0.0, 1.0));
+             grazing angles. The body colour is absorption, not paint: it is
+             strongest looking down through the deepest section and gives way
+             to the mirror as the eye flattens. */
+          float lookDown = smoothstep(0.0, 0.85, cosi);
+          vec3 tinted = mix(col, uShallow * 0.92 + vec3(0.02, 0.09, 0.10), lookDown * 0.72);
           /* the surface colour is drawn at strength, not as a veil: what the
              pool loses in see-through depth it gains in reading as water at
              every angle the walkthrough looks at it from */
-          float alpha = mix(0.80, 0.94, clamp(fres * 1.10, 0.0, 1.0));
-          alpha *= mix(0.86, 1.0, smoothstep(0.0, 0.45, edgeD));
+          float alpha = mix(0.58, 0.93, clamp(fres * 1.15, 0.0, 1.0));
+          alpha = mix(alpha, 0.86, lookDown * 0.45);
+          alpha *= mix(0.80, 1.0, smoothstep(0.0, 0.45, edgeD));
           gl_FragColor = vec4(min(tinted, vec3(0.90, 0.94, 0.96)), alpha);
           #include <tonemapping_fragment>
           #include <colorspace_fragment>
@@ -3539,6 +3856,8 @@ scene.background = null;
     /* plinths: one pale slab under each volume, 0.36 proud of the meadow */
     addBox(G.x1 - G.x0 + 0.9, 0.36, G.z1 - G.z0 + 0.9, (G.x0 + G.x1) / 2, -0.18, (G.z0 + G.z1) / 2, M.concrete, { uv: 0.42 });
     addBox(WING.x1 - WING.x0 + 0.7, 0.34, WING.z1 - WING.z0 + 0.7, (WING.x0 + WING.x1) / 2, -0.17, (WING.z0 + WING.z1) / 2, M.concrete, { uv: 0.42 });
+
+    await nextTick();
 
     /* ── ground storey: stone piers, glass between them ─────────────────── */
     addWall({
@@ -4497,6 +4816,8 @@ scene.background = null;
     // a stone threshold inside the door, then oak
     addPlane(3.0, 1.1, 0, 0.02, G.z1 - 0.55, M.stonePale, { uv: 0.5 });
 
+    await nextTick();
+
     /* ── the second-floor plate, built around the atrium ────────────────── */
     {
       const plate = (x0, x1, z0, z1) => {
@@ -4887,6 +5208,8 @@ scene.background = null;
       addPoint(x, 0.62, z, MOBILE ? 2.5 : 4, 5, 0xffb877);
     };
     bollard(-6.6, -8.6); bollard(9.6, -8.6);
+
+    await nextTick();
 
     /* ── bougainvillea ─────────────────────────────────────────────────────
        Paper flower draped over the entry canopy, the pergola, the wing's roof
@@ -6080,6 +6403,8 @@ function frondGeo(ox, oy, oz, az, pitch, len, droop, twist = 0, dense = 1) {
 
     // (low shrubs are grass tufts and vine skirts now — no separate pass)
 
+    await nextTick();
+
     /* ── the country beyond the wall ───────────────────────────────────────
        The estate has to stand in a real place, not on a table. Out in the
        dunes: a scatter of date palms seen at 40–160 m, where only the
@@ -6183,16 +6508,16 @@ function frondGeo(ox, oy, oz, az, pitch, len, droop, twist = 0, dense = 1) {
         const yW = 0.075 + si * 0.0009;
         const len = S.to - S.from, mid = (S.from + S.to) / 2;
         const alongX = S.axis === 'x';
-        if (alongX) addPlane(len, S.half * 2, mid, yA, S.at, M.asphalt);
-        else addPlane(S.half * 2, len, S.at, yA, mid, M.asphalt);
+        if (alongX) addPlane(len, S.half * 2, mid, yA, S.at, M.asphalt, { uv: 0.34 });
+        else addPlane(S.half * 2, len, S.at, yA, mid, M.asphalt, { uv: 0.34 });
         for (const sd of [-1, 1]) {
           const o = sd * (S.half + 0.14 + S.walk / 2);
           if (alongX) {
             addBox(len, 0.17, 0.30, mid, 0.085, S.at + sd * (S.half + 0.15), M.stonePale, { uv: 0.44, cast: false });
-            addBox(len, 0.15, S.walk, mid, yW, S.at + o, M.pave, { uv: 0.155, cast: false });
+            addBox(len, 0.15, S.walk, mid, yW, S.at + o, M.pave, { uv: 0.42, cast: false });
           } else {
             addBox(0.30, 0.17, len, S.at + sd * (S.half + 0.15), 0.085, mid, M.stonePale, { uv: 0.44, cast: false });
-            addBox(S.walk, 0.15, len, S.at + o, yW, mid, M.pave, { uv: 0.155, cast: false });
+            addBox(S.walk, 0.15, len, S.at + o, yW, mid, M.pave, { uv: 0.42, cast: false });
           }
         }
         if (S.main) {
@@ -6267,13 +6592,15 @@ function frondGeo(ox, oy, oz, az, pitch, len, droop, twist = 0, dense = 1) {
         const yOf = (p) => terrainH(p.x, p.z);
         const strip = (w, y, lift, mat, segs = 120) => {
           const pos = [], uv = [], idx = [];
+          const runLen = drive.getLength();
           for (let i = 0; i <= segs; i++) {
             const t = lerp(tGate, 1, i / segs), p = drive.getPoint(t), tan = drive.getTangent(t);
             const nx = -tan.z, nz = tan.x, l = Math.hypot(nx, nz) || 1;
             const yy = yOf(p) + lift;
             for (const s of [-1, 1]) {
               pos.push(p.x + (nx / l) * w * s, yy, p.z + (nz / l) * w * s);
-              uv.push(s * 0.5 + 0.5, i * 0.5);
+              // world-scale UVs, so the scanned tarmac keeps its grain size
+              uv.push((s * w + w) * 0.34, (i / segs) * runLen * 0.34);
             }
             if (i < segs) { const a = i * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
           }
