@@ -538,3 +538,29 @@ Additional discipline:
   and haze, not by detail.
 - **Pinned scroll** assumes the document scrolls. Scroll-hijacking libraries that transform
   a wrapper will break the sticky canvas (see integration step 7).
+
+---
+
+## 9. Megascans props and surfaces
+
+`models/` holds eleven Quixel Megascans props (Fab, free, Fab Standard License):
+Alexandra Palm, Broadleaf Lady Palm, Snake Plant, Ribbon Plant, Red Fountain Grass,
+Grass Clumps, Icelandic Rock Formation, Nordic Beach Boulder, Desert Western Ledge
+Rock, Clay Vase and Wooden Vase. Each is one mesh and one material, 512 px maps,
+metres, base at y = 0, instanced once per asset (38 placements, 4.6 MB total).
+
+- They load **after the first frame** (`requestIdleCallback`), one `fetch` per asset with
+  a 9 s deadline (12 s on the phone tier); the first frame never waits on them.
+- Every prop that replaces a drawn object leaves the drawing in a `megascans-fallbacks`
+  group, hidden only when its GLB lands. A blocked network, an offline page or a device
+  out of memory gives you exactly the scene the template shipped before.
+- `?models=0` renders the walkthrough with the Megascans layer off — useful for
+  measuring the cost, and the fallback check.
+- `textures/` now carries Megascans PBR sets for travertine, oak, asphalt and lawn
+  (BaseColor/Normal/Roughness at 512 px, 1k/768 colour) in place of the ambientCG CC0
+  sets. The loader (`PHOTO_MANIFEST` in `scene.js`) is unchanged: drop your own sets in
+  with the same file names.
+- License note for anyone republishing this template: the Fab Standard License lets you
+  ship a Project with the assets incorporated, but not redistribute the raw assets on a
+  standalone basis. If you are reselling the template itself, replace `models/` with
+  your own scans (Poly Haven is CC0) or remove the folder and the props fall back.
