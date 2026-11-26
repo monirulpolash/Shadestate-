@@ -7420,6 +7420,7 @@ function frondGeo(ox, oy, oz, az, pitch, len, droop, twist = 0, dense = 1) {
     }
 
     const megaStats = { loaded: 0, failed: 0, assets: [] };
+    let shadowDirty = false;
     function megaPlaceModels() {
       if (opts.models === false || !megaSpots.length || !THREE) return;
       let base = opts.modelBase;
@@ -7467,10 +7468,14 @@ function frondGeo(ox, oy, oz, az, pitch, len, droop, twist = 0, dense = 1) {
           for (const fb of megaFallbacks.get(key) || []) fb.visible = false;
           megaStats.loaded++;
           megaStats.assets.push(key + '×' + spots.length);
-          /* the shadow map was baked on the first frame, so a late prop has
-             to be folded into it once — not every frame after that */
-          if (info.shadow) renderer.shadowMap.needsUpdate = true;
-          drawFrame();
+          if (shadowDirty && (megaStats.loaded + megaStats.failed) >= keys.length) {
+            renderer.shadowMap.needsUpdate = true;
+            shadowDirty = false;
+            drawFrame();
+          }
+          /* the shadow map was baked on the first frame; one refresh folds
+             every late prop into it, and only when the last one has landed */
+          if (info.shadow) shadowDirty = true;
         }).catch((err) => {
           megaStats.failed++;
           if (megaStats.failed === 1) console.warn('[megascans] ' + key + ' not loaded:', (err && err.message) || err);
