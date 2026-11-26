@@ -1669,6 +1669,7 @@ export async function createWalkthrough(container, options = {}) {
     if (q.has('palms')) opts.palms = q.get('palms') !== '0';
     if (q.has('city')) opts.city = q.get('city') !== '0';
     if (q.has('quality')) opts.quality = q.get('quality');
+    if (q.has('models')) opts.models = q.get('models') !== '0';
   }
 
   /* ── environment ──────────────────────────────────────────────────────────
