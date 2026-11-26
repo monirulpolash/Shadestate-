@@ -1,57 +1,152 @@
 {
- "boulder": {
-  "height": 1.821,
-  "tris": 2432,
-  "bytes": 256548
- },
- "clay_vase": {
-  "height": 0.265,
-  "tris": 200,
-  "bytes": 87784
- },
- "fountain_grass": {
-  "height": 0.832,
-  "tris": 15490,
-  "bytes": 1432796
- },
- "grass_tuft": {
-  "height": 0.255,
-  "tris": 3660,
-  "bytes": 396152
+ "palm": {
+  "positions": 16042,
+  "tris": 7832,
+  "bytes": 973700,
+  "bbox": [
+   [
+    -0.8679267692565941,
+    0.0,
+    -0.5778918266296386
+   ],
+   [
+    0.8679267692565941,
+    1.4644541871547732,
+    0.5778918266296386
+   ]
+  ],
+  "key": "palm",
+  "height": 1.464,
+  "width": 1.736,
+  "depth": 1.156,
+  "listing": "de222652-2e7f-45e0-9710-0bbed55a753e",
+  "package": "mid",
+  "variant": "VarA",
+  "kind": "fbx"
  },
  "lady_palm": {
-  "height": 0.966,
+  "positions": 2457,
   "tris": 1229,
-  "bytes": 285764
- },
- "palm": {
-  "height": 1.464,
-  "tris": 7832,
-  "bytes": 950276
- },
- "ribbon_plant": {
-  "height": 0.272,
-  "tris": 1642,
-  "bytes": 236580
- },
- "rock_formation": {
-  "height": 0.766,
-  "tris": 2317,
-  "bytes": 291484
- },
- "sandstone": {
-  "height": 2.127,
-  "tris": 2783,
-  "bytes": 319460
+  "bytes": 296488,
+  "bbox": [
+   [
+    -0.535353584289551,
+    0.0,
+    -0.526102924346924
+   ],
+   [
+    0.535353584289551,
+    0.9656443166732784,
+    0.526102924346924
+   ]
+  ],
+  "key": "lady_palm",
+  "height": 0.966,
+  "width": 1.071,
+  "depth": 1.052,
+  "listing": "65df339a-ec8a-4a55-86c4-69b2d4517e8d",
+  "package": "mid",
+  "variant": "VarA",
+  "kind": "fbx"
  },
  "snake_plant": {
-  "height": 1.189,
+  "positions": 1088,
   "tris": 544,
-  "bytes": 291016
+  "bytes": 307124,
+  "bbox": [
+   [
+    -0.2842569065093995,
+    0.0,
+    -0.35603214263916
+   ],
+   [
+    0.2842569065093995,
+    1.1888314843177807,
+    0.35603214263916
+   ]
+  ],
+  "key": "snake_plant",
+  "height": 1.189,
+  "width": 0.569,
+  "depth": 0.712,
+  "listing": "95e25db4-635c-4a77-bf03-5e5b527d1a72",
+  "package": "mid",
+  "variant": "VarA",
+  "kind": "fbx"
  },
- "wood_vase": {
-  "height": 0.09,
-  "tris": 202,
-  "bytes": 102152
+ "ribbon_plant": {
+  "positions": 3284,
+  "tris": 1642,
+  "bytes": 243744,
+  "bbox": [
+   [
+    -0.29641711235046386,
+    0.0,
+    -0.27797463417053225
+   ],
+   [
+    0.29641711235046386,
+    0.2717830491065979,
+    0.27797463417053225
+   ]
+  ],
+  "key": "ribbon_plant",
+  "height": 0.272,
+  "width": 0.593,
+  "depth": 0.556,
+  "listing": "db5ad07c-2838-48af-8aec-32055708f2a4",
+  "package": "mid",
+  "variant": "VarA",
+  "kind": "fbx"
+ },
+ "fountain_grass": {
+  "positions": 30980,
+  "tris": 15490,
+  "bytes": 1444216,
+  "bbox": [
+   [
+    -0.3410947704315185,
+    0.0,
+    -0.35355504035949703
+   ],
+   [
+    0.3410947704315185,
+    0.8315724468231201,
+    0.35355504035949703
+   ]
+  ],
+  "key": "fountain_grass",
+  "height": 0.832,
+  "width": 0.682,
+  "depth": 0.707,
+  "listing": "b8248574-2b05-479e-88eb-05fc2a5647be",
+  "package": "mid",
+  "variant": "VarA",
+  "kind": "fbx"
+ },
+ "grass_tuft": {
+  "positions": 7320,
+  "tris": 3660,
+  "bytes": 401000,
+  "bbox": [
+   [
+    -0.33985221862792997,
+    0.0,
+    -0.321162395477295
+   ],
+   [
+    0.33985221862792997,
+    0.2551047682762142,
+    0.321162395477295
+   ]
+  ],
+  "key": "grass_tuft",
+  "height": 0.255,
+  "width": 0.68,
+  "depth": 0.642,
+  "listing": "d22b2fc3-9389-4d39-894c-5369a7e49ddf",
+  "package": "low",
+  "variant": "VarA",
+  "kind": "fbx"
  }
 }
