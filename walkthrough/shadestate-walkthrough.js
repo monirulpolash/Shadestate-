@@ -53205,12 +53205,22 @@ function normalFromHeight(src, strength = 2.0, maxSize = 0) {
    roughness maps are 512 everywhere because they are sampled through a tiled,
    high-frequency UV.
    ───────────────────────────────────────────────────────────────────────────── */
-const PHOTO = { asphalt: null, travertine: null, oak: null, grass: null };
+const PHOTO = {
+  asphalt: null, travertine: null, oak: null, grass: null,
+  stucco: null, plaster: null, limestone: null, pooltile: null, conc: null, cedar: null
+};
 const PHOTO_MANIFEST = {
   asphalt: { color: ['@768', '@512'], normal: ['@512', '@512'] },
   travertine: { color: ['@1k', '@512'], normal: ['@512', '@512'], rough: ['@512', '@512'] },
   oak: { color: ['@1k', '@512'], normal: ['@512', '@512'], rough: ['@512', '@512'] },
-  grass: { color: ['@768', '@512'] }
+  grass: { color: ['@768', '@512'] },
+  /* the 2026-11-26 Quixel pass: every remaining architectural surface */
+  stucco: { color: ['@1k', '@512'], normal: ['@512', '@512'], rough: ['@512', '@512'] },
+  plaster: { color: ['@1k', '@512'], normal: ['@512', '@512'], rough: ['@512', '@512'] },
+  limestone: { color: ['@1k', '@512'], normal: ['@512', '@512'], rough: ['@512', '@512'] },
+  pooltile: { color: ['@1k', '@512'], normal: ['@512', '@512'], rough: ['@512', '@512'] },
+  conc: { color: ['@1k', '@512'], normal: ['@512', '@512'], rough: ['@512', '@512'] },
+  cedar: { color: ['@1k', '@512'], normal: ['@512', '@512'], rough: ['@512', '@512'] }
 };
 
 function loadPhoto(url, timeout = 5000) {
@@ -53226,6 +53236,28 @@ function loadPhoto(url, timeout = 5000) {
     setTimeout(() => done(null), timeout);
     img.src = url;
   });
+}
+
+/*  Where the atlases live. Set at boot from the host's textureBase (the Framer
+    component passes the Vercel origin), so the sprite cards resolve in every
+    host. A card whose atlas never arrives simply keeps its drawn twin. */
+let TEX_BASE = './textures/';
+const _atlasCache = new Map();
+function loadAtlas(name) {
+  if (_atlasCache.has(name)) return _atlasCache.get(name);
+  const t = new THREE.Texture();
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping;
+  t.minFilter = THREE.LinearMipmapLinearFilter;
+  t.anisotropy = 4;
+  t.needsUpdate = true;
+  _atlasCache.set(name, t);
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.decoding = 'async';
+  img.onload = () => { t.image = img; t.needsUpdate = true; };
+  img.src = TEX_BASE + name;
+  return t;
 }
 
 /** Fetch every set at once; a set without a colour map is dropped whole. */
@@ -53262,6 +53294,22 @@ function photoUnder(ctx, img, size, { tiles = 1, mode = 'multiply', alpha = 1, d
     }
   }
   ctx.restore();
+}
+
+/** A loaded photo set as a three.js map, or null when the scan did not arrive.
+    Every caller treats null as "keep the drawn surface", so a blocked network
+    only costs detail, never the scene. */
+const _photoTexCache = new Map();
+function photoTex(key, kind, srgb = false, size = 512) {
+  const set = PHOTO[key];
+  if (!set || !set[kind]) return null;
+  const id = key + '|' + kind + '|' + size;
+  let t = _photoTexCache.get(id);
+  if (!t) {
+    t = tex(photoCanvas(set[kind], size), { srgb });
+    _photoTexCache.set(id, t);
+  }
+  return t;
 }
 
 /** The same, but each cell takes a different crop, so a 4×4 deck of pavers is
@@ -53899,13 +53947,15 @@ function makeGrassTuft() {
         const lean = side * rr(0.04, 0.55) + rr(-0.12, 0.12);
         const dry = rnd() < 0.17;
         const tone = rr(0.72, 1.12);
+        /* an irrigated Gulf lawn in warm afternoon light: olive-sage, never
+           the bottle green that reads as plastic at ten metres */
         const greens = dry
-          ? [`rgba(${Math.round(88 * tone)},${Math.round(84 * tone)},${Math.round(52 * tone)},1)`,
-             `rgba(${Math.round(150 * tone)},${Math.round(140 * tone)},${Math.round(88 * tone)},1)`,
-             `rgba(${Math.round(196 * tone)},${Math.round(184 * tone)},${Math.round(132 * tone)},1)`]
-          : [`rgba(${Math.round(54 * tone)},${Math.round(72 * tone)},${Math.round(30 * tone)},1)`,
-             `rgba(${Math.round(102 * tone)},${Math.round(128 * tone)},${Math.round(58 * tone)},1)`,
-             `rgba(${Math.round(168 * tone)},${Math.round(188 * tone)},${Math.round(108 * tone)},1)`];
+          ? [`rgba(${Math.round(104 * tone)},${Math.round(96 * tone)},${Math.round(62 * tone)},1)`,
+             `rgba(${Math.round(162 * tone)},${Math.round(150 * tone)},${Math.round(102 * tone)},1)`,
+             `rgba(${Math.round(206 * tone)},${Math.round(194 * tone)},${Math.round(146 * tone)},1)`]
+          : [`rgba(${Math.round(66 * tone)},${Math.round(76 * tone)},${Math.round(44 * tone)},1)`,
+             `rgba(${Math.round(116 * tone)},${Math.round(128 * tone)},${Math.round(74 * tone)},1)`,
+             `rgba(${Math.round(182 * tone)},${Math.round(184 * tone)},${Math.round(124 * tone)},1)`];
         blade(bx, baseY, bx + lean * hgt, baseY - hgt, CELL * rr(0.006, 0.012), greens, g);
       }
     }
@@ -53926,7 +53976,7 @@ function makeLawnMat() {
      below give the depth the camera reads at the pool edge */
   const grassPhoto = PHOTO.grass;
   if (grassPhoto) {
-    g.fillStyle = '#4b5527';
+    g.fillStyle = '#5f6739';
     g.fillRect(0, 0, S, S);
     g.save();
     g.globalCompositeOperation = 'luminosity';
@@ -53937,7 +53987,7 @@ function makeLawnMat() {
     g.drawImage(grassPhoto.color, 0, 0, S, S);
     g.restore();
   } else {
-    g.fillStyle = '#5d6b30';
+    g.fillStyle = '#6b743f';
     g.fillRect(0, 0, S, S);
   }
 
@@ -53945,7 +53995,7 @@ function makeLawnMat() {
   for (let i = 0; i < 260; i++) {
     const x = rnd() * S, y = rnd() * S, r = rr(40, 190), t = rnd();
     const grd = g.createRadialGradient(x, y, 0, x, y, r);
-    grd.addColorStop(0, t > 0.55 ? 'rgba(84,104,44,.30)' : t > 0.25 ? 'rgba(30,44,14,.34)' : 'rgba(120,124,62,.22)');
+    grd.addColorStop(0, t > 0.55 ? 'rgba(96,108,56,.26)' : t > 0.25 ? 'rgba(44,54,26,.22)' : 'rgba(134,134,78,.22)');
     grd.addColorStop(1, 'rgba(0,0,0,0)');
     g.fillStyle = grd; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill();
   }
@@ -53966,7 +54016,7 @@ function makeLawnMat() {
     }
   };
   const tones = [
-    [56, 74, 32], [72, 90, 40], [88, 104, 46], [106, 120, 56], [128, 134, 68], [158, 150, 88]
+    [66, 78, 42], [82, 94, 50], [98, 110, 58], [116, 126, 66], [138, 140, 82], [166, 158, 104]
   ];
   for (let i = 0; i < 26000; i++) {
     const x = rnd() * S, y = rnd() * S;
@@ -54592,7 +54642,19 @@ const MEGA_ASSETS = {
   boulder:        { wind: 0, shadow: true },
   sandstone:      { wind: 0, shadow: true },
   clay_vase:      { wind: 0, shadow: true },
-  wood_vase:      { wind: 0, shadow: true }
+  wood_vase:      { wind: 0, shadow: true },
+  /* the 2026-11-26 planting + props pass (SUBSTITUTES.md §1–§4) */
+  yucca_a:        { wind: 0.030, shadow: true, soft: 0.42 },
+  fan_palm:       { wind: 0.055, shadow: true, soft: 0.44 },
+  cane_palm:      { wind: 0.050, shadow: true, soft: 0.42 },
+  tropical_palm:  { wind: 0.060, shadow: true, soft: 0.46 },
+  laurel:         { wind: 0.028, shadow: true, soft: 0.44 },
+  ground_cover:   { wind: 0.018, shadow: false, soft: 0.46 },
+  pot_bowl:       { wind: 0, shadow: true },
+  pot_taper:      { wind: 0, shadow: true },
+  median:         { wind: 0, shadow: true },
+  bollard:        { wind: 0, shadow: true },
+  bench:          { wind: 0, shadow: true }
 };
 
 function glbChunks(buf) {
@@ -54758,6 +54820,7 @@ async function createWalkthrough(container, options = {}) {
       try { base = new URL('./textures/', (document.currentScript && document.currentScript.src) || location.href).href; }
       catch (_) { base = './textures/'; }
     }
+    TEX_BASE = base;
     photos = loadPhotos(base, MOBILE).catch(() => null);
   }
 
@@ -54820,14 +54883,14 @@ async function createWalkthrough(container, options = {}) {
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, DPR_MAX));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 0.82;
+    renderer.toneMappingExposure = 1.16;
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.info.autoReset = false;
     renderer.autoClear = true;
 
     const scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0xd9d0bd, 0.0027);
+    scene.fog = new THREE.FogExp2(0xe3d6c0, 0.00215);
     /* hooks the look controls fill in later (sky rebuild, palm toggle) */
     let setSky = null;
     let setPalms = () => {};
@@ -54852,34 +54915,37 @@ async function createWalkthrough(container, options = {}) {
 
     const SKY_PRESETS = {
       morning: {
-        stops: [[0, '#3f74ad'], [78, '#4378b2'], [58, '#487eb8'], [38, '#4f88c2'],
-          [24, '#5b95cb'], [15, '#6ba5d5'], [10, '#7aaed9'], [6.5, '#90bddc'],
-          [5.0, '#a3c8dc'], [3.8, '#bcd2d6'], [2.8, '#d3d6c8'], [2.0, '#e4dcc4'],
-          [1.2, '#f1e4c8'], [0.5, '#f9edd3']],
-        horizon: '#ded4bf', below: ['#d9d0bd', '#b9b09b', '#8b8270', '#4b4538'],
+        /* Rayleigh scatter: a muted mid blue overhead that desaturates as the
+           ray path lengthens, crossing a warm, slightly grey desert haze at the
+           ridge. The old cobalt was a poster blue, not air. */
+        stops: [[0, '#3d6b9c'], [78, '#4170a1'], [58, '#4776a7'], [38, '#5484b1'],
+          [24, '#668fba'], [15, '#7ba2c4'], [10, '#93b4d0'], [6.5, '#aec6da'],
+          [5.0, '#c4d2dc'], [3.8, '#d8d9cf'], [2.8, '#e6dec9'], [2.0, '#efe3c9'],
+          [1.2, '#f5e9cd'], [0.5, '#f9eed5']],
+        horizon: '#e3d8c4', below: ['#e0d5c1', '#c0b49c', '#8f8571', '#4c4639'],
         sun: [-0.86, 0.30, 0.41], sunCol: [1.55, 1.02, 0.64], sunInt: 4.6, light: 0xffd2a0,
-        sunGlow: 'rgba(255,247,224,.88)', lit: [253, 249, 238], shade: [176, 187, 208],
-        fog: 0xd9d0bd
+        sunGlow: 'rgba(255,247,224,.88)', lit: [253, 249, 238], shade: [186, 194, 210],
+        fog: 0xe3d6c0
       },
       noon: {
-        stops: [[0, '#2f66a8'], [78, '#3370af'], [58, '#3a78b8'], [38, '#4485c4'],
-          [24, '#4f92ce'], [15, '#5fa2d8'], [10, '#6fafe0'], [6.5, '#84bde5'],
-          [5.0, '#9bcbe8'], [3.8, '#b6d8e4'], [2.8, '#cfe0d8'], [2.0, '#e2e6cf'],
-          [1.2, '#f0eccf'], [0.5, '#f8f0d8']],
-        horizon: '#e2dbc8', below: ['#ded9c8', '#c0baa4', '#958c76', '#544d3f'],
+        stops: [[0, '#396aa2'], [78, '#3d6ea6'], [58, '#4476ac'], [38, '#5082b4'],
+          [24, '#6291bd'], [15, '#77a5c8'], [10, '#8db5d3'], [6.5, '#a6c5dc'],
+          [5.0, '#bdd4e0'], [3.8, '#d3dade'], [2.8, '#e2e0d3'], [2.0, '#ece6d3'],
+          [1.2, '#f3ecd8'], [0.5, '#f8f1de']],
+        horizon: '#e6dfcd', below: ['#e2dccb', '#c6bfa9', '#978e79', '#554e40'],
         sun: [-0.55, 0.78, 0.30], sunCol: [1.45, 1.26, 1.02], sunInt: 5.4, light: 0xfff4e2,
-        sunGlow: 'rgba(255,252,240,.92)', lit: [253, 252, 248], shade: [172, 184, 206],
-        fog: 0xded9c8
+        sunGlow: 'rgba(255,252,240,.92)', lit: [253, 252, 248], shade: [180, 190, 208],
+        fog: 0xe6dfcd
       },
       golden: {
-        stops: [[0, '#3a5f96'], [78, '#3f66a0'], [58, '#466faa'], [38, '#537fb6'],
-          [24, '#6490c2'], [15, '#7fa2cc'], [10, '#9ab4d2'], [6.5, '#b8c3cd'],
-          [5.0, '#d0cbc2'], [3.8, '#e2d2b6'], [2.8, '#edd6ac'], [2.0, '#f4dcac'],
-          [1.2, '#f9e3b6'], [0.5, '#fdecc8']],
-        horizon: '#e2d2b8', below: ['#dccbac', '#c2ac8c', '#96826a', '#4e4638'],
+        stops: [[0, '#3a5c8e'], [78, '#3f6296'], [58, '#466a9d'], [38, '#5477a8'],
+          [24, '#6785b3'], [15, '#8296bb'], [10, '#9fa9c0'], [6.5, '#bcb9ba'],
+          [5.0, '#d2c5b2'], [3.8, '#e0caa9'], [2.8, '#e9cf9f'], [2.0, '#efd5a3'],
+          [1.2, '#f5ddae'], [0.5, '#fae5c0']],
+        horizon: '#e6d3b6', below: ['#e1cfb4', '#c6ae90', '#98836b', '#4f4739'],
         sun: [-0.94, 0.16, 0.32], sunCol: [1.75, 1.02, 0.52], sunInt: 4.2, light: 0xffc78a,
-        sunGlow: 'rgba(255,236,198,.90)', lit: [255, 236, 208], shade: [168, 168, 190],
-        fog: 0xdccbac
+        sunGlow: 'rgba(255,236,198,.90)', lit: [255, 236, 208], shade: [178, 175, 190],
+        fog: 0xe6d3b4
       },
       dusk: {
         stops: [[0, '#22355e'], [78, '#263a64'], [58, '#2c426d'], [38, '#394f7c'],
@@ -55071,7 +55137,16 @@ async function createWalkthrough(container, options = {}) {
     sun.shadow.normalBias = 0.03;
     scene.add(sun, sun.target);
 
-    scene.add(new THREE.HemisphereLight(0xb2c8de, 0x7d6a4e, MOBILE ? 0.17 : 0.23));
+    /*  the sky's own fill. A desert afternoon is not a studio: the shadow side
+        of a wall is still lit by the whole dome, and at 0.17 it read as black.
+        The hemisphere now carries the sky colour and a warm sand bounce, which
+        is what makes shadows blue-warm instead of dead. */
+    scene.add(new THREE.HemisphereLight(0xc2d4e6, 0xa48a64, MOBILE ? 0.44 : 0.56));
+    {
+      /* one weak ambient term for the last of the ground bounce */
+      const amb = new THREE.AmbientLight(0xe2d6c0, MOBILE ? 0.13 : 0.19);
+      scene.add(amb);
+    }
 
     /* Rebuild the sky, the light and the environment for a preset. Used by the
        Framer look controls; costs one canvas pass and one PMREM bake. */
@@ -55204,31 +55279,67 @@ const SKY_DOME_FRAG = /* glsl */`
     return f;
   }
 
+  /*  A photographic sky, not a painted one: two decks whose edges are
+      feathered over a third of their own range, a sun-side tap that shades the
+      cumulus bases, and forward scatter on the sunward rim. Nothing here uses
+      a hard smoothstep narrower than the noise scale, which is what drew the
+      cartoon cut-outs.                                                       */
   vec4 cloudSky(vec3 dn, vec3 sun, float t, float warm, vec3 hor, float cover) {
     if (dn.y <= 0.0) return vec4(0.0);
-    vec2 cp = dn.xz / (dn.y + 0.18) * 12.5 + vec2(t * 0.004, t * 0.0015);
-    float f  = cfbm(cp * 0.42) * 0.87 + cfbm(cp * 1.5 + 31.7) * 0.13;
-    float clus = smoothstep(0.32, 0.80, cfbm(cp * 0.16 + 5.3));
-    // clouds gather low in the view and leave the zenith blue, the way a Gulf
-    // morning reads: a broken deck over the horizon, clean sky overhead
-    float cov = mix(0.62, 0.30, clamp(cover, 0.0, 1.0)) + mix(0.20, -0.12, clus)
-      + smoothstep(0.22, 0.85, dn.y) * 0.10;
+    float el = clamp(dn.y, 0.0, 1.0);
+    float cv = clamp(cover, 0.0, 1.0);
+    /* the azimuth is divided by height, so clouds compress toward the horizon
+       exactly as a real deck does; drift is slow and mostly lateral */
+    vec2 cp = dn.xz / (dn.y + 0.16) * 8.2 + vec2(t * 0.0034, t * 0.0011);
     vec2 sdir = normalize(sun.xz + vec2(1e-4));
-    vec2 sp = cp + sdir * 0.30;
-    float f2 = cfbm(sp * 0.42) * 0.87 + cfbm(sp * 1.5 + 31.7) * 0.13;
-    float dens = smoothstep(cov, cov + 0.26, f);
-    if (dens <= 0.002) return vec4(0.0);
-    float shadow = clamp((f2 - cov) / 0.34, 0.0, 1.0);
-    float body = pow(dens, 1.6);
-    float lit = clamp(1.0 - 0.72 * shadow - 0.26 * body, 0.0, 1.0);
+
+    /* ── high cirrus: a thin streaked sheet, only where the eye can see it ── */
+    vec2 sp = cp * vec2(0.26, 0.85) + vec2(2.7, 9.4);
+    float ci = cfbm(sp * 0.52) * 0.60 + cfbm(sp * 1.65 + 17.3) * 0.40;
+    float aCi = smoothstep(0.46, 0.86, ci) * smoothstep(0.04, 0.36, el) * (0.11 + 0.16 * cv);
+
+    /* ── cumulus: a broken deck over a clear zenith ───────────────────────── */
+    vec2 q = cp * 0.62;
+    float cu = cfbm(q) * 0.78 + cfbm(q * 2.4 + 31.7) * 0.22;
+    /* clusters: one corner of the sky carries the weather, the rest stays open */
+    float clus = cfbm(q * 0.21 + 5.3);
+    float thr = mix(0.63, 0.47, cv) + (clus - 0.5) * 0.16 + smoothstep(0.45, 1.0, el) * 0.05;
+    float dens = smoothstep(thr - 0.12, thr + 0.30, cu);
+    dens *= smoothstep(0.012, 0.20, dn.y);          // melt into the horizon haze
+    dens = pow(dens, 1.15) * uCloud;
+
+    if (dens + aCi <= 0.004) return vec4(0.0);
+
+    /* the same field tapped toward the sun: how much cloud stands between this
+       sample and the sun decides how much of it is in shade */
+    float near = cfbm((q + sdir * 0.22)) * 0.78 + cfbm((q + sdir * 0.22) * 2.4 + 31.7) * 0.22;
+    float shadow = clamp((near - thr + 0.16) / 0.30, 0.0, 1.0);
+    float body = pow(dens, 2.0);
+    float lit = clamp(0.90 - 0.30 * shadow - 0.20 * body, 0.0, 1.0);
+
+    vec3 sunC = mix(vec3(1.0, 0.975, 0.93), vec3(1.0, 0.72, 0.46), warm);
+    vec3 litC = mix(vec3(0.88, 0.89, 0.925), sunC * 1.05, 0.55);
+    vec3 shdC = mix(vec3(0.56, 0.59, 0.665), vec3(0.62, 0.56, 0.55), warm * 0.7);
+    vec3 cc = mix(shdC, litC, lit);
+
+    /* forward scatter: the silver lining lives on the thin sunward edge, and a
+       little of the sun's colour bleeds through the whole deck */
     float g = max(dot(dn, sun), 0.0);
-    float ph = pow(g, 6.0) * 0.55 + pow(g, 26.0) * 0.9;
-    float sss = ph * (1.0 - dens) * 1.7 + ph * 0.22;
-    vec3 sunC = mix(vec3(1.0, 0.98, 0.94), vec3(1.0, 0.66, 0.42), warm);
-    vec3 baseC = mix(vec3(0.40, 0.47, 0.62), vec3(0.36, 0.31, 0.42), warm);
-    vec3 cc = mix(baseC, sunC * 1.18, lit) + sunC * sss;
-    cc = mix(cc, hor * 0.9, 0.12 * (1.0 - lit));
-    float a = smoothstep(0.0, 0.22, dens) * smoothstep(0.004, 0.09, dn.y) * 0.97 * uCloud;
+    float phase = pow(g, 7.0) * 0.5 + pow(g, 32.0) * 0.8;
+    cc += sunC * phase * (0.35 + 0.85 * (1.0 - dens)) * (0.55 + 0.45 * warm);
+    cc += sunC * 0.10 * (1.0 - body) * warm;
+    cc = mix(cc, hor * 1.02, 0.14 * (1.0 - lit));
+
+    /* feather the deck into the sky at both ends: no edge survives */
+    float a = dens * 0.86 * smoothstep(0.004, 0.13, dn.y);
+
+    /* cirrus over the cumulus, thin and warm-white */
+    if (aCi > 0.004) {
+      vec3 ciC = mix(vec3(0.86, 0.88, 0.93), vec3(1.0, 0.94, 0.86), 0.45 + 0.55 * warm);
+      ciC += vec3(1.0, 0.92, 0.82) * pow(g, 10.0) * 0.35;
+      cc = mix(cc, ciC, aCi * (1.0 - a * 0.65));
+      a = max(a, aCi * 0.72);
+    }
     return vec4(cc, a);
   }
 
@@ -55253,11 +55364,14 @@ const SKY_DOME_FRAG = /* glsl */`
     float sd = 1.0 - smoothstep(0.8, 1.12, sa);
     float mu = sqrt(max(1.0 - sa * sa, 0.0));
     float limb = 0.82 + 0.18 * mu;
-    vec3 core = mix(vec3(1.0, 0.98, 0.94) * 3.2, vec3(1.0, 0.72, 0.4) * 2.4, uWarm * uWarm);
-    vec3 rim  = mix(vec3(1.0, 0.9, 0.7) * 1.6, vec3(1.0, 0.48, 0.18) * 1.3, uWarm * uWarm);
-    col = mix(col, mix(rim, core, limb) * limb * 1.15 * uSunCol, sd);
-    col += mix(vec3(1.0, 0.9, 0.75), vec3(1.0, 0.55, 0.25), uWarm) * exp(-max(sa - 1.0, 0.0) * 1.6) * 0.55 * uSunCol;
-    col += uSunCol * (pow(sg, 220.0) * 0.35 + pow(sg, 24.0) * 0.10);
+    vec3 core = mix(vec3(1.0, 0.98, 0.94) * 2.35, vec3(1.0, 0.74, 0.44) * 1.85, uWarm * uWarm);
+    vec3 rim  = mix(vec3(1.0, 0.9, 0.72) * 1.30, vec3(1.0, 0.52, 0.22) * 1.10, uWarm * uWarm);
+    col = mix(col, mix(rim, core, limb) * limb * 1.05 * uSunCol, sd);
+    col += mix(vec3(1.0, 0.9, 0.75), vec3(1.0, 0.55, 0.25), uWarm) * exp(-max(sa - 1.0, 0.0) * 1.45) * 0.46 * uSunCol;
+    col += uSunCol * (pow(sg, 220.0) * 0.26 + pow(sg, 24.0) * 0.085);
+    /* the broad atmospheric scatter around the sun that a real sky carries:
+       warm, wide and weak, so it reads as air rather than a glow sprite */
+    col += mix(vec3(1.0, 0.86, 0.70), vec3(1.0, 0.62, 0.34), uWarm) * pow(sg, 3.2) * (0.055 + 0.055 * uWarm) * uSunCol;
 
     // the warm band the sun lays along the ridge, and the haze at the horizon
     col += vec3(1.0, 0.76, 0.57) * 0.20 * uWarm * exp(-abs(dn.y) * 9.0)
@@ -55481,25 +55595,32 @@ scene.background = null;
     }
 
     const M = {
+      /* the villa's travertine: the drawn block structure carries the joints,
+         and the scanned Quixel normal and roughness carry the stone itself */
       stone: weather(new THREE.MeshStandardMaterial({
         map: tex(stoneA.map, { srgb: true }),
-        normalMap: tex(stoneA.normal),
-        roughnessMap: tex(stoneA.rough),
+        normalMap: photoTex('travertine', 'normal') || tex(stoneA.normal),
+        roughnessMap: photoTex('travertine', 'rough') || tex(stoneA.rough),
         roughness: 1.0, metalness: 0.0,
-        normalScale: new THREE.Vector2(1.55, 1.55),
+        normalScale: new THREE.Vector2(1.35, 1.35),
         envMapIntensity: 0.42
-      }), { grime: 0.09, streak: 0.15, base: 0.18, scale: 0.30 }),
+      }), { grime: 0.10, streak: 0.18, base: 0.20, scale: 0.30 }),
+      /* the pale limestone: Quixel Grey Stone Tile, its joints and all */
       stonePale: weather(new THREE.MeshStandardMaterial({
-        map: tex(stoneB.map, { srgb: true }),
-        normalMap: tex(stoneB.normal),
-        roughness: 0.9, metalness: 0.0,
-        normalScale: new THREE.Vector2(0.45, 0.45),
+        map: photoTex('limestone', 'color', true, 1024) || tex(stoneB.map, { srgb: true }),
+        normalMap: photoTex('limestone', 'normal') || tex(stoneB.normal),
+        roughnessMap: photoTex('limestone', 'rough'),
+        color: photoTex('limestone', 'color') ? 0xfdfaf3 : 0xffffff,
+        roughness: photoTex('limestone', 'rough') ? 1.0 : 0.9, metalness: 0.0,
+        normalScale: new THREE.Vector2(0.85, 0.85),
         envMapIntensity: 0.5
       }), { grime: 0.07, streak: 0.12, base: 0.15, scale: 0.34 }),
       concrete: weather(new THREE.MeshStandardMaterial({
-        map: tex(conc.map, { srgb: true }),
-        normalMap: tex(conc.normal),
-        roughness: 0.86, metalness: 0.0,
+        map: photoTex('conc', 'color', true, 1024) || tex(conc.map, { srgb: true }),
+        normalMap: photoTex('conc', 'normal') || tex(conc.normal),
+        roughnessMap: photoTex('conc', 'rough'),
+        roughness: photoTex('conc', 'rough') ? 1.0 : 0.86, metalness: 0.0,
+        normalScale: new THREE.Vector2(1.0, 1.0),
         envMapIntensity: 0.8
       }), { grime: 0.2, streak: 0.3, base: 0.3, scale: 0.5 }),
       oakFloor: new THREE.MeshStandardMaterial({
@@ -55562,7 +55683,41 @@ scene.background = null;
       stoneVessel: new THREE.MeshStandardMaterial({ color: 0xa89b86, roughness: 0.66, metalness: 0.0, envMapIntensity: 0.8 }),
       brass: new THREE.MeshStandardMaterial({ color: 0xb08a4e, roughness: 0.26, metalness: 1.0, envMapIntensity: 1.7 }),
       bronze: new THREE.MeshStandardMaterial({ color: 0x5b4632, roughness: 0.33, metalness: 0.92, envMapIntensity: 1.5 }),
-      plaster: new THREE.MeshStandardMaterial({ color: 0xf1eade, roughness: 0.96, metalness: 0.0, envMapIntensity: 0.2 }),
+      /* inside and under the slabs: scanned plaster, never a flat fill */
+      plaster: new THREE.MeshStandardMaterial({
+        map: photoTex('plaster', 'color', true, 1024),
+        normalMap: photoTex('plaster', 'normal'),
+        roughnessMap: photoTex('plaster', 'rough'),
+        color: photoTex('plaster', 'color') ? 0xf6f0e5 : 0xf1eade,
+        roughness: photoTex('plaster', 'rough') ? 1.0 : 0.96,
+        metalness: 0.0, envMapIntensity: 0.2
+      }),
+      /* the roof frieze and every rendered soffit: Quixel stucco */
+      stucco: new THREE.MeshStandardMaterial({
+        map: photoTex('stucco', 'color', true, 1024),
+        normalMap: photoTex('stucco', 'normal'),
+        roughnessMap: photoTex('stucco', 'rough'),
+        color: photoTex('stucco', 'color') ? 0xf4efe4 : 0xefe9dd,
+        roughness: photoTex('stucco', 'rough') ? 1.0 : 0.94,
+        metalness: 0.0, envMapIntensity: 0.24
+      }),
+      /* west-red cedar: the soffit slats and the pergola rafters */
+      cedar: new THREE.MeshStandardMaterial({
+        map: photoTex('cedar', 'color', true, 1024),
+        normalMap: photoTex('cedar', 'normal'),
+        roughnessMap: photoTex('cedar', 'rough'),
+        color: photoTex('cedar', 'color') ? 0xd7b48f : 0xb98a5e,
+        roughness: photoTex('cedar', 'rough') ? 1.0 : 0.62,
+        metalness: 0.0, envMapIntensity: 0.55
+      }),
+      cedarVert: new THREE.MeshStandardMaterial({
+        map: photoTex('cedar', 'color', true, 1024),
+        normalMap: photoTex('cedar', 'normal'),
+        roughnessMap: photoTex('cedar', 'rough'),
+        color: photoTex('cedar', 'color') ? 0xd7b48f : 0xb98a5e,
+        roughness: photoTex('cedar', 'rough') ? 1.0 : 0.62,
+        metalness: 0.0, envMapIntensity: 0.55
+      }),
       glass: (() => {
         const m = new THREE.MeshPhysicalMaterial({
           color: 0xb3c8c6, metalness: 0.0, roughness: 0.02,
@@ -55592,28 +55747,34 @@ scene.background = null;
       gravel: new THREE.MeshStandardMaterial({
         map: tex(grav.map, { srgb: true }),
         normalMap: tex(grav.normal),
+        color: 0xd8cdb8,
         roughness: 1.0, metalness: 0.0,
         normalScale: new THREE.Vector2(1.1, 1.1),
         envMapIntensity: 0.55
       }),
+      /* weathered charcoal, not chalk: the scan is bright, the road is not */
       asphalt: new THREE.MeshStandardMaterial({
         map: tex(asph.map, { srgb: true }),
         normalMap: asph.normal ? tex(asph.normal) : null,
         roughnessMap: asph.rough ? tex(asph.rough) : null,
-        color: 0xffffff,
-        roughness: asph.rough ? 1.0 : 0.95, metalness: 0.0,
-        normalScale: new THREE.Vector2(1.5, 1.5),
-        envMapIntensity: 0.34
+        color: 0x7a7671,
+        roughness: asph.rough ? 1.0 : 0.97, metalness: 0.0,
+        normalScale: new THREE.Vector2(1.8, 1.8),
+        envMapIntensity: 0.20
       }),
+      /* the drive and the walk: Quixel limestone pavers */
       pave: new THREE.MeshStandardMaterial({
-        map: tex(pave.map, { srgb: true }),
-        normalMap: tex(pave.normal),
-        color: 0xc6bfb0,
-        roughness: 0.9, metalness: 0.0,
-        normalScale: new THREE.Vector2(0.85, 0.85),
+        map: photoTex('limestone', 'color', true, 1024) || tex(pave.map, { srgb: true }),
+        normalMap: photoTex('limestone', 'normal') || tex(pave.normal),
+        roughnessMap: photoTex('limestone', 'rough'),
+        color: photoTex('limestone', 'color') ? 0xf7f2e6 : 0xc6bfb0,
+        roughness: photoTex('limestone', 'rough') ? 1.0 : 0.9, metalness: 0.0,
+        normalScale: new THREE.Vector2(0.7, 0.7),
         envMapIntensity: 0.5
       }),
-      line: new THREE.MeshStandardMaterial({ color: 0xd9d3c2, roughness: 0.88, metalness: 0.0, envMapIntensity: 0.42 }),
+      /* worn thermoplastic, not fresh paint: the lane lines were the brightest
+         thing in the frame after the sky */
+      line: new THREE.MeshStandardMaterial({ color: 0xa89f8d, roughness: 0.92, metalness: 0.0, envMapIntensity: 0.34 }),
       glassDark: new THREE.MeshStandardMaterial({
         color: 0x2e3c42, metalness: 0.42, roughness: 0.13, envMapIntensity: 1.45
       }),
@@ -55677,10 +55838,12 @@ scene.background = null;
       linenB: new THREE.MeshStandardMaterial({ map: tex(linenB, { srgb: true }), roughness: 0.95, metalness: 0.0, envMapIntensity: 0.4 }),
       dark: new THREE.MeshStandardMaterial({ color: 0x24211d, roughness: 0.7, metalness: 0.1, envMapIntensity: 0.5 }),
       poolWall: caustic(new THREE.MeshStandardMaterial({
-        map: tex(poolTile.map, { srgb: true }),
-        normalMap: tex(poolTile.normal),
-        normalScale: new THREE.Vector2(0.7, 0.7),
-        color: 0xfaf6ec, roughness: 0.62, metalness: 0.0, envMapIntensity: 0.5
+        map: photoTex('pooltile', 'color', true, 1024) || tex(poolTile.map, { srgb: true }),
+        normalMap: photoTex('pooltile', 'normal') || tex(poolTile.normal),
+        roughnessMap: photoTex('pooltile', 'rough'),
+        normalScale: new THREE.Vector2(0.9, 0.9),
+        color: photoTex('pooltile', 'color') ? 0xffffff : 0xfaf6ec,
+        roughness: photoTex('pooltile', 'rough') ? 1.0 : 0.62, metalness: 0.0, envMapIntensity: 0.5
       })),
       leaf: (() => {
         const leafTex = makeLeafCluster();
@@ -56452,8 +56615,8 @@ scene.background = null;
       uTime: { value: 0 },
       uSunDir: { value: SUN_DIR.clone() },
       uSunCol: { value: new THREE.Color(1.7, 1.12, 0.72) },
-      uDeep: { value: new THREE.Color(0.006, 0.115, 0.140) },
-      uShallow: { value: new THREE.Color(0.030, 0.250, 0.270) },
+      uDeep: { value: new THREE.Color(0.010, 0.120, 0.130) },
+      uShallow: { value: new THREE.Color(0.055, 0.270, 0.255) },
       uSkyCol: { value: new THREE.Color(0.22, 0.40, 0.66) },
       uFogCol: { value: new THREE.Color(0.69, 0.63, 0.51) },
       uFogDensity: { value: 0.0027 },
@@ -56608,12 +56771,15 @@ scene.background = null;
              strongest looking down through the deepest section and gives way
              to the mirror as the eye flattens. */
           float lookDown = smoothstep(0.0, 0.85, cosi);
-          vec3 tinted = mix(col, uShallow * 0.92 + vec3(0.02, 0.09, 0.10), lookDown * 0.72);
+          /* the body of the water is absorption, so it has to stay thin enough
+             to show the pale travertine floor through it; the old 0.72 veil
+             was paint over a mirror nobody could see */
+          vec3 tinted = mix(col, uShallow * 0.80 + vec3(0.012, 0.055, 0.060), lookDown * 0.50);
           /* the surface colour is drawn at strength, not as a veil: what the
              pool loses in see-through depth it gains in reading as water at
              every angle the walkthrough looks at it from */
-          float alpha = mix(0.58, 0.93, clamp(fres * 1.15, 0.0, 1.0));
-          alpha = mix(alpha, 0.86, lookDown * 0.45);
+          float alpha = mix(0.42, 0.88, clamp(fres * 1.15, 0.0, 1.0));
+          alpha = mix(alpha, 0.74, lookDown * 0.35);
           alpha *= mix(0.80, 1.0, smoothstep(0.0, 0.45, edgeD));
           gl_FragColor = vec4(min(tinted, vec3(0.90, 0.94, 0.96)), alpha);
           #include <tonemapping_fragment>
@@ -56785,8 +56951,8 @@ scene.background = null;
         emissive: new THREE.Color(0xffc488),
         emissiveIntensity: 0.55,
         color: 0xffffff,
-        roughness: 0.38, metalness: 0.10,
-        envMapIntensity: 0.85,
+        roughness: 0.30, metalness: 0.22,
+        envMapIntensity: 1.15,
         side: THREE.DoubleSide,   /* the prisms are wound as plans, either way */
         fog: false                /* the atmosphere is its own below */
       });
@@ -56816,9 +56982,9 @@ scene.background = null;
             float cwH = clamp((vCYWorld.y + 4.0) / 190.0, 0.0, 1.0);
             float cwE = cwD * 0.0019;
             float cwF = 1.0 - exp(-cwE * cwE);
-            float cwA = mix(cwF, 0.72, smoothstep(700.0, 1900.0, cwD));
+            float cwA = mix(cwF, 0.62, smoothstep(700.0, 1900.0, cwD));
             cwA *= 1.0 - 0.42 * cwH;
-            cwA = clamp(cwA, 0.0, 0.94);
+            cwA = clamp(cwA, 0.0, 0.88);
             vec3 cwHaze = mix(uHazeLow, uHaze, smoothstep(0.0, 0.55, cwH));
             gl_FragColor.rgb = mix(gl_FragColor.rgb, cwHaze, cwA);
 
@@ -57251,8 +57417,8 @@ scene.background = null;
       addBox(2.66, 0.05, 0.2, 0, DOOR.top + 0.02, z, M.bronze, { uv: 0.5 });
       addBox(0.05, DOOR.top, 0.2, -1.31, DOOR.top / 2, z, M.bronze, { uv: 0.5 });
       addBox(0.05, DOOR.top, 0.2, 1.31, DOOR.top / 2, z, M.bronze, { uv: 0.5 });
-      // a bronze threshold, and the step up onto the plinth
-      addBox(2.7, 0.02, 0.3, 0, 0.005, z + 0.12, M.bronze, { uv: 0.5 });
+      // the threshold itself is laid with the entry apron, on the apron's own
+      // level: one bronze inlay, not a plate buried under the floor
       // the door itself, open inward against the wall
       addBox(0.06, 3.0, 1.18, -1.28, 1.5, z - 0.62, M.walnutVert, { uv: 0.6 });
       addBox(0.05, 0.05, 1.0, -1.24, 1.05, z - 0.6, M.bronze, { uv: 0.5 });
@@ -57262,7 +57428,7 @@ scene.background = null;
     {
       const z0 = PORCH.z0, z1 = PORCH.z1 - 0.05, zc = (z0 + z1) / 2, d = z1 - z0;
       for (let x = S.x0 + 0.15; x <= S.x1 - 0.1; x += 0.17) {
-        addBox(0.085, 0.13, d, x, 3.97, zc, M.oakVert, { uv: 0.7 });
+        addBox(0.085, 0.13, d, x, 3.97, zc, M.cedarVert, { uv: 0.7 });
       }
       addBox(S.x1 - S.x0, 0.08, 0.07, (S.x0 + S.x1) / 2, 3.9, z0 + 0.03, M.bronze, { uv: 0.5 });
       for (const x of [-8.6, 2.4]) {
@@ -57308,7 +57474,10 @@ scene.background = null;
       for (const [a, b, c, d] of [[x0 + 0.14, x1 - 0.14, z0 + 0.14, z0 + 0.14 + pw2], [x0 + 0.14, x1 - 0.14, z1 - 0.14 - pw2, z1 - 0.14],
         [x0 + 0.14, x0 + 0.14 + pw2, z0 + 0.14, z1 - 0.14], [x1 - 0.14 - pw2, x1 - 0.14, z0 + 0.14, z1 - 0.14]]) {
         addBox(b - a, ph, d - c, (a + b) / 2, ROOF + ph / 2, (c + d) / 2, M.stonePale, { uv: 0.4 });
-        addBox(b - a + 0.06, 0.055, d - c + 0.06, (a + b) / 2, ROOF + ph + 0.02, (c + d) / 2, M.bronze, { uv: 0.5, cast: false });
+        /* a crisp cut-stone coping, bevelled by its own overhang, instead of
+           the bronze cap that read as a painted line on the pale roof */
+        addBox(b - a + 0.10, 0.06, d - c + 0.10, (a + b) / 2, ROOF + ph + 0.03, (c + d) / 2, M.stonePale, { uv: 0.45, cast: false });
+        addBox(b - a + 0.02, 0.018, d - c + 0.02, (a + b) / 2, ROOF + ph - 0.009, (c + d) / 2, M.dark, { uv: 0.5, cast: false });
       }
     }
     // the skylight over the hall, raised out of the roof
@@ -57383,10 +57552,10 @@ scene.background = null;
       for (const [x, z] of [[px0, pz0], [px1, pz0], [px0, pz1], [px1, pz1]]) {
         addBox(0.13, py - DECK, 0.13, x, (py + DECK) / 2, z, M.bronze, { uv: 0.5 });
       }
-      addBox(px1 - px0 + 0.5, 0.24, 0.16, (px0 + px1) / 2, py + 0.09, pz0, M.oakDark, { uv: 0.6 });
-      addBox(px1 - px0 + 0.5, 0.24, 0.16, (px0 + px1) / 2, py + 0.09, pz1, M.oakDark, { uv: 0.6 });
+      addBox(px1 - px0 + 0.5, 0.24, 0.16, (px0 + px1) / 2, py + 0.09, pz0, M.cedar, { uv: 0.6 });
+      addBox(px1 - px0 + 0.5, 0.24, 0.16, (px0 + px1) / 2, py + 0.09, pz1, M.cedar, { uv: 0.6 });
       for (let x = px0 + 0.24; x <= px1 - 0.18; x += 0.23) {
-        addBox(0.07, 0.14, pz1 - pz0 - 0.1, x, py + 0.22, (pz0 + pz1) / 2, M.oakVert, { uv: 0.7 });
+        addBox(0.07, 0.14, pz1 - pz0 - 0.1, x, py + 0.22, (pz0 + pz1) / 2, M.cedarVert, { uv: 0.7 });
       }
       // a daybed and two planters, so the deck reads as a room
       const daybed = (x, z) => {
@@ -57478,11 +57647,20 @@ scene.background = null;
       }
     }
 
-    /* ── the way in: a stone apron under the porch, a step at its edge ──── */
+    /* ── the way in: a solid stone apron under the porch, a nosing at its
+       edge, and a bronze threshold that is the only thing crossing the door
+       line. It used to be a zero-thickness plane laid over the plinth and
+       through the step, which is what flickered as the camera crossed the
+       threshold: three surfaces inside 30 mm of each other. Now each level has
+       one slab and one height, and nothing is coplanar.                     */
     {
-      addPlane(9.2, PORCH.z1 - G.z1 + 1.6, 0, 0.028, (G.z1 + PORCH.z1 + 1.6) / 2 - 0.2, M.stonePale, { uv: 0.5 });
-      addBox(9.4, 0.16, 0.3, 0, -0.06, PORCH.z1 + 0.75, M.stonePale, { uv: 0.5 });
-      for (const x of [-4.2, 4.2]) addBox(0.14, 0.05, 0.14, x, 0.03, PORCH.z1 + 0.9, M.bronze, { cast: false });
+      const zA = G.z1 + 0.02, zB = PORCH.z1 + 0.62;      // 6.62 → 9.02
+      addBox(9.2, 0.06, zB - zA, 0, 0.03, (zA + zB) / 2, M.stonePale, { uv: 0.5 });
+      // the nosing: one riser, 15 mm below the apron, so the step reads
+      addBox(9.22, 0.045, 0.26, 0, 0.0225, zB + 0.13, M.stonePale, { uv: 0.5, cast: false });
+      // the threshold inlay: 18 mm proud of the apron, 30 mm deep
+      addBox(2.9, 0.018, 0.3, 0, 0.069, G.z1 + 0.05, M.bronze, { uv: 0.6, cast: false });
+      for (const x of [-4.2, 4.2]) addBox(0.14, 0.05, 0.14, x, 0.085, zB + 0.02, M.bronze, { cast: false });
     }
 
     /* ── teak loungers by the pool ──────────────────────────────────────── */
@@ -57649,10 +57827,67 @@ scene.background = null;
        in the lawn, and a stepping-stone spur off the pavilion path. All of it
        under the orbit's low west pass, so nothing new is flown through.    */
     {
+      /*  A clipped hedge, built from the Quixel Japanese Privet leaf atlas: a
+          dark core so no light shows through the run, and instanced 0.5 m leaf
+          cards on both faces and the crown, each at its own angle. Three runs
+          are three draw calls and about 140 cards, which is cheaper than the
+          painted box it replaces and looks like a hedge instead of a slab. */
+      const hedgeMat = windify(new THREE.MeshStandardMaterial({
+        map: loadAtlas('hedge_privet.webp'), alphaTest: 0.42, side: THREE.DoubleSide,
+        roughness: 0.94, metalness: 0.0, envMapIntensity: 0.45, color: 0xe2e8d2
+      }), { amp: 0.018, freq: 1.3, height: 0.8, base: -0.2, soft: 0.55,
+        fill: [0.095, 0.125, 0.062], trans: 0.22 });
+      const hedgeCore = new THREE.MeshStandardMaterial({ color: 0x2b3720, roughness: 1.0, envMapIntensity: 0.12 });
+      const cardGeo = new THREE.PlaneGeometry(1, 1);
+      const hd = new THREE.Object3D();
+      const hcol = new THREE.Color();
+      function hedgeRun(x0, z0, x1, z1, h = 0.54, w = 0.46) {
+        const dx = x1 - x0, dz = z1 - z0;
+        const len = Math.hypot(dx, dz);
+        const ang = Math.atan2(dz, dx);
+        const core = new THREE.BoxGeometry(len, h * 0.88, w * 0.62);
+        core.rotateY(-ang);
+        core.translate((x0 + x1) / 2, h * 0.44, (z0 + z1) / 2);
+        const cm = new THREE.Mesh(core, hedgeCore);
+        cm.castShadow = cm.receiveShadow = true;
+        world.add(cm);
+        const nx = Math.sin(ang), nz = -Math.cos(ang);      // normal to the run
+        const mats = [], cols = [];
+        const card = (u, y, across, face) => {
+          const px = x0 + dx * u, pz = z0 + dz * u;
+          hd.position.set(px + nx * across, y, pz + nz * across);
+          if (face === 'side') hd.rotation.set(0, -ang + Math.PI / 2 + rr(-0.35, 0.35), rr(-0.22, 0.22));
+          else hd.rotation.set(-Math.PI / 2 + rr(-0.28, 0.28), rr(0, 6.283), 0);
+          const s = rr(0.44, 0.64) * (h / 0.54);
+          hd.scale.set(s, s, s);
+          hd.updateMatrix();
+          mats.push(hd.matrix.clone());
+          const v = rr(0.78, 1.0);
+          hcol.setRGB(v * 0.94, v, v * 0.78);
+          cols.push(hcol.clone());
+        };
+        const n = Math.max(5, Math.round(len / 0.19));
+        for (let i = 0; i <= n; i++) {
+          const u = i / n;
+          for (const sgn of [-1, 1]) {
+            card(u, rr(h * 0.18, h * 0.60), sgn * w * 0.46, 'side');
+            card(u, rr(h * 0.54, h * 0.92), sgn * w * 0.30, 'side');
+          }
+          card(u, h * rr(0.94, 1.03), rr(-w * 0.24, w * 0.24), 'top');
+        }
+        const mesh = new THREE.InstancedMesh(cardGeo, hedgeMat, mats.length);
+        mats.forEach((m, i) => { mesh.setMatrixAt(i, m); mesh.setColorAt(i, cols[i]); });
+        mesh.instanceMatrix.needsUpdate = true;
+        if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        mesh.frustumCulled = false;
+        world.add(mesh);
+      }
       // two hedge runs framing the west lawn
-      addBox(4.4, 0.52, 0.42, -15.2, 0.30, -4.6, M.meadow, { uv: 0.55 });
-      addBox(4.4, 0.52, 0.42, -15.2, 0.30, -2.6, M.meadow, { uv: 0.55 });
-      addBox(0.42, 0.52, 3.6, -17.2, 0.30, -5.4, M.meadow, { uv: 0.55 });
+      hedgeRun(-17.4, -4.6, -13.0, -4.6);
+      hedgeRun(-17.4, -2.6, -13.0, -2.6);
+      hedgeRun(-17.2, -7.2, -17.2, -3.6);
       // a bronze-trimmed gravel bed between them, with three stone orbs
       addPlane(3.9, 2.3, -15.2, 0.035, -3.6, M.gravel, { uv: 0.5 });
       addBox(4.0, 0.05, 0.07, -15.2, 0.075, -4.78, M.bronze, { cast: false });
@@ -57664,7 +57899,7 @@ scene.background = null;
       }
       // a second, smaller bed nearer the house's west corner
       addPlane(2.6, 1.8, -16.0, 0.035, -8.2, M.gravel, { uv: 0.5 });
-      addBox(0.42, 0.46, 2.2, -17.4, 0.26, -8.2, M.meadow, { uv: 0.55 });
+      hedgeRun(-17.4, -9.3, -17.4, -7.1, 0.48, 0.44);
       megaVessel('boulder', [[0.001, 0], [0.2, 0.02], [0.26, 0.2], [0.2, 0.34]], -15.4, 0.05, -8.2, M.stoneVessel, 16, { hScale: 1.5 });
     }
 
@@ -58500,6 +58735,11 @@ scene.background = null;
       }), { amp: 0.09, freq: 1.45, height: 3.4 });
 
       const bMats = [], bCols = [], lMats = [], lCols = [];
+      /* the scanned Paper Flower sprigs: one card in five of the procedural
+         bracts is replaced by a whole scanned cluster (SUBSTITUTES.md §0), so
+         the mass reads as real bougainvillea and the drawn card survives as
+         the fine detail between them */
+      const pfMats = [[], []], pfCols = [[], []];
       const bGeo = new THREE.PlaneGeometry(1, 1);
       const vd = new THREE.Object3D();
       const vc = new THREE.Color();
@@ -58519,6 +58759,17 @@ scene.background = null;
         const p = PALETTE[pick % PALETTE.length];
         vc.setRGB(p[0] * rr(0.9, 1.1), p[1] * rr(0.88, 1.12), p[2] * rr(0.9, 1.1));
         bCols.push(vc.clone());
+        if (bMats.length % 5 === 0) {
+          const w = (bMats.length >> 2) & 1;
+          vd.rotation.set(rr(-1.1, 1.1), rr(0, 6.3), rr(-1.6, 1.6));
+          const sc = rr(0.34, 0.60) * (MOBILE ? 0.86 : 1);
+          vd.scale.set(sc, sc, sc);
+          vd.updateMatrix();
+          pfMats[w].push(vd.matrix.clone());
+          const v = rr(0.80, 0.98);
+          vc.setRGB(v, v * rr(0.94, 1.0), v * rr(0.92, 1.0));
+          pfCols[w].push(vc.clone());
+        }
       }
 
       function vleaf(x, y, z, s) {
@@ -58702,6 +58953,25 @@ scene.background = null;
       vLeaves.castShadow = false;
       vLeaves.frustumCulled = false;
       world.add(vLeaves);
+
+      /* the two scanned Paper Flower sprites, over the same masses */
+      const pfTex = [loadAtlas('paperflower_pf09.webp'), loadAtlas('paperflower_pf02.webp')];
+      for (let w = 0; w < 2; w++) {
+        if (!pfMats[w].length) continue;
+        const mat = windify(new THREE.MeshStandardMaterial({
+          map: pfTex[w], alphaTest: 0.40, side: THREE.DoubleSide,
+          roughness: 0.80, metalness: 0.0, envMapIntensity: 0.55,
+          emissive: new THREE.Color(0x1c0710), emissiveIntensity: 0.10
+        }), { amp: 0.075, freq: 1.45, height: 3.4, soft: 0.22, fill: [0.16, 0.10, 0.12], trans: 0.18 });
+        const mesh = new THREE.InstancedMesh(bGeo, mat, pfMats[w].length);
+        pfMats[w].forEach((m, i) => { mesh.setMatrixAt(i, m); mesh.setColorAt(i, pfCols[w][i]); });
+        mesh.instanceMatrix.needsUpdate = true;
+        if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+        mesh.castShadow = false;
+        mesh.receiveShadow = true;
+        mesh.frustumCulled = false;
+        world.add(mesh);
+      }
     }
 
     /* ─────────────────────────────────────────────────────────────────────
@@ -58744,8 +59014,9 @@ scene.background = null;
       };
 
       const paved = (x, z) => {
-        if (onStreet(x, z, 0.7)) return true;                              // the city streets
-        if (driveDist(x, z) < 0.22) return true;
+        if (onStreet(x, z, 2.6)) return true;                              // the city streets and their pavements
+        if (driveDist(x, z) < 0.9) return true;                            // the drive, shoulders included
+        if (x > -5.2 && x < 5.2 && z > G.z1 - 0.2 && z < 9.6) return true;  // the entry apron
         if (estateBand(x, z)) return true;                                   // the wall's footprint
         if (x > G.x0 - 1.2 && x < WING.x1 + 1.2 && z > G.z0 - 1.2 && z < S.z1 + 1.3) return true;
         if (x > -4.4 && x < 4.2 && z > S.z1 && z < 12.2) return true;   // the entrance walk
@@ -58973,12 +59244,13 @@ scene.background = null;
             float fieldN = sin(wxz.x * 0.061 + wxz.y * 0.043 + 1.7)
                         + 0.5 * sin(wxz.x * 0.017 - wxz.y * 0.023 + 3.1);
             float dry = clamp(0.5 + 0.26 * fieldN + (aTint - 0.9) * 0.55, 0.0, 1.0);
-            vec3 lush = vec3(0.150, 0.235, 0.085);
-            vec3 straw = vec3(0.330, 0.290, 0.140);
+            vec3 lush = vec3(0.175, 0.215, 0.098);
+            vec3 straw = vec3(0.315, 0.282, 0.158);
             vec3 base = mix(lush, straw, dry);
 
-            // per-tuft light, and a root that sits in its own shadow
-            base *= 0.46 + 0.62 * smoothstep(-0.02, 0.85, position.y);
+            // per-tuft light, and a root that sits in its own shadow — but a
+            // mown lawn has no black root, only a deeper green
+            base *= 0.58 + 0.50 * smoothstep(-0.02, 0.85, position.y);
             base *= 0.82 + aTint * 0.30;
             vCol = base;
             vUp = position.y;
@@ -59003,14 +59275,17 @@ scene.background = null;
 
           void main() {
             vec4 texel = texture2D(uTuft, vUv);
-            if (texel.a < 0.42) discard;
+            if (texel.a < 0.36) discard;
 
-            vec3 albedo = vCol * texel.rgb * 3.5;
+            vec3 albedo = vCol * texel.rgb * 2.30;
 
             // a card's face is mostly up-facing, so the light comes from the sky
             vec3 N = normalize(vec3(0.0, 1.0, 0.0));
             float ndl = max(dot(N, uSunDir), 0.0);
-            vec3 col = albedo * (uSkyCol * 1.18 + uSunCol * ndl * 1.28);
+            /* a card's normal is the sky, but the sun still rakes across a mown
+               lawn at 17° and lights most of each blade: at 1.16 the field sat
+               in permanent half-shade and read as scrub */
+            vec3 col = albedo * (uSkyCol * 1.45 + uSunCol * ndl * 2.05);
             // backlit rim, where the sun comes through the thin tips
             col += albedo * uSunCol * 0.55 * smoothstep(0.35, 1.0, vUp) * ndl;
 
@@ -59578,11 +59853,11 @@ function frondGeo(ox, oy, oz, az, pitch, len, droop, twist = 0, dense = 1) {
        left one is the tree the camera passes closest to, the right one gives
        the approach its parallax. Everything else in the field is the meadow,
        the four palms, and the light. */
-    const treeSpots = [
-      [-9.4, 18.8, 1.16],
-      [13.6, 34.0, 1.0]
-    ];
-    treeSpots.forEach(([x, z, s]) => addOlive(x, z, s));
+    /*  The two olive balls that used to stand here were the last cartoon
+        silhouettes in the approach: a crown of cards on a smooth trunk. They
+        are now two Quixel planting groups — a fan palm, a spineless yucca and
+        a clump of spotted laurel each — laid out through the mega-spot table
+        at the end of the build, so every leaf in the foreground is a scan. */
 
     /* date palms: four Gulf date palms standing on the four corners of the
        house + terrace + pool plinth, the way four minarets frame the Taj. One
@@ -60430,6 +60705,58 @@ function frondGeo(ox, oy, oz, az, pitch, len, droop, twist = 0, dense = 1) {
     for (const sp of MEGA_SPOTS) {
       megaSpot(sp[0], sp[1], sp[2], sp[3], { yaw: sp[4], s: sp[5] == null ? undefined : sp[5],
         h: sp[6] == null ? undefined : sp[6], mobile: sp[7] !== false });
+    }
+
+    /* ── the scanned planting, the props, and the street furniture ────────
+       SUBSTITUTES.md §1–§4, placed where the camera actually goes. Each of
+       these replaces a drawn stand-in: the two olive balls in the forecourt,
+       the flat hedge boxes, the empty deck pots, the plain gate posts. The
+       whole set is 3.9 MB of GLB and about 23k triangles, instanced per key. */
+    {
+      const P = (key, x, z, h, yaw = null, mobile = true) =>
+        megaSpot(key, x, 0.02, z, { h, yaw: yaw == null ? undefined : yaw, mobile });
+
+      /* the forecourt group left of the drive: the tree the approach passes */
+      P('tropical_palm', -9.8, 18.9, 3.1, 0.9);
+      P('yucca_a', -8.1, 18.2, 2.0, 2.1);
+      P('laurel', -10.9, 19.9, 1.55, 0.4);
+      P('laurel', -8.35, 20.15, 1.30, 2.8);
+      P('laurel', -10.2, 17.7, 1.15, 4.2);
+      P('ground_cover', -9.5, 19.3, 0.26, 1.0);
+      P('ground_cover', -8.8, 18.8, 0.22, 3.1);
+      P('ground_cover', -10.3, 18.6, 0.24, 5.0);
+
+      /* the right-hand group, giving the approach its parallax */
+      P('fan_palm', 13.9, 34.1, 2.7, 1.4);
+      P('yucca_a', 12.5, 33.45, 1.85, 3.3);
+      P('laurel', 14.95, 35.2, 1.45, 0.9);
+      P('cane_palm', 12.15, 35.25, 1.35, 2.2);
+      P('ground_cover', 13.3, 34.4, 0.24, 0.2);
+      P('ground_cover', 14.2, 33.7, 0.21, 2.4);
+
+      /* the gate court: planting at both piers, inside the wall line */
+      P('laurel', -4.7, 22.5, 1.45, 1.1);
+      P('cane_palm', -6.5, 21.6, 1.30, 3.4);
+      P('laurel', 13.5, 22.4, 1.50, 2.0);
+      P('yucca_a', 14.9, 21.6, 1.85, 0.6);
+      P('ground_cover', -5.6, 22.0, 0.24, 4.0);
+      P('ground_cover', 14.2, 22.1, 0.22, 1.7);
+
+      /* the pool terrace: the two ends of the deck, off the swim line */
+      P('yucca_a', 12.15, -6.1, 1.75, 1.2);
+      P('fan_palm', -7.5, -18.6, 2.15, 2.6);
+      P('cane_palm', -6.8, -19.6, 1.25, 0.3);
+      P('ground_cover', -7.0, -18.2, 0.24, 2.2);
+      P('ground_cover', 11.8, -6.7, 0.22, 3.6);
+
+      /* the concrete pots, the bollards at the gate, the bench at the water */
+      megaSpot('pot_bowl', 11.95, 0.02, -12.3, { s: 1.0, yaw: 0.3 });
+      megaSpot('pot_taper', -6.95, 0.02, -11.15, { s: 1.0, yaw: 1.9 });
+      megaSpot('pot_bowl', 5.85, 0.02, 9.4, { s: 0.9, yaw: 2.4 });
+      megaSpot('pot_taper', -5.95, 0.02, 9.6, { s: 0.85, yaw: 0.7 });
+      megaSpot('bollard', 1.55, 0.02, 26.8, { s: 1.0, yaw: 0 });
+      megaSpot('bollard', 7.45, 0.02, 26.8, { s: 1.0, yaw: 0 });
+      megaSpot('bench', 12.9, 0.02, -19.9, { s: 1.0, yaw: 1.5708 });
     }
 
     const megaStats = { loaded: 0, failed: 0, assets: [] };
