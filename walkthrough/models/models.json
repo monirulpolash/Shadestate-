@@ -1,0 +1,57 @@
+{
+ "boulder": {
+  "height": 1.821,
+  "tris": 2432,
+  "bytes": 256548
+ },
+ "clay_vase": {
+  "height": 0.265,
+  "tris": 200,
+  "bytes": 87784
+ },
+ "fountain_grass": {
+  "height": 0.832,
+  "tris": 15490,
+  "bytes": 1432796
+ },
+ "grass_tuft": {
+  "height": 0.255,
+  "tris": 3660,
+  "bytes": 396152
+ },
+ "lady_palm": {
+  "height": 0.966,
+  "tris": 1229,
+  "bytes": 285764
+ },
+ "palm": {
+  "height": 1.464,
+  "tris": 7832,
+  "bytes": 950276
+ },
+ "ribbon_plant": {
+  "height": 0.272,
+  "tris": 1642,
+  "bytes": 236580
+ },
+ "rock_formation": {
+  "height": 0.766,
+  "tris": 2317,
+  "bytes": 291484
+ },
+ "sandstone": {
+  "height": 2.127,
+  "tris": 2783,
+  "bytes": 319460
+ },
+ "snake_plant": {
+  "height": 1.189,
+  "tris": 544,
+  "bytes": 291016
+ },
+ "wood_vase": {
+  "height": 0.09,
+  "tris": 202,
+  "bytes": 102152
+ }
+}

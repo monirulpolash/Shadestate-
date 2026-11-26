@@ -45,6 +45,8 @@ const DEFAULTS = {
   waterRipples: 1,         // ripple strength multiplier
   grassDensity: 1,         // 0 … 1 (clamped to the device tier)
   palms: true,             // the four corner date palms
+  models: true,            // the Megascans props in models/ (async, optional)
+  modelBase: null,         // where models/ lives, when the host knows better
   city: true,              // the skyline beyond the pool
   quality: 'auto',         // auto | high | lite
   pausedOffscreen: true,   // stop the loop when the section leaves the viewport
@@ -1517,6 +1519,110 @@ function makeGlowTexture() {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
+   Megascans props — a small glTF 2.0 binary reader
+
+   Every prop in models/ is a Quixel Megascans asset (Fab, free) re-encoded for
+   the web: one mesh, one material, 512 px maps, no Draco and no extensions, so
+   the reader below is the whole loader. A GLB is fetched only after the scene
+   has drawn its first frame, each request has a deadline, and a prop that does
+   not arrive leaves the procedural piece it was going to replace exactly where
+   it was. Nothing in this layer can block the first paint.
+   ───────────────────────────────────────────────────────────────────────────── */
+const MEGA_ASSETS = {
+  palm:           { wind: 0.11, shadow: true,  soft: 0.42 },
+  lady_palm:      { wind: 0.06, shadow: true,  soft: 0.40 },
+  snake_plant:    { wind: 0.04, shadow: true,  soft: 0.38 },
+  ribbon_plant:   { wind: 0.05, shadow: false, soft: 0.38 },
+  fountain_grass: { wind: 0.09, shadow: false, soft: 0.45 },
+  grass_tuft:     { wind: 0.06, shadow: false, soft: 0.45 },
+  rock_formation: { wind: 0, shadow: true },
+  boulder:        { wind: 0, shadow: true },
+  sandstone:      { wind: 0, shadow: true },
+  clay_vase:      { wind: 0, shadow: true },
+  wood_vase:      { wind: 0, shadow: true }
+};
+
+function glbChunks(buf) {
+  const dv = new DataView(buf);
+  if (dv.getUint32(0, true) !== 0x46546C67) throw new Error('not a GLB');
+  let off = 12, json = null, bin = null;
+  while (off + 8 <= buf.byteLength) {
+    const len = dv.getUint32(off, true), type = dv.getUint32(off + 4, true);
+    off += 8;
+    const chunk = buf.slice(off, off + len);
+    if (type === 0x4E4F534A) json = JSON.parse(new TextDecoder().decode(chunk));
+    else if (type === 0x004E4942) bin = chunk;
+    off += len + ((4 - (len % 4)) % 4);
+  }
+  if (!json || !bin) throw new Error('incomplete GLB');
+  return { json, bin };
+}
+
+function glbAccessor(json, bin, index) {
+  const a = json.accessors[index];
+  const bv = json.bufferViews[a.bufferView];
+  const comps = { SCALAR: 1, VEC2: 2, VEC3: 3, VEC4: 4 }[a.type];
+  const TA = { 5120: Int8Array, 5121: Uint8Array, 5122: Int16Array, 5123: Uint16Array, 5125: Uint32Array, 5126: Float32Array }[a.componentType];
+  if (!TA) throw new Error('unsupported component type ' + a.componentType);
+  const base = (bv.byteOffset || 0) + (a.byteOffset || 0);
+  const need = comps * TA.BYTES_PER_ELEMENT;
+  const stride = bv.byteStride || need;
+  if (stride === need) return new TA(bin, base, a.count * comps);
+  const out = new TA(a.count * comps);
+  for (let i = 0; i < a.count; i++) out.set(new TA(bin, base + i * stride, comps), i * comps);
+  return out;
+}
+
+function glbTexture(THREE, json, bin, info, srgb) {
+  const tex = json.textures[info.index];
+  const img = json.images[tex.source];
+  const bv = json.bufferViews[img.bufferView];
+  const bytes = new Uint8Array(bin, bv.byteOffset || 0, bv.byteLength);
+  const url = URL.createObjectURL(new Blob([bytes], { type: img.mimeType || 'image/jpeg' }));
+  const t = new THREE.TextureLoader().load(url, () => URL.revokeObjectURL(url));
+  t.flipY = false;
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  if (srgb) t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+
+/** Fetch + decode one Megascans GLB into { geometry, material }. */
+function loadMegaModel(THREE, url, timeout = 9000) {
+  const ctl = typeof AbortController === 'function' ? new AbortController() : null;
+  const timer = setTimeout(() => ctl && ctl.abort(), timeout);
+  return fetch(url, ctl ? { signal: ctl.signal, mode: 'cors' } : { mode: 'cors' })
+    .then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.arrayBuffer(); })
+    .then((buf) => {
+      clearTimeout(timer);
+      const { json, bin } = glbChunks(buf);
+      const prim = json.meshes[0].primitives[0];
+      const geo = new THREE.BufferGeometry();
+      const P = glbAccessor(json, bin, prim.attributes.POSITION);
+      geo.setAttribute('position', new THREE.BufferAttribute(P, 3));
+      if (prim.attributes.NORMAL != null) geo.setAttribute('normal', new THREE.BufferAttribute(glbAccessor(json, bin, prim.attributes.NORMAL), 3));
+      if (prim.attributes.TEXCOORD_0 != null) geo.setAttribute('uv', new THREE.BufferAttribute(glbAccessor(json, bin, prim.attributes.TEXCOORD_0), 2));
+      if (prim.indices != null) geo.setIndex(new THREE.BufferAttribute(glbAccessor(json, bin, prim.indices), 1));
+      if (prim.attributes.NORMAL == null) geo.computeVertexNormals();
+      geo.computeBoundingSphere();
+      const def = (json.materials && json.materials[0]) || {};
+      const pbr = def.pbrMetallicRoughness || {};
+      const mat = new THREE.MeshStandardMaterial({
+        color: pbr.baseColorFactor ? new THREE.Color(pbr.baseColorFactor[0], pbr.baseColorFactor[1], pbr.baseColorFactor[2]) : 0xffffff,
+        metalness: pbr.metallicFactor != null ? pbr.metallicFactor : 0,
+        roughness: pbr.roughnessFactor != null ? pbr.roughnessFactor : 1,
+        side: def.doubleSided ? THREE.DoubleSide : THREE.FrontSide
+      });
+      if (pbr.baseColorTexture) mat.map = glbTexture(THREE, json, bin, pbr.baseColorTexture, true);
+      if (def.normalTexture) mat.normalMap = glbTexture(THREE, json, bin, def.normalTexture, false);
+      if (pbr.metallicRoughnessTexture) mat.roughnessMap = glbTexture(THREE, json, bin, pbr.metallicRoughnessTexture, false);
+      if (def.alphaMode === 'MASK') mat.alphaTest = def.alphaCutoff || 0.35;
+      mat.envMapIntensity = 0.9;
+      return { geometry: geo, material: mat };
+    })
+    .catch((e) => { clearTimeout(timer); throw e; });
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
    3 · renderer
    ───────────────────────────────────────────────────────────────────────────── */
 let THREE = null;   /* the namespace, loaded once and shared by every instance */
@@ -2824,6 +2930,45 @@ scene.background = null;
       geo.computeVertexNormals();
       geo.translate(x, y, z);
       queue(geo, mat, opts.cast !== false, opts.receive !== false, opts.order || 0);
+    }
+
+    /* ── Megascans props — placements registered while the scene is built ──
+       A scanned prop never replaces anything by surgery on the merged
+       batches: the procedural piece it stands in for is built into its own
+       group, so the swap is one visibility flip when the GLB arrives. If the
+       model never arrives — offline, a strict network, a phone out of
+       memory — the drawing is exactly what it always was.                  */
+    const megaFallback = new THREE.Group();
+    megaFallback.name = 'megascans-fallbacks';
+    world.add(megaFallback);
+    const megaSpots = [];
+    const megaFallbacks = new Map();
+
+    function megaSpot(key, x, y, z, opts = {}) {
+      const sp = {
+        key, x, y, z,
+        yaw: opts.yaw == null ? rr(0, 6.283) : opts.yaw,
+        s: opts.s, h: opts.h, sy: opts.sy, mobile: opts.mobile !== false
+      };
+      megaSpots.push(sp);
+      return sp;
+    }
+
+    /** A turned vessel whose scan replaces it at the same footprint. */
+    function megaVessel(key, profile, x, y, z, mat, segs = 24, opts = {}) {
+      const pts = profile.map(([r, h]) => new THREE.Vector2(Math.max(0.001, r), h));
+      const geo = new THREE.LatheGeometry(pts, segs);
+      geo.computeVertexNormals();
+      geo.translate(x, y, z);
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.castShadow = opts.cast !== false;
+      mesh.receiveShadow = opts.receive !== false;
+      megaFallback.add(mesh);
+      if (!megaFallbacks.has(key)) megaFallbacks.set(key, []);
+      megaFallbacks.get(key).push(mesh);
+      const target = Math.max(...profile.map((q) => q[1]));
+      megaSpot(key, x, y, z, { yaw: opts.yaw, h: target * (opts.hScale || 1) });
+      return mesh;
     }
 
     /** A baked contact shadow, so a lounger or a stair tread sits on the ground. */
@@ -4459,13 +4604,14 @@ scene.background = null;
       addBox(4.0, 0.05, 0.07, -15.2, 0.075, -4.78, M.bronze, { cast: false });
       addBox(4.0, 0.05, 0.07, -15.2, 0.075, -2.42, M.bronze, { cast: false });
       for (const [ox, oz, orr] of [[-16.1, -3.1, 0.26], [-15.0, -4.1, 0.33], [-14.2, -3.3, 0.22]]) {
-        addLathe([[0.001, 0], [orr * 0.9, 0.02], [orr, orr * 0.72], [orr * 0.94, orr * 1.28], [0.05, orr * 1.5]],
-          ox, 0.05, oz, M.stoneVessel, 18);
+        megaVessel(ox > -15 ? 'sandstone' : 'rock_formation',
+          [[0.001, 0], [orr * 0.9, 0.02], [orr, orr * 0.72], [orr * 0.94, orr * 1.28], [0.05, orr * 1.5]],
+          ox, 0.05, oz, M.stoneVessel, 18, { hScale: 1.5 });
       }
       // a second, smaller bed nearer the house's west corner
       addPlane(2.6, 1.8, -16.0, 0.035, -8.2, M.gravel, { uv: 0.5 });
       addBox(0.42, 0.46, 2.2, -17.4, 0.26, -8.2, M.meadow, { uv: 0.55 });
-      addLathe([[0.001, 0], [0.2, 0.02], [0.26, 0.2], [0.2, 0.34]], -15.4, 0.05, -8.2, M.stoneVessel, 16);
+      megaVessel('boulder', [[0.001, 0], [0.2, 0.02], [0.26, 0.2], [0.2, 0.34]], -15.4, 0.05, -8.2, M.stoneVessel, 16, { hScale: 1.5 });
     }
 
     /* ── the children's court in the east side yard ───────────────────────
@@ -4952,14 +5098,17 @@ scene.background = null;
           queue(f, M.walnut, true, false);
         }
       }
-      addLathe([[0.001, 0], [0.055, 0.006], [0.078, 0.10], [0.048, 0.21], [0.052, 0.30], [0.036, 0.35]],
+      megaVessel('wood_vase',
+        [[0.001, 0], [0.055, 0.006], [0.078, 0.10], [0.048, 0.21], [0.052, 0.30], [0.036, 0.35]],
         -5.28, 0.375, -2.94, M.ceramic, 24);
-      addLathe([[0.001, 0], [0.075, 0], [0.135, 0.02], [0.158, 0.085], [0.148, 0.098], [0.128, 0.072], [0.062, 0.013], [0.001, 0.012]],
-        -4.58, 0.375, -3.02, M.stoneVessel, 24);
+      megaVessel('clay_vase',
+        [[0.001, 0], [0.075, 0], [0.135, 0.02], [0.158, 0.085], [0.148, 0.098], [0.128, 0.072], [0.062, 0.013], [0.001, 0.012]],
+        -4.58, 0.375, -3.02, M.stoneVessel, 24, { hScale: 2.4 });
       addBox(0.34, 0.035, 0.24, -5.55, 0.392, -2.72, M.dark, { uv: 0.5 });
       addBox(0.31, 0.03, 0.22, -5.53, 0.424, -2.73, M.linenB, { uv: 0.6 });
 
-      addLathe([[0.001, 0], [0.13, 0.01], [0.19, 0.22], [0.14, 0.48], [0.10, 0.62], [0.115, 0.70], [0.10, 0.72]],
+      megaVessel('clay_vase',
+        [[0.001, 0], [0.13, 0.01], [0.19, 0.22], [0.14, 0.48], [0.10, 0.62], [0.115, 0.70], [0.10, 0.72]],
         -8.55, 0.012, -1.55, M.stoneVessel, 26);
 
       contactShadow(-5.2, -4.45, 4.1, 1.7, false, 0.032);
@@ -4978,7 +5127,8 @@ scene.background = null;
       addBox(2.74, 0.02, 4.64, 0, 0.028, 4.0, M.rugEdge, { cast: false });
       addBox(1.9, 0.09, 0.5, 2.9, 0.42, 4.4, M.stonePale, { uv: 0.5 });
       for (const dz of [-0.72, 0.72]) addBox(0.42, 0.38, 0.06, 2.9, 0.19, 4.4 + dz, M.bronze, { uv: 0.5, cast: false });
-      addLathe([[0.001, 0], [0.14, 0.01], [0.19, 0.24], [0.13, 0.5], [0.1, 0.66], [0.11, 0.72]],
+      megaVessel('clay_vase',
+        [[0.001, 0], [0.14, 0.01], [0.19, 0.24], [0.13, 0.5], [0.1, 0.66], [0.11, 0.72]],
         2.9, 0.47, 3.2, M.stoneVessel, 22);
       contactShadow(2.9, 4.4, 2.2, 1.0, false, 0.03);
       contactShadow(2.9, 3.2, 0.7, 0.7, false, 0.03);
@@ -5047,8 +5197,8 @@ scene.background = null;
       // a long low sideboard against the rear glass, and the pendants over it
       addBox(4.2, 0.86, 0.75, 9.8, 0.43, -5.2, M.stonePale, { uv: 0.5 });
       addBox(4.4, 0.06, 0.95, 9.8, 0.89, -5.2, M.concrete, { uv: 0.5 });
-      addLathe([[0.001, 0], [0.09, 0.01], [0.12, 0.2], [0.08, 0.34], [0.09, 0.4]],
-        9.0, 0.92, -5.2, M.stoneVessel, 20);
+      megaVessel('clay_vase', [[0.001, 0], [0.09, 0.01], [0.12, 0.2], [0.08, 0.34], [0.09, 0.4]],
+        9.0, 0.92, -5.2, M.stoneVessel, 20, { hScale: 1.4 });
       for (const x of [8.4, 9.6, 10.8]) {
         addBox(0.03, 2.0, 0.03, x, 1.75, -1.3, M.bronze, { cast: false, receive: false });
         addSoft(0.2, 0.12, 0.2, 0.03, x, 0.72, -1.3, M.brass, { seg: 2 });
@@ -5065,7 +5215,7 @@ scene.background = null;
       queue(g, M.rugWoven, false, true);
       addBox(2.4, 0.06, 0.42, -4.4, F2 + 0.76, 7.9, M.walnut, { uv: 0.6 });
       for (const dx of [-1.05, 1.05]) addBox(0.05, 0.73, 0.36, -4.4 + dx, F2 + 0.365, 7.9, M.bronze, { uv: 0.5 });
-      addLathe([[0.001, 0], [0.07, 0.01], [0.1, 0.16], [0.06, 0.3], [0.07, 0.35]], -5.0, F2 + 0.79, 7.9, M.ceramic, 20);
+      megaVessel('wood_vase', [[0.001, 0], [0.07, 0.01], [0.1, 0.16], [0.06, 0.3], [0.07, 0.35]], -5.0, F2 + 0.79, 7.9, M.ceramic, 20, { hScale: 3.4 });
       addBox(0.26, 0.03, 0.2, -3.7, F2 + 0.81, 7.9, M.linenB, { uv: 0.6 });
       // a framed work over it, on the front wall between the windows
       {
@@ -5078,7 +5228,8 @@ scene.background = null;
       }
       // a walnut wardrobe run along the east gallery, and a tall vessel
       addBox(0.55, 2.5, 3.4, S.x1 - 0.62, F2 + 1.25, -3.2, M.walnutVert, { uv: 0.6 });
-      addLathe([[0.001, 0], [0.16, 0.01], [0.22, 0.26], [0.16, 0.55], [0.12, 0.72], [0.13, 0.8]],
+      megaVessel('clay_vase',
+        [[0.001, 0], [0.16, 0.01], [0.22, 0.26], [0.16, 0.55], [0.12, 0.72], [0.13, 0.8]],
         S.x1 - 1.05, F2 + 0.01, -0.4, M.stoneVessel, 24);
       // the glazed screen that closes the front rooms off the gallery
       {
@@ -7175,6 +7326,123 @@ function frondGeo(ox, oy, oz, az, pitch, len, droop, twist = 0, dense = 1) {
     }
 
     /* ─────────────────────────────────────────────────────────────────────
+       10b · the Megascans layer
+
+       Quixel Megascans props, placed by hand where the drawing had a stand-in
+       and where the garden wanted more: boulders in the gravel beds, fountains
+       of grass on the kitchen side of the pool, a palm cluster at each end of
+       the deck, sansevierias and ribbon plants in the troughs, the tall clay
+       vessels swapped in the rooms. Each asset is one GLB, fetched after the
+       first frame, instanced once, and dressed with the same wind the
+       procedural foliage uses. A prop that fails to arrive leaves its
+       procedural twin visible — nothing is ever missing from the scene.
+       ───────────────────────────────────────────────────────────────────── */
+    const MEGA_SPOTS = [
+      /* the west gravel beds: boulders and drifts of fountain grass */
+      ['rock_formation', -16.35, 0.045, -3.75, 0.70, null, 0.62],
+      ['boulder',        -15.05, 0.045, -4.25, 2.20, null, 0.50],
+      ['sandstone',      -14.20, 0.045, -3.05, 1.10, null, 0.46],
+      ['fountain_grass', -16.75, 0.030, -2.90, 1.20, 0.95, null],
+      ['fountain_grass', -15.70, 0.030, -3.10, 4.00, 1.05, null, false],
+      ['fountain_grass', -14.55, 0.030, -4.25, 2.60, 0.90, null],
+      ['fountain_grass', -16.90, 0.030, -4.55, 5.40, 1.00, null, false],
+      /* the smaller bed by the west corner */
+      ['sandstone',      -16.35, 0.045, -8.15, 0.30, null, 0.40],
+      ['fountain_grass', -15.05, 0.030, -7.85, 3.10, 0.85, null],
+      ['fountain_grass', -14.60, 0.030, -8.60, 1.70, 0.78, null],
+      /* dry tufts along the lawn's west edge, where the garden gives way */
+      ['grass_tuft',     -12.90, 0.030, -6.20, 0.90, 1.05, null],
+      ['grass_tuft',     -13.45, 0.030, -3.40, 2.40, 0.95, null],
+      ['grass_tuft',     -12.60, 0.030, -1.20, 4.10, 1.10, null],
+      ['grass_tuft',     -13.20, 0.030,  0.90, 5.30, 1.00, null],
+      ['grass_tuft',     -12.80, 0.030, -8.90, 1.50, 0.90, null],
+      /* the far side of the pool: two boulders and a palm at each end */
+      ['boulder',         -5.30, 0.020, -20.60, 1.40, null, 0.55],
+      ['boulder',         10.00, 0.020, -19.20, 0.40, null, 0.70],
+      ['palm',            -6.60, 0.020, -22.20, 0.80, 1.90, null],
+      ['palm',            11.40, 0.020, -12.40, 3.60, 1.60, null],
+      /* the deck-edge troughs, planted under the bougainvillea */
+      ['snake_plant',     -8.60, 0.600,  -9.06, 0.40, 0.62, null],
+      ['snake_plant',     -6.60, 0.600,  -9.06, 2.90, 0.55, null],
+      ['ribbon_plant',    -4.60, 0.600,  -9.06, 1.60, 1.15, null],
+      ['ribbon_plant',    10.90, 0.600,  -7.00, 3.20, 1.25, null],
+      /* the troughs across the water */
+      ['lady_palm',       -2.20, 0.560, -20.35, 0.90, 1.25, null],
+      ['lady_palm',        4.90, 0.560, -20.35, 4.40, 1.15, null],
+      /* the two stone cubes on the roof deck */
+      ['lady_palm',        5.20, 4.555,   2.60, 0.70, 1.40, null],
+      ['lady_palm',        5.20, 4.555,  -5.20, 3.90, 1.30, null, false]
+    ];
+    for (const sp of MEGA_SPOTS) {
+      megaSpot(sp[0], sp[1], sp[2], sp[3], { yaw: sp[4], s: sp[5] == null ? undefined : sp[5],
+        h: sp[6] == null ? undefined : sp[6], mobile: sp[7] !== false });
+    }
+
+    const megaStats = { loaded: 0, failed: 0, assets: [] };
+    function megaPlaceModels() {
+      if (opts.models === false || !megaSpots.length || !THREE) return;
+      let base = opts.modelBase;
+      if (!base) {
+        try { base = new URL('./models/', import.meta.url).href; }
+        catch (_) { base = './models/'; }
+      }
+      const keys = [...new Set(megaSpots.map((sp) => sp.key))];
+      for (const key of keys) {
+        const spots = megaSpots.filter((sp) => sp.key === key && (sp.mobile || !MOBILE));
+        if (!spots.length) continue;
+        loadMegaModel(THREE, base + key + '.glb', MOBILE ? 12000 : 9000).then((model) => {
+          const info = MEGA_ASSETS[key] || {};
+          const mat = model.material;
+          mat.envMapIntensity = (key === 'clay_vase' || key === 'wood_vase') ? 1.0 : 0.85;
+          if (info.wind) {
+            windify(mat, {
+              amp: info.wind, freq: 1.35, height: 2.2, base: -1.2,
+              soft: info.soft || 0, fill: [0.10, 0.125, 0.075], trans: 0.22
+            });
+          }
+          model.geometry.computeBoundingBox();
+          const bb = model.geometry.boundingBox;
+          const bh = Math.max(0.02, bb.max.y - bb.min.y);
+          const mesh = new THREE.InstancedMesh(model.geometry, mat, spots.length);
+          mesh.name = 'megascans:' + key;
+          const d = new THREE.Object3D(), col = new THREE.Color();
+          spots.forEach((sp, i) => {
+            const s = sp.h ? sp.h / bh : (sp.s || 1);
+            d.position.set(sp.x, sp.y, sp.z);
+            d.rotation.set(0, sp.yaw, 0);
+            d.scale.set(s, (sp.sy || s), s);
+            d.updateMatrix();
+            mesh.setMatrixAt(i, d.matrix);
+            const v = 0.90 + ((i * 0.618) % 1) * 0.12;
+            col.setRGB(v, v * (0.985 + (i % 3) * 0.008), v * 0.97);
+            mesh.setColorAt(i, col);
+          });
+          mesh.instanceMatrix.needsUpdate = true;
+          if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+          mesh.castShadow = !!info.shadow;
+          mesh.receiveShadow = true;
+          mesh.frustumCulled = false;
+          world.add(mesh);
+          for (const fb of megaFallbacks.get(key) || []) fb.visible = false;
+          megaStats.loaded++;
+          megaStats.assets.push(key + '×' + spots.length);
+          /* the shadow map was baked on the first frame, so a late prop has
+             to be folded into it once — not every frame after that */
+          if (info.shadow) renderer.shadowMap.needsUpdate = true;
+          drawFrame();
+        }).catch((err) => {
+          megaStats.failed++;
+          if (megaStats.failed === 1) console.warn('[megascans] ' + key + ' not loaded:', (err && err.message) || err);
+        });
+      }
+    }
+    if (opts.models !== false) {
+      const kick = () => { if (!destroyed) megaPlaceModels(); };
+      if (typeof requestIdleCallback === 'function') requestIdleCallback(kick, { timeout: 2600 });
+      else setTimeout(kick, 900);
+    }
+
+    /* ─────────────────────────────────────────────────────────────────────
        11 · camera choreography
        ───────────────────────────────────────────────────────────────────── */
     const V3 = (a) => new THREE.Vector3(a[0], a[1], a[2]);
@@ -7567,6 +7835,7 @@ const handle = {
   camera, scene, renderer, section, sun, waterMat, dust, THREE, materials: M, build: BUILD,
   /* the site, for the checks that have to know where the walls are */
   site: { estate: ESTATE, planters: PLANTERS },
+  megascans: megaStats,
   get stats() {
     return {
       calls: renderer.info.render.calls,
