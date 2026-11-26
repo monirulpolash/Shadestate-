@@ -74,16 +74,25 @@ const lerp = (a, b, t) => a + (b - a) * t;
    builds them at half size. Everything else keeps its authored resolution. */
 let NRM_CAP = 0;
 let LITE_TEX = false;
+/* a 4 GB phone (or a low-core machine) draws the lite scene under a stricter
+   budget: half-size procedural canvases, no secondary maps, a 768 px shadow */
+let LOWRAM = false;
+let LEAN = false;
+/* every canvas this scene bakes, so the backing stores can be released once
+   their pixels are on the GPU (see releaseCanvases) */
+const CANVAS_KEEP = [];
 
 const cv = (w, h = w) => {
   const c = document.createElement('canvas');
   c.width = w; c.height = h;
+  CANVAS_KEEP.push(c);
   const get = c.getContext.bind(c);
   c.getContext = (type, opts) => get(type, type === '2d' ? { willReadFrequently: true, ...(opts || {}) } : opts);
   return c;
 };
 
 function tex(canvasEl, { repeat = [1, 1], srgb = false } = {}) {
+  canvasEl.__asTex = true;        // releaseScratchCanvases must leave this one
   const t = new THREE.CanvasTexture(canvasEl);
   t.wrapS = t.wrapT = THREE.RepeatWrapping;
   t.repeat.set(repeat[0], repeat[1]);
@@ -170,6 +179,10 @@ const PHOTO_MANIFEST = {
   cedar: { color: ['@1k', '@512'], normal: ['@512', '@512'], rough: ['@512', '@512'] }
 };
 
+/* the six surfaces the first two seconds actually look at; everything else
+   arrives after the first frame (see loadPhotos and schedulePhotoUpgrade) */
+const PHOTO_CORE = ['oak', 'travertine', 'limestone', 'plaster', 'stucco', 'cedar'];
+
 function loadPhoto(url, timeout = 5000) {
   return new Promise((resolve) => {
     if (typeof Image === 'undefined') { resolve(null); return; }
@@ -207,16 +220,37 @@ function loadAtlas(name) {
   return t;
 }
 
-/** Fetch every set at once; a set without a colour map is dropped whole. */
-async function loadPhotos(base, lite) {
+/** Fetch a set of photo scans; a set without a colour map is dropped whole.
+
+    Two phases, because the first frame is what the user is waiting for:
+
+    · phase one loads the colour of the six surfaces the camera meets in the
+      first two seconds (the villa's stone, the floor, the plaster and the
+      cedar soffit) and nothing else;
+    · phase two, run from idle after the first frame, brings the normals and
+      the remaining surfaces, and swaps them into the materials in place.
+
+    A lean device also skips the roughness maps entirely: the lite tier gets
+    one colour and one light normal, which is what halves the texture memory. */
+async function loadPhotos(base, lite, keys = null, onlyKinds = null) {
   if (!base) return;
   const tier = lite ? 1 : 0;
   const jobs = [];
   for (const [key, kinds] of Object.entries(PHOTO_MANIFEST)) {
+    if (keys && !keys.includes(key)) continue;
     jobs.push((async () => {
-      const out = {};
-      await Promise.all(Object.entries(kinds).map(async ([kind, sizes]) => {
-        out[kind] = await loadPhoto(base + key + '-' + kind + sizes[tier] + '.webp');
+      const out = PHOTO[key] || {};
+      const want = Object.entries(kinds).filter(([kind]) => {
+        if (onlyKinds && !onlyKinds.includes(kind)) return false;
+        /* a lean device takes the colour and one light normal, never the
+           roughness map: a third of the pixels and half the VRAM */
+        if (lite && kind === 'rough') return false;
+        if (out[kind]) return false;              // phase one already has it
+        return true;
+      });
+      await Promise.all(want.map(async ([kind, sizes]) => {
+        const img = await loadPhoto(base + key + '-' + kind + sizes[tier] + '.webp');
+        if (img) out[kind] = img;
       }));
       if (out.color) PHOTO[key] = out;
     })());
@@ -290,8 +324,12 @@ function photoCanvas(img, size = 512) {
 /* ─────────────────────────────────────────────────────────────────────────────
    3 · procedural textures
    ───────────────────────────────────────────────────────────────────────────── */
+/* a lean device bakes every canvas at half resolution: the same drawing, a
+   quarter of the pixels to fill, upload and keep in VRAM (a 4 GB phone) */
+const TS = (v) => (LEAN ? Math.max(64, Math.round(v / 2)) : v);
+
 function makeStone(base = '#e7dfd0', poreRGB = '124,110,90') {
-  const S = 1024;
+  const S = TS(1024);
   const c = cv(S), g = c.getContext('2d');
   const hc = cv(S), hg = hc.getContext('2d');
   g.fillStyle = base; g.fillRect(0, 0, S, S);
@@ -352,7 +390,7 @@ function makeStone(base = '#e7dfd0', poreRGB = '124,110,90') {
  * draws a line along every course.
  */
 function makeAshlar(base = [233, 225, 210], courses = 5) {
-  const S = 1024, ch = S / courses;
+  const S = TS(1024), ch = S / courses;
   const c = cv(S), g = c.getContext('2d');
   const hc = cv(S), hg = hc.getContext('2d');
   const rc = cv(256), rg = rc.getContext('2d');
@@ -459,7 +497,7 @@ function makeAshlar(base = [233, 225, 210], courses = 5) {
     water, so it is a warm, light stone rather than a dark ceramic: the water
     takes its aqua from what sunlight does to this, not from a tinted tile. */
 function makePoolTile() {
-  const S = 512, n = 10, t = S / n;
+  const S = TS(512), n = 10, t = S / n;
   const c = cv(S), g = c.getContext('2d');
   const hc = cv(S), hg = hc.getContext('2d');
   g.fillStyle = '#c9bfa9'; g.fillRect(0, 0, S, S);          // grout line
@@ -491,7 +529,7 @@ function makePoolTile() {
 }
 
 function makeOakFloor() {
-  const S = 1024, c = cv(S), g = c.getContext('2d');
+  const S = TS(1024), c = cv(S), g = c.getContext('2d');
   /* the scanned board floor, warmed toward the interior's oak grade. Its own
      plank seams and grain do the work; the drawing below stays as the
      fallback when the scan is not reachable. */
@@ -560,7 +598,7 @@ function makeOakFloor() {
 }
 
 function makeAsphalt() {
-  const S = 512, c = cv(S), g = c.getContext('2d');
+  const S = TS(512), c = cv(S), g = c.getContext('2d');
   const hc = cv(S), hg = hc.getContext('2d');
   const a = PHOTO.asphalt;
   if (a) {
@@ -596,8 +634,56 @@ function makeAsphalt() {
   return { map: c, normal: normalFromHeight(hc, 0.55) };
 }
 
+/** A monocrystalline module: 6 × 10 half-cells under glass, dark navy with the
+    faintest blue cast, a silver busbar grid and the two junction lines. Drawn
+    once, tiled across every panel on the roof. */
+function makePvPanel() {
+  const S = TS(512), c = cv(S), g = c.getContext('2d');
+  const cols = 6, rows = 10, pad = 7;
+  const cw = (S - pad * 2) / cols, ch = (S - pad * 2) / rows;
+  // the sheet under the cells: near-black, a touch of blue
+  g.fillStyle = '#0b0f16'; g.fillRect(0, 0, S, S);
+  g.fillStyle = '#111722'; g.fillRect(pad * 0.5, pad * 0.5, S - pad, S - pad);
+  for (let j = 0; j < rows; j++) {
+    for (let i = 0; i < cols; i++) {
+      const x = pad + i * cw, y = pad + j * ch;
+      const v = rr(0.90, 1.10);
+      g.fillStyle = `rgb(${Math.round(17 * v)},${Math.round(24 * v)},${Math.round(41 * v)})`;
+      g.fillRect(x + 1.1, y + 1.1, cw - 2.2, ch - 2.2);
+      // the cell's own fine finger grid, running across the short side
+      g.strokeStyle = 'rgba(148,158,172,.16)'; g.lineWidth = 0.7;
+      for (let k = 1; k < 6; k++) {
+        const fy = y + (ch * k) / 6;
+        g.beginPath(); g.moveTo(x + 2, fy); g.lineTo(x + cw - 2, fy); g.stroke();
+      }
+      // a soft sheen along the top-left of each cell, the anti-reflective coat
+      const grd = g.createLinearGradient(x, y, x + cw, y + ch);
+      grd.addColorStop(0, 'rgba(96,126,170,.16)');
+      grd.addColorStop(0.45, 'rgba(60,86,128,.04)');
+      grd.addColorStop(1, 'rgba(8,12,20,0)');
+      g.fillStyle = grd; g.fillRect(x + 1.1, y + 1.1, cw - 2.2, ch - 2.2);
+    }
+  }
+  // busbars: three silver ribbons down the module, and the cell gaps
+  g.fillStyle = 'rgba(176,184,196,.85)';
+  for (const fx of [0.167, 0.5, 0.833]) g.fillRect(S * fx - 1.6, pad, 3.2, S - pad * 2);
+  g.strokeStyle = 'rgba(150,160,175,.42)'; g.lineWidth = 1.4;
+  for (let i = 0; i <= cols; i++) {
+    const x = pad + i * cw;
+    g.beginPath(); g.moveTo(x, pad); g.lineTo(x, S - pad); g.stroke();
+  }
+  for (let j = 0; j <= rows; j++) {
+    const y = pad + j * ch;
+    g.beginPath(); g.moveTo(pad, y); g.lineTo(S - pad, y); g.stroke();
+  }
+  // the anodised frame line at the very edge of the laminate
+  g.strokeStyle = 'rgba(188,194,204,.55)'; g.lineWidth = 2;
+  g.strokeRect(3, 3, S - 6, S - 6);
+  return { map: c };
+}
+
 function makeConcrete() {
-  const S = 512, c = cv(S), g = c.getContext('2d');
+  const S = TS(512), c = cv(S), g = c.getContext('2d');
   const hc = cv(S), hg = hc.getContext('2d');
   g.fillStyle = '#b9b3a6'; g.fillRect(0, 0, S, S);
   hg.fillStyle = '#8a8a8a'; hg.fillRect(0, 0, S, S);
@@ -622,7 +708,7 @@ function makeConcrete() {
 }
 
 function makePaving() {
-  const S = 512, c = cv(S), g = c.getContext('2d');
+  const S = TS(512), c = cv(S), g = c.getContext('2d');
   const hc = cv(S), hg = hc.getContext('2d');
   g.fillStyle = '#cfc7b7'; g.fillRect(0, 0, S, S);
   hg.fillStyle = '#9a9a9a'; hg.fillRect(0, 0, S, S);
@@ -672,7 +758,7 @@ function makePaving() {
    a railing; the cool one is an office with a ribbon of glass and stone piers
    between the bays. A few windows are lit, for the dusk presets.            */
 function makeFacade({ wall = [214, 205, 190], glass = [58, 72, 84], balcony = true } = {}) {
-  const S = 512, B = 4, t = S / B;
+  const S = TS(512), B = 4, t = S / B;
   const c = cv(S), g = c.getContext('2d');
   const em = cv(S), eg = em.getContext('2d');
   g.fillStyle = `rgb(${wall[0]},${wall[1]},${wall[2]})`; g.fillRect(0, 0, S, S);
@@ -744,7 +830,7 @@ function makeFacade({ wall = [214, 205, 190], glass = [58, 72, 84], balcony = tr
 }
 
 function makeGravel() {
-  const S = 768, c = cv(S), g = c.getContext('2d');
+  const S = TS(768), c = cv(S), g = c.getContext('2d');
   const hc = cv(S), hg = hc.getContext('2d');
   g.fillStyle = '#918776'; g.fillRect(0, 0, S, S);
   hg.fillStyle = '#7a7a7a'; hg.fillRect(0, 0, S, S);
@@ -766,7 +852,7 @@ function makeGravel() {
 function makeMeadow() {
   const hc = cv(512), hg = hc.getContext('2d');
   hg.fillStyle = '#808080'; hg.fillRect(0, 0, 512, 512);
-  const S = 1024, c = cv(S), g = c.getContext('2d');
+  const S = TS(1024), c = cv(S), g = c.getContext('2d');
   g.fillStyle = '#aeb37c'; g.fillRect(0, 0, S, S);
   for (let i = 0; i < 1200; i++) {
     const x = rnd() * S, y = rnd() * S, r = rr(20, 130), t = rnd();
@@ -796,7 +882,7 @@ function makeMeadow() {
    The land outside the wall is a dune field, not a lawn; this is the surface
    the ground shader mixes toward where the dunes rise and the grass thins. */
 function makeDuneSand() {
-  const S = 512, c = cv(S), g = c.getContext('2d');
+  const S = TS(512), c = cv(S), g = c.getContext('2d');
   const hc = cv(S), hg = hc.getContext('2d');
   g.fillStyle = '#b7a685'; g.fillRect(0, 0, S, S);
   hg.fillStyle = '#808080'; hg.fillRect(0, 0, S, S);
@@ -917,7 +1003,7 @@ function makeGrassTuft() {
    root, with enough mottling that a 6 m tile never shows a seam. One plane,
    one draw call, and the tufts merge into a lawn. */
 function makeLawnMat() {
-  const S = 1024, c = cv(S), g = c.getContext('2d');
+  const S = TS(1024), c = cv(S), g = c.getContext('2d');
   /* a real mown lawn under the instanced blades: the scan gives the thatch and
      soil shadow between tufts that a flat fill cannot, and the drawn blades
      below give the depth the camera reads at the pool edge */
@@ -1110,7 +1196,7 @@ function makeLeafCluster() {
 }
 
 function makeBarkTextures() {
-  const S = 512, c = cv(S), g = c.getContext('2d');
+  const S = TS(512), c = cv(S), g = c.getContext('2d');
   const hc = cv(S), hg = hc.getContext('2d');
   const rc = cv(256), rg = rc.getContext('2d');
 
@@ -1214,7 +1300,7 @@ function makeWaterNormal(S = 512) {
 }
 
 function makeLinen(tint = [226, 218, 203]) {
-  const S = 512, c = cv(S), g = c.getContext('2d');
+  const S = TS(512), c = cv(S), g = c.getContext('2d');
   g.fillStyle = `rgb(${tint[0]},${tint[1]},${tint[2]})`; g.fillRect(0, 0, S, S);
   for (let i = 0; i < 14000; i++) {
     const x = rnd() * S, y = rnd() * S;
@@ -1230,7 +1316,7 @@ function makeLinen(tint = [226, 218, 203]) {
 
 /** Nubby loop-pile bouclé, the texture the whole sofa is built from. */
 function makeBoucle(tint = [238, 230, 216]) {
-  const S = 512, c = cv(S), g = c.getContext('2d');
+  const S = TS(512), c = cv(S), g = c.getContext('2d');
   const hc = cv(S), hg = hc.getContext('2d');
   g.fillStyle = `rgb(${tint[0]},${tint[1]},${tint[2]})`; g.fillRect(0, 0, S, S);
   hg.fillStyle = '#808080'; hg.fillRect(0, 0, S, S);
@@ -1289,7 +1375,7 @@ function makeRug() {
 /** The entry mat: charcoal coir, woven one way, bound on all four edges.
     Reads as a mat at 1.5 m and costs one 512 canvas. */
 function makeDoormat() {
-  const S = 512, c = cv(S), g = c.getContext('2d');
+  const S = TS(512), c = cv(S), g = c.getContext('2d');
   const hc = cv(256), hg = hc.getContext('2d');
   g.fillStyle = '#403d37'; g.fillRect(0, 0, S, S);
   hg.fillStyle = '#808080'; hg.fillRect(0, 0, S, S);
@@ -1362,7 +1448,7 @@ function makeArtwork() {
  * grain as a real surface rather than a picture of one.
  */
 function makeWoodGrain(base = [150, 96, 54], dark = [74, 42, 22], light = [196, 145, 96]) {
-  const S = 1024, c = cv(S), g = c.getContext('2d');
+  const S = TS(1024), c = cv(S), g = c.getContext('2d');
   const hc = cv(S), hg = hc.getContext('2d');
   g.fillStyle = `rgb(${base[0]},${base[1]},${base[2]})`; g.fillRect(0, 0, S, S);
   hg.fillStyle = '#8a8a8a'; hg.fillRect(0, 0, S, S);
@@ -1422,7 +1508,7 @@ function makeWoodGrain(base = [150, 96, 54], dark = [74, 42, 22], light = [196, 
 
 /** Date-palm trunk: overlapping leaf-base diamonds down a dusty grey column. */
 function makePalmBark() {
-  const S = 512, c = cv(S), g = c.getContext('2d');
+  const S = TS(512), c = cv(S), g = c.getContext('2d');
   const hc = cv(S), hg = hc.getContext('2d');
   g.fillStyle = '#6f6555'; g.fillRect(0, 0, S, S);
   hg.fillStyle = '#8a8a8a'; hg.fillRect(0, 0, S, S);
@@ -1517,7 +1603,7 @@ function makePalmFrondTex() {
 
 /** Fine cypress needles on a card: a dark body, a thousand short sprays. */
 function makeNeedleCluster() {
-  const S = 256, c = cv(S), g = c.getContext('2d');
+  const S = TS(256), c = cv(S), g = c.getContext('2d');
   g.clearRect(0, 0, S, S);
   const cx = S / 2, cy = S / 2;
   for (let i = 0; i < 40; i++) {
@@ -1544,7 +1630,7 @@ function makeNeedleCluster() {
 /** The surface of a dense cypress: dark, vertically streaked, almost black in
     the shade. Used on the revolved body so it does not read as painted green. */
 function makeCypressSurface() {
-  const S = 512, c = cv(S), g = c.getContext('2d');
+  const S = TS(512), c = cv(S), g = c.getContext('2d');
   g.fillStyle = '#465c36'; g.fillRect(0, 0, S, S);
   for (let i = 0; i < 1800; i++) {
     const x = rnd() * S, y = rnd() * S, len = rr(10, 60), t = rr(0.65, 1.5);
@@ -1565,7 +1651,7 @@ function makeCypressSurface() {
 
 /** Soft radial shade for a contact shadow decal. */
 function makeContactShadowTexture() {
-  const S = 128, c = cv(S), g = c.getContext('2d');
+  const S = TS(128), c = cv(S), g = c.getContext('2d');
   const grd = g.createRadialGradient(S / 2, S / 2, 0, S / 2, S / 2, S / 2);
   grd.addColorStop(0, 'rgba(0,0,0,.60)');
   grd.addColorStop(0.38, 'rgba(0,0,0,.42)');
@@ -1590,7 +1676,7 @@ function makeContactBandTexture() {
 
 /** Soft radial veil, used for lens glare at the big openings. */
 function makeGlowTexture() {
-  const S = 256, c = cv(S), g = c.getContext('2d');
+  const S = TS(256), c = cv(S), g = c.getContext('2d');
   const grd = g.createRadialGradient(S / 2, S / 2, 0, S / 2, S / 2, S / 2);
   grd.addColorStop(0, 'rgba(255,238,210,1)');
   grd.addColorStop(0.35, 'rgba(255,228,190,.55)');
@@ -1774,6 +1860,19 @@ export async function createWalkthrough(container, options = {}) {
   const lite = opts.quality === 'lite' || (opts.quality === 'auto' && (hostW <= 820 ||
     (navigator.maxTouchPoints > 1 && window.innerWidth < 1100)));
   const MOBILE = lite;
+  /* ── the lean budget ─────────────────────────────────────────────────────
+     A phone gets lite. A 4 GB phone, or any machine that reports four cores
+     or fewer, gets the same scene under a stricter budget: half-size bakes,
+     no secondary maps, a smaller shadow map, a leaner lawn and no far
+     Megascans layer. `navigator.deviceMemory` is Chromium-only, so cores are
+     the second signal.                                                     */
+  LOWRAM = (navigator.deviceMemory || 8) <= 4 || (navigator.hardwareConcurrency || 8) <= 4;
+  LEAN = MOBILE || LOWRAM;
+  /* what this boot actually cost, for the perf harness and the README */
+  const ctxStats = {
+    lowram: LOWRAM, lean: LEAN, dpr: 0, shadowMap: 0, scratchCanvasesFreed: 0, scratchMbFreed: 0,
+    photoWaitMs: 0, grassTufts: 0, megascansDeferred: 0
+  };
   /* tablet sits between the phone tier and the full desktop tier */
   const TABLET = !MOBILE && opts.quality === 'auto' && Math.min(hostW, window.innerWidth) <= 1024;
   /* the drawing buffer is never larger than this, whatever the device reports:
@@ -1781,18 +1880,19 @@ export async function createWalkthrough(container, options = {}) {
      quarter of the fragments of a 2× buffer. */
   /* the panel's Max pixel ratio is a ceiling, never a floor for a weaker tier:
      a 1.5 setting on a phone still caps at the lite tier's 1.25 */
-  const TIER_DPR = MOBILE ? 1.25 : (TABLET ? 1.4 : 1.75);
+  const TIER_DPR = LOWRAM ? 1.0 : (MOBILE ? 1.25 : (TABLET ? 1.4 : 1.75));
   const DPR_MAX = opts.dprMax != null ? Math.min(opts.dprMax, TIER_DPR) : TIER_DPR;
   /* a phone gets half-size normal maps: four times fewer pixels to derive, and
      four times less texture memory for the same look at a 390 px canvas */
-  LITE_TEX = MOBILE;
-  NRM_CAP = MOBILE ? 512 : (TABLET ? 768 : 0);
+  LITE_TEX = LEAN;
+  NRM_CAP = LEAN ? 256 : (TABLET ? 768 : 0);
 
   /* Photo scans start downloading now, in parallel with three.js, the renderer
      and the procedural canvases. They are only awaited just before the
      materials are built, and never for longer than 2.5 s: a phone on a slow
      connection gets the all-procedural scene rather than a blank canvas. */
   let photos = null;
+  let photoBase = null;
   {
     let base = opts.textureBase;
     if (!base) {
@@ -1800,7 +1900,10 @@ export async function createWalkthrough(container, options = {}) {
       catch (_) { base = './textures/'; }
     }
     TEX_BASE = base;
-    photos = loadPhotos(base, MOBILE).catch(() => null);
+    photoBase = base;
+    photos = LEAN
+      ? loadPhotos(base, true, PHOTO_CORE, ['color']).catch(() => null)
+      : loadPhotos(base, false).catch(() => null);
   }
 
   const section = container;
@@ -2104,7 +2207,10 @@ export async function createWalkthrough(container, options = {}) {
     sun.position.copy(SUN_DIR).multiplyScalar(120);
     sun.target.position.set(-1, 0, -1);
     sun.castShadow = true;
-    const SM = MOBILE ? 1024 : (TABLET ? 1536 : 2048);
+    /* a 4 GB phone gets a 768 px shadow map: 0.6 MB instead of 4 MB of depth,
+       and at 390 css px there is no edge anyone can see */
+    const SM = LEAN ? (LOWRAM ? 768 : 1024) : (TABLET ? 1536 : 2048);
+    ctxStats.shadowMap = SM;
     sun.shadow.mapSize.set(SM, SM);
     sun.shadow.camera.left = -44;
     sun.shadow.camera.right = 44;
@@ -2535,8 +2641,10 @@ scene.background = null;
     await nextTick();
 
     /* ── materials ─────────────────────────────────────────────────────── */
-    if (photos && !PHOTO.asphalt) {
-      await Promise.race([photos, new Promise((r) => setTimeout(r, 2500))]);
+    /* the first frame is not held for a slow scan: a lean device waits 900 ms
+       for the six colours it needs and not a millisecond longer */
+    if (photos) {
+      await Promise.race([photos, new Promise((r) => setTimeout(r, LEAN ? 900 : 2500))]);
     }
     const stoneA = makeAshlar([221, 211, 194], 5);
     const stoneB = makeStone('#ded4c1', '118,104,86');
@@ -2909,6 +3017,68 @@ scene.background = null;
         side: THREE.DoubleSide
       })
     };
+
+    /* ── phase two: the rest of the scans, once the first frame is up ──────
+       On a lean device the scene is drawn from six colour scans. This runs from
+       idle after that frame: it fetches the normals and the surfaces that were
+       skipped, then swaps them into the materials that are already on screen —
+       a map assignment per material, no rebuild. A texture that never arrives
+       leaves the material exactly as it was drawn.                          */
+    let photoPhase2 = false;
+    function schedulePhotoUpgrade() {
+      if (photoPhase2 || !LEAN || !photoBase) return;
+      photoPhase2 = true;
+      const go = () => {
+        if (destroyed) return;
+        loadPhotos(photoBase, true, null, ['color', 'normal']).then(() => {
+          if (destroyed) return;
+          const put = (mat, key, opts = {}) => {
+            const set = PHOTO[key];
+            if (!mat || !set || !set.color) return;
+            const size = 256;
+            try {
+              if (mat.map && mat.map.isTexture) mat.map.dispose();
+              mat.map = tex(photoCanvas(set.color, size), { srgb: true });
+              if (set.normal) {
+                if (mat.normalMap && mat.normalMap.isTexture) mat.normalMap.dispose();
+                mat.normalMap = tex(photoCanvas(set.normal, size));
+                mat.normalScale = new THREE.Vector2(opts.ns || 0.85, opts.ns || 0.85);
+              }
+            } catch (_) { return; }
+            mat.needsUpdate = true;
+          };
+          /* the floor is baked, so its own builder runs again over the scans */
+          try {
+            if (PHOTO.oak && PHOTO.oak.color) {
+              const o = makeOakFloor();
+              if (M.oakFloor.map) M.oakFloor.map.dispose();
+              M.oakFloor.map = tex(o.map, { srgb: true });
+              if (o.normal) {
+                if (M.oakFloor.normalMap) M.oakFloor.normalMap.dispose();
+                M.oakFloor.normalMap = tex(photoCanvas(PHOTO.oak.normal, 256));
+                M.oakFloor.normalScale = new THREE.Vector2(0.7, 0.7);
+              }
+              M.oakFloor.needsUpdate = true;
+            }
+          } catch (_) {}
+          put(M.plaster, 'plaster');
+          put(M.stucco, 'stucco');
+          put(M.cedar, 'cedar');
+          put(M.cedarVert, 'cedar');
+          put(M.concrete, 'conc', { ns: 0.8 });
+          put(M.stone, 'limestone');
+          put(M.poolWall, 'pooltile', { ns: 0.9 });
+          photoPhase2 = 'done';
+        }).catch(() => { photoPhase2 = false; });
+      };
+      /* idle, and after the first frame has actually painted */
+      const kick = () => {
+        if (typeof requestIdleCallback === 'function') requestIdleCallback(go, { timeout: 4000 });
+        else setTimeout(go, 1600);
+      };
+      if (typeof requestAnimationFrame === 'function') requestAnimationFrame(() => requestAnimationFrame(kick));
+      else kick();
+    }
 
     /* ── the land shader ────────────────────────────────────────────────────
        One surface carries the whole country: lawn on the estate pad, dune sand
@@ -4500,6 +4670,94 @@ scene.background = null;
       world.add(cover);
     }
 
+    /* ── the solar array ──────────────────────────────────────────────────
+       Twelve monocrystalline modules in three rows on the open east half of
+       the main roof, clear of the skylight lantern and the parapet planters.
+       12° south tilt on charcoal rails and concrete ballast, so it reads as
+       the plant room of a house that is meant to run itself. Instanced: four
+       draws for the whole array, no material the rest of the scene does not
+       already carry.                                                       */
+    {
+      const TILT = 12 * Math.PI / 180;
+      const PW = 1.68, PD = 1.02;                 // module, landscape
+      const ROWS = [5.05, 6.60, 8.15];            // row centres, front to back
+      const COLS = [-1.15, 0.62, 2.39, 4.16];     // module centres across
+      const y0 = ROOF + 0.26 + (PD / 2) * Math.sin(TILT);
+      const pvTex = makePvPanel();
+      const pvMat = MOBILE || LOWRAM
+        ? new THREE.MeshStandardMaterial({
+            map: tex(pvTex.map, { srgb: true }),
+            roughness: 0.17, metalness: 0.34, envMapIntensity: 1.1
+          })
+        : new THREE.MeshPhysicalMaterial({
+            map: tex(pvTex.map, { srgb: true }),
+            roughness: 0.18, metalness: 0.30, envMapIntensity: 1.15,
+            clearcoat: 0.55, clearcoatRoughness: 0.14
+          });
+      const railMat = new THREE.MeshStandardMaterial({
+        color: 0x25282c, roughness: 0.34, metalness: 0.88, envMapIntensity: 1.0
+      });
+
+      /* the glass laminate, one draw for all twelve */
+      const faceGeo = new THREE.PlaneGeometry(PW - 0.05, PD - 0.05);
+      faceGeo.rotateX(-Math.PI / 2 + TILT);
+      const faces = new THREE.InstancedMesh(faceGeo, pvMat, ROWS.length * COLS.length);
+      faces.name = 'solar:panels';
+      /* the anodised frame under each laminate */
+      const frameGeo = new THREE.BoxGeometry(PW + 0.02, 0.055, PD + 0.02);
+      frameGeo.rotateX(TILT);
+      const frames = new THREE.InstancedMesh(frameGeo, railMat, ROWS.length * COLS.length);
+      frames.name = 'solar:frames';
+      frames.castShadow = true;
+      const d = new THREE.Object3D();
+      let k = 0;
+      for (const z of ROWS) {
+        for (const x of COLS) {
+          d.position.set(x, y0 - 0.032, z); d.rotation.set(0, 0, 0); d.scale.set(1, 1, 1);
+          d.updateMatrix(); frames.setMatrixAt(k, d.matrix);
+          d.position.set(x, y0 + 0.012, z);
+          d.updateMatrix(); faces.setMatrixAt(k, d.matrix);
+          k++;
+        }
+      }
+      faces.instanceMatrix.needsUpdate = true;
+      frames.instanceMatrix.needsUpdate = true;
+      faces.castShadow = false; faces.receiveShadow = true;
+      faces.frustumCulled = false; frames.frustumCulled = false;
+      world.add(frames); world.add(faces);
+
+      /* rails under each row, and the ballast feet that hold them down */
+      const span = COLS[COLS.length - 1] - COLS[0] + PW;
+      const cx = (COLS[0] + COLS[COLS.length - 1]) / 2;
+      const railGeo = new THREE.BoxGeometry(span, 0.07, 0.08);
+      const rails = new THREE.InstancedMesh(railGeo, railMat, ROWS.length * 2);
+      rails.name = 'solar:rails'; rails.castShadow = true;
+      let r = 0;
+      for (const z of ROWS) for (const dz of [-0.30, 0.30]) {
+        d.position.set(cx, ROOF + 0.225, z + dz); d.updateMatrix(); rails.setMatrixAt(r++, d.matrix);
+      }
+      rails.instanceMatrix.needsUpdate = true; rails.frustumCulled = false;
+      world.add(rails);
+
+      const footGeo = new THREE.BoxGeometry(0.22, 0.15, 0.19);
+      const feet = new THREE.InstancedMesh(footGeo, M.concrete, ROWS.length * 2 * 5);
+      feet.name = 'solar:ballast'; feet.receiveShadow = true;
+      let f = 0;
+      for (const z of ROWS) for (const dz of [-0.30, 0.30]) {
+        for (let i = 0; i < 5; i++) {
+          d.position.set(COLS[0] + (span - 0.22) * (i / 4), ROOF + 0.095, z + dz);
+          d.updateMatrix(); feet.setMatrixAt(f++, d.matrix);
+        }
+      }
+      feet.instanceMatrix.needsUpdate = true; feet.frustumCulled = false;
+      world.add(feet);
+
+      /* the string inverter on the lantern's east wall, with its conduit */
+      addBox(0.16, 0.46, 0.36, -2.52, ROOF + 0.35, 2.30, railMat, { cast: false });
+      addBox(0.06, 0.06, 0.06, -2.52, ROOF + 0.06, 2.30, M.bronze, { cast: false });
+      addBox(0.05, 0.05, 2.4, -2.52, ROOF + 0.08, 3.55, M.bronze, { cast: false });
+    }
+
     /* ── balconies and the roof deck ────────────────────────────────────── */
     /** A frameless glass balustrade on a bronze shoe, axis aligned. */
     function railX(x0, x1, z, y, h = 1.05) {
@@ -6063,6 +6321,72 @@ scene.background = null;
         }
       }
 
+      /* ── the front wall: one clipped bougainvillea, on purpose ────────────
+         Rooted in a travertine trough on the porch apron, against the stone
+         pier between the living-room glass and the entry. Three canes climb
+         the pier, the crown spills under the cedar soffit and two runners
+         drop over the porch edge. It never reaches the glass, the door head
+         or the upper windows: this is the one place on the house the paper
+         flower is allowed to grow.                                        */
+      {
+        const PX0 = -3.02, PX1 = -1.50, PZ0 = 6.74, PZ1 = 7.28;
+        const w = PX1 - PX0, dd = PZ1 - PZ0, cx = (PX0 + PX1) / 2, cz = (PZ0 + PZ1) / 2;
+        const H = 0.50, th = 0.065;
+        /* the trough: a travertine box, one course of stone, 60 mm proud of
+           the apron so it casts its own shadow line */
+        addBox(w, 0.06, dd, cx, 0.09, cz, M.stonePale, { uv: 0.5 });
+        for (const s of [-1, 1]) {
+          addBox(w, H, th, cx, 0.06 + H / 2, cz + s * (dd / 2 - th / 2), M.stonePale, { uv: 0.5 });
+          addBox(th, H, dd - th * 2, cx + s * (w / 2 - th / 2), 0.06 + H / 2, cz, M.stonePale, { uv: 0.5 });
+        }
+        addPlane(w - th * 2 - 0.02, dd - th * 2 - 0.02, cx, 0.06 + H - 0.09, cz, M.dark, { receive: true });
+        contactShadow(cx, cz, w + 0.34, dd + 0.34, true, 0.065);
+
+        const RY = 0.06 + H - 0.10;          // soil
+        const RX = cx - 0.06;
+        /* the canes: three woody stems, thickening at the base */
+        runner([[RX + 0.02, RY, 6.98], [RX + 0.06, 1.30, 6.97], [RX - 0.02, 2.30, 6.95],
+                [RX + 0.04, 3.30, 6.95], [RX, 3.84, 6.96]],
+          { r: 0.042, density: 1.5, droop: 0.22, spread: 0.20, pick: 0 });
+        runner([[RX - 0.30, RY - 0.02, 7.04], [RX - 0.36, 1.45, 6.98], [RX - 0.30, 2.55, 6.96],
+                [RX - 0.22, 3.55, 6.97], [RX - 0.18, 3.86, 7.02]],
+          { r: 0.034, density: 1.3, droop: 0.22, spread: 0.18, pick: 1 });
+        runner([[RX + 0.34, RY - 0.02, 6.98], [RX + 0.40, 1.5, 6.96], [RX + 0.34, 2.6, 6.95],
+                [RX + 0.26, 3.6, 6.96], [RX + 0.22, 3.86, 7.00]],
+          { r: 0.032, density: 1.3, droop: 0.2, spread: 0.18, pick: 3 });
+
+        /* the climb: four loose strands up the pier, never a slab of colour,
+           each with its own green so the wall reads as a vine, not a ribbon */
+        const nS = LEAN ? 44 : 120;
+        for (let s = 0; s < 4; s++) {
+          const bx = PX0 + 0.22 + s * 0.34;
+          mass(bx - 0.19, bx + 0.19, 0.62, 3.62, 6.90, 7.10, nS, s + 1);
+          for (let k = 0; k < (LEAN ? 26 : 64); k++) {
+            vleaf(bx + rr(-0.30, 0.30), rr(0.55, 3.65), 6.90 + rr(-0.03, 0.16), rr(0.08, 0.16));
+          }
+        }
+        /* the crown: it lifts off the pier and runs the soffit, twice as deep in
+           z as the climb and thinning at both ends, the way a clipped vine
+           flowers where the sun catches it */
+        mass(PX0 - 0.10, PX1 + 0.26, 3.56, 4.02, 6.90, 7.84, LEAN ? 210 : 520, 2);
+        mass(PX0 - 0.05, PX0 + 1.05, 3.66, 4.03, 7.62, 8.02, LEAN ? 55 : 140, 4);
+        mass(PX1 - 0.55, PX1 + 0.34, 3.62, 4.02, 7.30, 7.86, LEAN ? 45 : 120, 0);
+        for (let k = 0; k < (LEAN ? 30 : 78); k++) {
+          vleaf(rr(PX0 - 0.12, PX1 + 0.26), rr(3.56, 4.0), rr(6.9, 7.9), rr(0.08, 0.15));
+        }
+
+        /* two runners spilling over the porch edge, so the crown has weight */
+        for (const [tx, tz] of [[RX - 0.55, 7.75], [RX + 0.42, 7.7]]) {
+          runner([[tx, 3.92, 7.35], [tx + rr(-0.08, 0.08), 3.62, 7.72],
+                  [tx + rr(-0.12, 0.12), 3.20, 7.94], [tx + rr(-0.12, 0.12), 2.86, 8.02]],
+            { r: 0.018, density: 1.5, droop: 0.5, spread: 0.26, pick: 5, mat: M.bark });
+        }
+        /* a little green at the soil line, so the canes are planted */
+        for (let i = 0; i < (LEAN ? 10 : 22); i++) {
+          vleaf(cx + rr(-0.62, 0.62), RY + rr(0.02, 0.16), cz + rr(-0.2, 0.2), rr(0.09, 0.16));
+        }
+      }
+
       const bracts = new THREE.InstancedMesh(bGeo, bractMat, bMats.length);
       bMats.forEach((m, i) => { bracts.setMatrixAt(i, m); bracts.setColorAt(i, bCols[i]); });
       bracts.instanceMatrix.needsUpdate = true;
@@ -6242,7 +6566,11 @@ scene.background = null;
         return g;
       })();
 
-      const N = Math.round((MOBILE ? 19000 : (TABLET ? 30000 : 40000)) * clamp(opts.grassDensity, 0.15, 1));
+      /* the lawn: a lean phone carries 9–12k tufts instead of 19k. The blades
+         are drawn wider (see uBladeW) so the same ground still reads as turf,
+         which is a tenth of the vertex work for no visible hole */
+      const N = Math.round((LEAN ? (LOWRAM ? 9000 : 12000) : (TABLET ? 30000 : 40000)) * clamp(opts.grassDensity, 0.15, 1));
+      ctxStats.grassTufts = N;
       const aRoot = new Float32Array(N * 3);
       const aParam = new Float32Array(N * 4);
       const aTint = new Float32Array(N);
@@ -6287,7 +6615,9 @@ scene.background = null;
 
         const baseH = (0.30 + Math.pow(rnd(), 1.35) * 0.34) * (0.62 + 0.38 * near);
         const h = baseH * (0.45 + 0.55 * edge) * rr(0.68, 1.32);
-        const w = h * rr(1.15, 1.75);
+        /* on a lean phone the lawn carries two thirds of the tufts, so each
+           card is drawn a fifth wider: same coverage, fewer vertices */
+        const w = h * rr(1.15, 1.75) * (LEAN ? 1.22 : 1);
 
         // a little jitter, so the sampling never shows as rows
         x += rr(-0.35, 0.35); z += rr(-0.35, 0.35);
@@ -7402,6 +7732,10 @@ function frondGeo(ox, oy, oz, az, pitch, len, droop, twist = 0, dense = 1) {
               }
               if (wMax < 9 || dMax < 8) continue;
               const dHome = Math.hypot(cx - HOME.x, cz - HOME.z);
+              /* a lean device keeps the two streets the camera can read and
+                 leaves the rest of the grid to the mid-ground ring: at 150 m
+                 through a 0.002 fog nobody counts the villas */
+              if (dHome > (LOWRAM ? 110 : 150) && LEAN) continue;
               // close in, the street is villas; the blocks start a street back
               const towerChance = dHome < 150 ? 0.12 : (dHome < 220 ? 0.34 : 0.44);
               if (rnd() < towerChance && wMax > 11 && dMax > 11) {
@@ -7428,7 +7762,7 @@ function frondGeo(ox, oy, oz, az, pitch, len, droop, twist = 0, dense = 1) {
          hundred-odd low blocks in rows, with no street detail: at 200 m only
          the massing, the height and the colour read anyway.                 */
       {
-        const bands = MOBILE ? 3 : 5;
+        const bands = LEAN ? (LOWRAM ? 1 : 2) : (TABLET ? 4 : 5);
         for (let b = 0; b < bands; b++) {
           const r = 190 + (b + 0.5) * 28;
           const n = Math.round((2 * Math.PI * r) / 32);
@@ -7956,71 +8290,113 @@ function frondGeo(ox, oy, oz, az, pitch, len, droop, twist = 0, dense = 1) {
 
     const megaStats = { loaded: 0, failed: 0, assets: [] };
     let shadowDirty = false;
-    function megaPlaceModels() {
+    /* ── the scanned props, in two waves ──────────────────────────────────
+       Wave one is what stands in the first four stops: the pots and bollards
+       of the entry, the forecourt planting, the pool ends. Wave two — the
+       rear boulders, the roof troughs, the play-court pieces, none of which
+       the camera sees before the amenities stop — follows once the first wave
+       has landed, or when the scroll reaches that part of the take. A 4 GB
+       phone takes wave one only: seven draws of scanned planting is the most
+       its WebGL budget should carry, and the procedural stand-ins stay in
+       place for everything else.                                          */
+    const MEGA_WAVE1 = ['pot_bowl', 'pot_taper', 'bollard', 'bench', 'laurel', 'yucca_a',
+                        'cane_palm', 'fan_palm', 'ground_cover', 'tropical_palm'];
+    let megaTotal = 0, megaDone = 0, megaWave2 = false;
+    function megaPlaceModels(only) {
       if (opts.models === false || !megaSpots.length || !THREE) return;
       let base = opts.modelBase;
       if (!base) {
         try { base = new URL('./models/', import.meta.url).href; }
         catch (_) { base = './models/'; }
       }
-      const keys = [...new Set(megaSpots.map((sp) => sp.key))];
-      for (const key of keys) {
-        const spots = megaSpots.filter((sp) => sp.key === key && (sp.mobile || !MOBILE));
-        if (!spots.length) continue;
-        loadMegaModel(THREE, base + key + '.glb', MOBILE ? 12000 : 9000).then((model) => {
-          const info = MEGA_ASSETS[key] || {};
-          const mat = model.material;
-          mat.envMapIntensity = (key === 'clay_vase' || key === 'wood_vase') ? 1.0 : 0.85;
-          if (info.wind) {
-            windify(mat, {
-              amp: info.wind, freq: 1.35, height: 2.2, base: -1.2,
-              soft: info.soft || 0, fill: [0.10, 0.125, 0.075], trans: 0.22
+      const all = [...new Set(megaSpots.map((sp) => sp.key))];
+      if (!megaTotal) megaTotal = all.length;
+      const keys = only || all;
+      let next = 0, live = 0;
+      const maxLive = LEAN ? 3 : 8;
+      const pump = () => {
+        while (live < maxLive && next < keys.length) {
+          const key = keys[next++];
+          const spots = megaSpots.filter((sp) => sp.key === key && (sp.mobile || !MOBILE));
+          if (!spots.length) { megaDone++; continue; }
+          live++;
+          loadMegaModel(THREE, base + key + '.glb', MOBILE ? 12000 : 9000).then((model) => {
+            const info = MEGA_ASSETS[key] || {};
+            const mat = model.material;
+            mat.envMapIntensity = (key === 'clay_vase' || key === 'wood_vase') ? 1.0 : 0.85;
+            if (info.wind) {
+              windify(mat, {
+                amp: info.wind, freq: 1.35, height: 2.2, base: -1.2,
+                soft: info.soft || 0, fill: [0.10, 0.125, 0.075], trans: 0.22
+              });
+            }
+            model.geometry.computeBoundingBox();
+            const bb = model.geometry.boundingBox;
+            const bh = Math.max(0.02, bb.max.y - bb.min.y);
+            const mesh = new THREE.InstancedMesh(model.geometry, mat, spots.length);
+            mesh.name = 'megascans:' + key;
+            const d = new THREE.Object3D(), col = new THREE.Color();
+            spots.forEach((sp, i) => {
+              const s = sp.h ? sp.h / bh : (sp.s || 1);
+              d.position.set(sp.x, sp.y, sp.z);
+              d.rotation.set(0, sp.yaw, 0);
+              d.scale.set(s, (sp.sy || s), s);
+              d.updateMatrix();
+              mesh.setMatrixAt(i, d.matrix);
+              const v = 0.90 + ((i * 0.618) % 1) * 0.12;
+              col.setRGB(v, v * (0.985 + (i % 3) * 0.008), v * 0.97);
+              mesh.setColorAt(i, col);
             });
-          }
-          model.geometry.computeBoundingBox();
-          const bb = model.geometry.boundingBox;
-          const bh = Math.max(0.02, bb.max.y - bb.min.y);
-          const mesh = new THREE.InstancedMesh(model.geometry, mat, spots.length);
-          mesh.name = 'megascans:' + key;
-          const d = new THREE.Object3D(), col = new THREE.Color();
-          spots.forEach((sp, i) => {
-            const s = sp.h ? sp.h / bh : (sp.s || 1);
-            d.position.set(sp.x, sp.y, sp.z);
-            d.rotation.set(0, sp.yaw, 0);
-            d.scale.set(s, (sp.sy || s), s);
-            d.updateMatrix();
-            mesh.setMatrixAt(i, d.matrix);
-            const v = 0.90 + ((i * 0.618) % 1) * 0.12;
-            col.setRGB(v, v * (0.985 + (i % 3) * 0.008), v * 0.97);
-            mesh.setColorAt(i, col);
-          });
-          mesh.instanceMatrix.needsUpdate = true;
-          if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
-          mesh.castShadow = !!info.shadow;
-          mesh.receiveShadow = true;
-          mesh.frustumCulled = false;
-          world.add(mesh);
-          for (const fb of megaFallbacks.get(key) || []) fb.visible = false;
-          megaStats.loaded++;
-          megaStats.assets.push(key + '×' + spots.length);
-          if (shadowDirty && (megaStats.loaded + megaStats.failed) >= keys.length) {
-            renderer.shadowMap.needsUpdate = true;
-            shadowDirty = false;
-            drawFrame();
-          }
-          /* the shadow map was baked on the first frame; one refresh folds
-             every late prop into it, and only when the last one has landed */
-          if (info.shadow) shadowDirty = true;
-        }).catch((err) => {
-          megaStats.failed++;
-          if (megaStats.failed === 1) console.warn('[megascans] ' + key + ' not loaded:', (err && err.message) || err);
-        });
-      }
+            mesh.instanceMatrix.needsUpdate = true;
+            if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+            mesh.castShadow = !!info.shadow;
+            mesh.receiveShadow = true;
+            mesh.frustumCulled = false;
+            world.add(mesh);
+            for (const fb of megaFallbacks.get(key) || []) fb.visible = false;
+            megaStats.loaded++;
+            megaStats.assets.push(key + '×' + spots.length);
+            if (info.shadow) shadowDirty = true;
+            settle();
+          }).catch((err) => {
+            megaStats.failed++;
+            if (megaStats.failed === 1) console.warn('[megascans] ' + key + ' not loaded:', (err && err.message) || err);
+            settle();
+          }).finally(() => { live--; pump(); });
+        }
+      };
+      /* one shadow refresh once everything that was asked for has landed */
+      const settle = () => {
+        megaDone++;
+        if (shadowDirty && megaDone >= megaTotal) {
+          renderer.shadowMap.needsUpdate = true;
+          shadowDirty = false;
+          drawFrame();
+        }
+      };
+      pump();
     }
     if (opts.models !== false) {
-      const kick = () => { if (!destroyed) megaPlaceModels(); };
-      if (typeof requestIdleCallback === 'function') requestIdleCallback(kick, { timeout: 2600 });
-      else setTimeout(kick, 900);
+      const wave1 = () => {
+        if (destroyed) return;
+        megaPlaceModels(MEGA_WAVE1);
+        if (LOWRAM) { megaStats.deferred = 'low-ram'; return; }
+        /* wave two waits for the wave-one requests to have had the link to
+           themselves, then rides in behind them */
+        const rest = [...new Set(megaSpots.map((sp) => sp.key))].filter((k) => !MEGA_WAVE1.includes(k));
+        const second = () => { if (!destroyed && !megaWave2) { megaWave2 = true; megaPlaceModels(rest); } };
+        if (typeof requestIdleCallback === 'function') requestIdleCallback(second, { timeout: 6000 });
+        else setTimeout(second, 3200);
+        setTimeout(second, 4200);
+      };
+      const kick = () => {
+        if (destroyed) return;
+        if (typeof requestIdleCallback === 'function') requestIdleCallback(wave1, { timeout: 2600 });
+        else setTimeout(wave1, 900);
+      };
+      /* after the first frame, not before it */
+      if (typeof requestAnimationFrame === 'function') requestAnimationFrame(() => requestAnimationFrame(kick));
+      else kick();
     }
 
     /* ─────────────────────────────────────────────────────────────────────
@@ -8252,13 +8628,24 @@ function resize() {
 
 /* A lost context (a phone under memory pressure, a GPU reset) must not leave a
    black rectangle: three re-initialises itself on restore, and the next frame
-   redraws the frozen product. */
+   redraws the frozen product. On the way down the depth map is handed back,
+   because on a 4 GB phone that 768² buffer is often the last straw. */
 let contextLost = false;
-canvas.addEventListener('webglcontextlost', (e) => { e.preventDefault(); contextLost = true; }, { signal });
+canvas.addEventListener('webglcontextlost', (e) => {
+  e.preventDefault();
+  contextLost = true;
+  canvas.classList.remove('is-ready');
+  container.classList.remove('is-ready');
+  container.classList.add('webgl-paused');
+  try { if (sun.shadow.map) { sun.shadow.map.dispose(); sun.shadow.map = null; } } catch (_) {}
+}, { signal });
 canvas.addEventListener('webglcontextrestored', () => {
   contextLost = false;
+  container.classList.remove('webgl-paused');
+  try { renderer.shadowMap.needsUpdate = true; } catch (_) {}
   resize();
   drawFrame();
+  canvas.classList.add('is-ready');
   schedule();
 }, { signal });
 
@@ -8371,6 +8758,11 @@ function tick() {
     renderer.shadowMap.autoUpdate = false;
     canvas.classList.add('is-ready');
     canvas.classList.remove('is-loading');
+    /* a lean phone: the deferred scans, then the scratch canvases handed back */
+    if (LEAN) {
+      schedulePhotoUpgrade();
+      setTimeout(releaseScratchCanvases, 9000);
+    }
   }
 
   schedule();
@@ -8384,6 +8776,30 @@ applyCamera(pSmooth, 1);
 paintOverlays(pSmooth);
 clock.start();
 schedule();
+
+/* ── scratch canvases ──────────────────────────────────────────────────────
+   Half the canvases this file bakes are intermediates: a height field a normal
+   map was derived from, a drawing composited into a larger sheet, an atlas
+   composited from pieces. They are never uploaded. Once the frame has been
+   drawn, zero the ones no live texture points at and give the backing store
+   back: a 4 GB phone needs that memory more than we do.                   */
+let scratchReleased = false;
+function releaseScratchCanvases() {
+  if (scratchReleased || destroyed) return;
+  scratchReleased = true;
+  let freed = 0, bytes = 0;
+  for (const c of CANVAS_KEEP) {
+    /* a canvas a texture still points at stays: three re-uploads from it on
+       a context restore, and a zeroed one would come back blank */
+    if (c.__asTex) continue;
+    if (!c.width || !c.height) continue;
+    bytes += c.width * c.height * 4;
+    c.width = 0; c.height = 0;
+    freed++;
+  }
+  ctxStats.scratchCanvasesFreed = freed;
+  ctxStats.scratchMbFreed = Math.round(bytes / 1048576 * 10) / 10;
+}
 
 /* ── the handle: everything a host needs and nothing it has to know ───── */
 const handle = {
@@ -8423,7 +8839,13 @@ const handle = {
       triangles: renderer.info.render.triangles,
       geometries: renderer.info.memory.geometries,
       textures: renderer.info.memory.textures,
-      tier: MOBILE ? 'lite' : (TABLET ? 'tablet' : 'high')
+      tier: MOBILE ? (LOWRAM ? 'lite+lowram' : 'lite') : (TABLET ? 'tablet' : 'high'),
+      lean: LEAN, lowram: LOWRAM, dpr: renderer.getPixelRatio(),
+      shadowMap: sun.shadow.mapSize.x,
+      grassTufts: ctxStats.grassTufts,
+      photoPhase2: photoPhase2,
+      scratchCanvasesFreed: ctxStats.scratchCanvasesFreed,
+      scratchMbFreed: ctxStats.scratchMbFreed
     };
   },
   destroy,
