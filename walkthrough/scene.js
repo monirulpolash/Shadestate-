@@ -923,7 +923,7 @@ function makeLawnMat() {
      below give the depth the camera reads at the pool edge */
   const grassPhoto = PHOTO.grass;
   if (grassPhoto) {
-    g.fillStyle = '#5f6739';
+    g.fillStyle = '#6a7440';
     g.fillRect(0, 0, S, S);
     g.save();
     g.globalCompositeOperation = 'luminosity';
@@ -934,7 +934,7 @@ function makeLawnMat() {
     g.drawImage(grassPhoto.color, 0, 0, S, S);
     g.restore();
   } else {
-    g.fillStyle = '#6b743f';
+    g.fillStyle = '#6f7a44';
     g.fillRect(0, 0, S, S);
   }
 
@@ -942,7 +942,7 @@ function makeLawnMat() {
   for (let i = 0; i < 260; i++) {
     const x = rnd() * S, y = rnd() * S, r = rr(40, 190), t = rnd();
     const grd = g.createRadialGradient(x, y, 0, x, y, r);
-    grd.addColorStop(0, t > 0.55 ? 'rgba(96,108,56,.26)' : t > 0.25 ? 'rgba(44,54,26,.22)' : 'rgba(134,134,78,.22)');
+    grd.addColorStop(0, t > 0.55 ? 'rgba(104,118,62,.22)' : t > 0.25 ? 'rgba(58,68,36,.15)' : 'rgba(146,148,88,.24)');
     grd.addColorStop(1, 'rgba(0,0,0,0)');
     g.fillStyle = grd; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill();
   }
@@ -1284,6 +1284,38 @@ function makeRug() {
   const hcS = cv(512);
   hcS.getContext('2d').drawImage(hc, 0, 0, 512, 512);
   return { map: c, normal: normalFromHeight(hcS, 0.5) };
+}
+
+/** The entry mat: charcoal coir, woven one way, bound on all four edges.
+    Reads as a mat at 1.5 m and costs one 512 canvas. */
+function makeDoormat() {
+  const S = 512, c = cv(S), g = c.getContext('2d');
+  const hc = cv(256), hg = hc.getContext('2d');
+  g.fillStyle = '#403d37'; g.fillRect(0, 0, S, S);
+  hg.fillStyle = '#808080'; hg.fillRect(0, 0, S, S);
+  // the coir ribs, one direction, slightly uneven like a real mat
+  for (let y = 0; y < S; y += 5) {
+    const t = rr(0.84, 1.14);
+    g.fillStyle = `rgba(${Math.round(84 * t)},${Math.round(80 * t)},${Math.round(70 * t)},.92)`;
+    g.fillRect(0, y + rr(0, 1.4), S, rr(2.2, 3.4));
+    hg.fillStyle = rnd() > 0.5 ? 'rgba(198,198,198,.55)' : 'rgba(70,70,70,.5)';
+    hg.fillRect(0, y, S, 2.6);
+  }
+  // cross threads, sparse and dark, so the weave holds together
+  for (let x = 0; x < S; x += 13) {
+    g.strokeStyle = 'rgba(20,19,17,.30)';
+    g.lineWidth = rr(1.0, 1.8);
+    g.beginPath(); g.moveTo(x + rr(-1, 1), 0); g.lineTo(x + rr(-1, 1), S); g.stroke();
+  }
+  for (let i = 0; i < 7000; i++) {
+    g.fillStyle = rnd() > 0.5 ? 'rgba(126,120,108,.20)' : 'rgba(14,14,12,.22)';
+    g.fillRect(rnd() * S, rnd() * S, rr(1, 3), rr(0.8, 2));
+  }
+  // the bound border: a band in near-black round the four edges
+  g.strokeStyle = '#22211e';
+  g.lineWidth = 14;
+  g.strokeRect(7, 7, S - 14, S - 14);
+  return { map: c, normal: normalFromHeight(hc, 0.35) };
 }
 
 /** A minimal framed work: warm paper, one ochre field, one ink line. */
@@ -2088,10 +2120,10 @@ export async function createWalkthrough(container, options = {}) {
         of a wall is still lit by the whole dome, and at 0.17 it read as black.
         The hemisphere now carries the sky colour and a warm sand bounce, which
         is what makes shadows blue-warm instead of dead. */
-    scene.add(new THREE.HemisphereLight(0xc2d4e6, 0xa48a64, MOBILE ? 0.44 : 0.56));
+    scene.add(new THREE.HemisphereLight(0xc6d8ea, 0xa89066, MOBILE ? 0.52 : 0.66));
     {
       /* one weak ambient term for the last of the ground bounce */
-      const amb = new THREE.AmbientLight(0xe2d6c0, MOBILE ? 0.13 : 0.19);
+      const amb = new THREE.AmbientLight(0xe4d9c4, MOBILE ? 0.15 : 0.22);
       scene.add(amb);
     }
 
@@ -2549,7 +2581,7 @@ scene.background = null;
         normalMap: photoTex('travertine', 'normal') || tex(stoneA.normal),
         roughnessMap: photoTex('travertine', 'rough') || tex(stoneA.rough),
         roughness: 1.0, metalness: 0.0,
-        normalScale: new THREE.Vector2(1.35, 1.35),
+        normalScale: new THREE.Vector2(0.95, 0.95),
         envMapIntensity: 0.42
       }), { grime: 0.10, streak: 0.18, base: 0.20, scale: 0.30 }),
       /* the pale limestone: Quixel Grey Stone Tile, its joints and all */
@@ -3358,52 +3390,99 @@ scene.background = null;
     buildGround(span(XS, -EXT, POOLG.x0), span(ZS, POOLG.z0, POOLG.z1));
     buildGround(span(XS, POOLG.x1, EXT), span(ZS, POOLG.z0, POOLG.z1));
 
-    // gravel drive — a ribbon following the same spline the camera flies
+    /* ── the way in: gravel outside the gate, laid stone from the gate to the
+       door ────────────────────────────────────────────────────────────────
+       The approach spline carries the camera the whole way in, so it also
+       carries the surface: past the wall the boulevard's tarmac takes over,
+       and the moment the drive crosses the estate line it becomes a laid
+       limestone walk. One material, one ribbon, joints from the scan, and a
+       pale border each side so the walk reads as architecture rather than a
+       painted lane. No tarmac, no lane paint, no loose stone inside the wall. */
     const drivePts = [
       [30, 150], [26, 128], [22.5, 108], [19.5, 92], [17, 78], [14.5, 64],
       [12, 52], [9.2, 41], [6.4, 31], [4.0, 23], [2.2, 16.5], [1.0, 12.6], [0.3, 10.4], [0, 8.8]
     ].map(([x, z]) => new THREE.Vector3(x, 0, z));
     const drive = new THREE.CatmullRomCurve3(drivePts, false, 'centripetal', 0.5);
+
+    /* where the drive crosses the wall: the surface changes here */
+    let tWALL = 1;
+    for (let i = 0; i <= 600; i++) {
+      const t = i / 600;
+      if (drive.getPoint(t).z <= ESTATE.z1) { tWALL = t; break; }
+    }
     {
-      const N = 200, pos = [], uv = [], idx = [];
-      for (let i = 0; i <= N; i++) {
-        const t = i / N;
-        const p = drive.getPoint(t);
-        const tan = drive.getTangent(t);
-        const nrm = new THREE.Vector3(-tan.z, 0, tan.x).normalize();
-        const w = lerp(1.65, 1.25, t);
-        for (const s of [-1, 1]) {
-          pos.push(p.x + nrm.x * w * s, 0.035 + (t > 0.95 ? (t - 0.95) * 1.0 : 0), p.z + nrm.z * w * s);
-          uv.push(s * 1.1 + 0.55, t * 34);
+      const N = 240;
+      const band = (t0, t1, wOf, lift, mat, uvS) => {
+        const pos = [], uv = [], idx = [];
+        for (let i = 0; i <= N; i++) {
+          const t = lerp(t0, t1, i / N);
+          const p = drive.getPoint(t), tan = drive.getTangent(t);
+          const nx = -tan.z, nz = tan.x, l = Math.hypot(nx, nz) || 1;
+          const w = wOf(t);
+          for (const s of [-1, 1]) {
+            const px = p.x + (nx / l) * w * s, pz = p.z + (nz / l) * w * s;
+            pos.push(px, lift, pz);
+            uv.push(px * uvS, pz * uvS);
+          }
+          if (i < N) { const a = i * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
         }
-        if (i < N) { const a = i * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
-      }
-      const geo = new THREE.BufferGeometry();
-      geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-      geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
-      geo.setIndex(idx);
-      geo.computeVertexNormals();
-      const path = new THREE.Mesh(geo, M.gravel);
-      path.receiveShadow = true;
-      world.add(path);
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+        geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+        geo.setIndex(idx);
+        geo.computeVertexNormals();
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.receiveShadow = true;
+        world.add(mesh);
+        return mesh;
+      };
+      /* outside the wall: the gravel verge the boulevard's tarmac sits in */
+      band(0.001, tWALL, (t) => lerp(1.65, 1.44, t), 0.035, M.gravel, 0.42);
+      /* inside the wall: the walk. Three metres of limestone, world-scaled so
+         the pavers are a constant 2 m format from the gate to the door. */
+      band(tWALL, 1, (t) => lerp(1.58, 1.46, (t - tWALL) / (1 - tWALL)), 0.044, M.pave, 0.5);
+      /* a pale border each side, 40 mm proud, so the walk has an edge */
+      const edge = (side) => {
+        const pos = [], uv = [], idx = [];
+        for (let i = 0; i <= N; i++) {
+          const t = lerp(tWALL, 1, i / N);
+          const p = drive.getPoint(t), tan = drive.getTangent(t);
+          const nx = -tan.z, nz = tan.x, l = Math.hypot(nx, nz) || 1;
+          const w = lerp(1.58, 1.46, i / N);
+          for (const q of [0, 1]) {
+            const o = (w + 0.02 + q * 0.16) * side;
+            pos.push(p.x + (nx / l) * o, 0.048 + q * 0.026, p.z + (nz / l) * o);
+            uv.push(q, i * 0.5);
+          }
+          if (i < N) { const a = i * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+        }
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+        geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+        geo.setIndex(idx);
+        geo.computeVertexNormals();
+        queue(geo, M.stonePale, false, true, 1);
+      };
+      edge(1); edge(-1);
     }
 
-    // loose pebbles on the drive shoulders — instanced, no shadow cost
+    // loose pebbles on the outer verge only: the walk inside the wall stays clear
     {
       const geo = new THREE.IcosahedronGeometry(1, 0);
-      const count = MOBILE ? 180 : 380;
+      const count = MOBILE ? 90 : 170;
       const pebbleMat = new THREE.MeshStandardMaterial({ color: 0x9d9483, roughness: 0.92, metalness: 0, envMapIntensity: 0.35 });
       const inst = new THREE.InstancedMesh(geo, pebbleMat, count);
       inst.receiveShadow = true;
       const d = new THREE.Object3D();
       for (let i = 0; i < count; i++) {
-        const t = Math.pow(rnd(), 0.8);
+        const t = Math.pow(rnd(), 0.8) * (tWALL - 0.01);
         const p = drive.getPoint(t);
         const tan = drive.getTangent(t);
         const nrm = new THREE.Vector3(-tan.z, 0, tan.x).normalize();
         const side = rnd() > 0.5 ? 1 : -1;
-        // the shoulder only: start clear of the gravel ribbon itself
-        const off = (lerp(1.65, 1.25, t) + lerp(0.06, 0.55, rnd())) * side;
+        // the verge only: outside the boulevard's asphalt and its walk, so no
+        // stone ever lies on the driving surface
+        const off = (3.95 + lerp(0.05, 1.35, Math.pow(rnd(), 0.8))) * side;
         d.position.set(p.x + nrm.x * off, 0.02, p.z + nrm.z * off);
         const s = rr(0.045, 0.11);
         d.scale.set(s * rr(1, 2.0), s * rr(0.45, 0.8), s * rr(1, 2.0));
@@ -3454,45 +3533,9 @@ scene.background = null;
       ribbon(road, M.gravel, 2.35, 0.03, 120, 150, 0.42);
       ribbon(road, asphalt, 1.72, 0.055, 120, 150, 0.40);
 
-      /* the kerb stones either side of the gravel drive, from the gate to the
-         entry court: two thin pale ribbons laid on the shoulder */
-      const kerbMat = M.stonePale;
-      const kerb = (side) => {
-        const pos = [], uv = [], idx = [];
-        const N = 60;
-        for (let i = 0; i <= N; i++) {
-          const t = 0.905 + 0.095 * (i / N);
-          const p = drive.getPoint(t), tan = drive.getTangent(t);
-          const nx = -tan.z, nz = tan.x;
-          const l = Math.hypot(nx, nz) || 1;
-          const off = lerp(1.30, 1.52, i / N) * side;
-          for (const q of [-1, 1]) {
-            const oo = off + q * 0.11;
-            pos.push(p.x + (nx / l) * oo, 0.075, p.z + (nz / l) * oo);
-            uv.push(q * 0.5 + 0.5, i * 0.6);
-          }
-          if (i < N) { const a = i * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
-        }
-        const geo = new THREE.BufferGeometry();
-        geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-        geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
-        geo.setIndex(idx);
-        geo.computeVertexNormals();
-        queue(geo, kerbMat, false, true, 1);
-      };
-      kerb(1); kerb(-1);
-
-      // and the kerb stones sit in a soft shadow of their own
-      for (let i = 0; i <= 11; i++) {
-        const t = 0.905 + 0.095 * (i / 11);
-        const p = drive.getPoint(t), tan = drive.getTangent(t);
-        const nx = -tan.z, nz = tan.x;
-        const l = Math.hypot(nx, nz) || 1;
-        for (const sd of [-1, 1]) {
-          const off = lerp(1.30, 1.52, i / 11) * sd;
-          contactShadow(p.x + (nx / l) * off, p.z + (nz / l) * off, 0.95, 0.85, true, 0.042);
-        }
-      }
+      /* the walk carries its own pale edge borders (laid above), so the old
+         raised kerb ribbons that used to run down the middle of it are gone:
+         they read as painted lane lines on the stone. */
     }
 
     /* The horizon is the meadow itself. Its own bend, plus the fog, gives the
@@ -4608,6 +4651,28 @@ scene.background = null;
       // the threshold inlay: 18 mm proud of the apron, 30 mm deep
       addBox(2.9, 0.018, 0.3, 0, 0.069, G.z1 + 0.05, M.bronze, { uv: 0.6, cast: false });
       for (const x of [-4.2, 4.2]) addBox(0.14, 0.05, 0.14, x, 0.085, zB + 0.02, M.bronze, { cast: false });
+
+      /* the mat: charcoal coir, 1.45 × 0.78 m, 60 mm clear of the bronze
+         inlay and 6 mm proud of the apron, on its own baked soft shadow, so
+         it never floats and never fights the slab it sits on */
+      {
+        const dm = makeDoormat();
+        const matMat = new THREE.MeshStandardMaterial({
+          map: tex(dm.map, { srgb: true }),
+          normalMap: tex(dm.normal),
+          roughness: 0.96, metalness: 0.0,
+          normalScale: new THREE.Vector2(0.55, 0.55),
+          envMapIntensity: 0.22
+        });
+        const mw = 1.45, md = 0.78, mz = G.z1 + 0.24 + md / 2;
+        const matGeo = new THREE.BoxGeometry(mw, 0.016, md);
+        matGeo.translate(0, 0.066, mz);
+        const matMesh = new THREE.Mesh(matGeo, matMat);
+        matMesh.receiveShadow = true;
+        matMesh.castShadow = false;
+        world.add(matMesh);
+        contactShadow(0, mz, mw + 0.18, md + 0.18, true, 0.061);
+      }
     }
 
     /* ── teak loungers by the pool ──────────────────────────────────────── */
@@ -4642,6 +4707,20 @@ scene.background = null;
        materials, so the whole court costs no extra draw call.              */
     {
       const CX = 9.6, CZ = 14.5, CW = 6.6, CD = 5.6;
+      /* the arrival court in front of the house: one field of limestone from
+         the porch step to the gate line, so the walk, the carport link and the
+         door all stand in stone rather than in meadow grass */
+      addPlane(12.5, 16.2, 0.85, 0.036, 17.1, M.pave, { uv: 0.5 });
+      addPlane(13.1, 16.8, 0.85, 0.026, 17.1, M.gravel, { uv: 0.5 });
+
+      /* the way in to the court: a stone apron from the walk to the bay heads,
+         and a driveway spur that runs from the pad out through the gate, so the
+         parking court reads as connected to the street rather than dropped on
+         the lawn */
+      addPlane(4.5, 5.4, 4.55, 0.044, CZ, M.pave, { uv: 0.5 });          // walk → bay heads
+      addPlane(3.9, 8.3, 7.95, 0.046, 21.1, M.pave, { uv: 0.5 });        // pad → gate → street
+      addPlane(4.9, 5.8, 4.55, 0.037, CZ, M.gravel, { uv: 0.5 });        // its gravel shoulder
+      addPlane(4.3, 8.7, 7.95, 0.037, 21.1, M.gravel, { uv: 0.5 });
       // paved apron with a pale border, on the lawn between drive and wall
       addPlane(CW + 0.9, CD + 0.9, CX, 0.045, CZ, M.gravel, { uv: 0.5 });
       addPlane(CW, CD, CX, 0.075, CZ, M.pave, { uv: 0.5 });
@@ -4680,6 +4759,93 @@ scene.background = null;
       cg.translate(CX, 2.88, CZ);
       queue(cg, carGlow, false, false, 4);
       contactShadow(CX, CZ, CW + 1, CD + 1, true, 0.03);
+
+      /* ── the car: a dark luxury SUV, nose to the gate, in the west bay.
+         Same bevelled volumes as the interior furniture: a low body, a
+         shoulder, a shorter glasshouse with tilted screens and a bonnet that
+         steps down at the nose, four wheels with machined rims and a dark
+         arch ring at each corner, so the wheel openings read as cut rather
+         than as wheels sunk into a box. */
+      {
+        const BX = CX - CW / 4, BZ = CZ + 0.1, Y0 = 0.075;
+        const paint = new THREE.MeshPhysicalMaterial({
+          color: 0x14171b, metalness: 0.28, roughness: 0.44,
+          clearcoat: 0.6, clearcoatRoughness: 0.16, envMapIntensity: 0.45
+        });
+        const carGlass = new THREE.MeshStandardMaterial({
+          color: 0x0a1015, metalness: 0.12, roughness: 0.20, envMapIntensity: 0.5
+        });
+        const tyre = new THREE.MeshStandardMaterial({ color: 0x0c0d0e, roughness: 0.96, metalness: 0.0, envMapIntensity: 0.25 });
+        const rimM = new THREE.MeshStandardMaterial({ color: 0x8d949b, roughness: 0.30, metalness: 0.92, envMapIntensity: 1.15 });
+        const trimM = new THREE.MeshStandardMaterial({ color: 0x08090a, roughness: 0.62, metalness: 0.35, envMapIntensity: 0.7 });
+        const lampF = new THREE.MeshBasicMaterial({ color: new THREE.Color(2.4, 2.35, 2.1) });
+        const lampR = new THREE.MeshBasicMaterial({ color: new THREE.Color(1.9, 0.24, 0.16) });
+        const add = (geo, mat, cast = true, recv = true) => {
+          geo.translate(BX, Y0, BZ);
+          queue(geo, mat, cast, recv);
+        };
+
+        // the body: a low sill, the main volume, a shoulder above it
+        let g = roundedBoxGeo(1.86, 0.56, 4.52, 0.15); g.translate(0, 0.56, 0); add(g, paint);
+        g = roundedBoxGeo(1.96, 0.44, 4.74, 0.17); g.translate(0, 0.92, 0); add(g, paint);
+        g = roundedBoxGeo(1.90, 0.20, 4.48, 0.10); g.translate(0, 1.18, -0.04); add(g, paint);
+        // the bonnet steps down ahead of the screen
+        g = roundedBoxGeo(1.86, 0.22, 1.10, 0.10); g.translate(0, 1.08, 1.78); add(g, paint);
+        // the glasshouse, shorter than the body, and its roof
+        g = roundedBoxGeo(1.68, 0.42, 2.50, 0.11); g.translate(0, 1.44, -0.28); add(g, carGlass);
+        g = roundedBoxGeo(1.66, 0.10, 2.28, 0.05); g.translate(0, 1.66, -0.32); add(g, paint);
+        // the screens, tilted: the rounded corner alone reads as a van
+        g = new THREE.BoxGeometry(1.56, 0.54, 0.035); g.rotateX(-0.52); g.translate(0, 1.45, 1.05); add(g, carGlass, false);
+        g = new THREE.BoxGeometry(1.54, 0.48, 0.035); g.rotateX(0.44); g.translate(0, 1.47, -1.55); add(g, carGlass, false);
+        // side glass, a touch proud of the pillars so it reads as a window
+        for (const sx of [-1, 1]) {
+          g = roundedBoxGeo(0.03, 0.34, 2.18, 0.02); g.translate(sx * 0.845, 1.44, -0.28); add(g, carGlass, false);
+        }
+        // sills and the arch rings that make the wheel openings read
+        for (const sx of [-1, 1]) {
+          g = roundedBoxGeo(0.11, 0.15, 3.20, 0.04); g.translate(sx * 0.95, 0.31, 0); add(g, trimM);
+          for (const wz of [-1.52, 1.52]) {
+            g = new THREE.TorusGeometry(0.47, 0.06, 8, 22); g.rotateY(Math.PI / 2);
+            g.translate(sx * 0.955, 0.40, wz); add(g, trimM, false);
+          }
+        }
+        // wheels: tyre, a machined rim, a dark hub and five spokes
+        for (const sx of [-1, 1]) {
+          for (const wz of [-1.52, 1.52]) {
+            g = new THREE.CylinderGeometry(0.385, 0.385, 0.28, 26); g.rotateZ(Math.PI / 2);
+            g.translate(sx * 0.875, 0.385, wz); add(g, tyre);
+            g = new THREE.CylinderGeometry(0.25, 0.25, 0.29, 22); g.rotateZ(Math.PI / 2);
+            g.translate(sx * 0.878, 0.385, wz); add(g, rimM, false);
+            g = new THREE.CylinderGeometry(0.07, 0.07, 0.30, 12); g.rotateZ(Math.PI / 2);
+            g.translate(sx * 0.88, 0.385, wz); add(g, trimM, false);
+            for (let s2 = 0; s2 < 5; s2++) {
+              const a = s2 * Math.PI * 2 / 5;
+              g = new THREE.BoxGeometry(0.31, 0.34, 0.06); g.rotateX(a);
+              g.translate(sx * 0.885, 0.385 + Math.cos(a) * 0.10, wz + Math.sin(a) * 0.10); add(g, rimM, false);
+            }
+          }
+        }
+        // the front: a low bumper, the grille with thin blades, a lamp each side
+        g = roundedBoxGeo(1.92, 0.30, 0.20, 0.07); g.translate(0, 0.52, 2.34); add(g, trimM, false);
+        g = roundedBoxGeo(1.16, 0.22, 0.08, 0.03); g.translate(0, 0.88, 2.36); add(g, trimM, false);
+        for (let i = 0; i < 7; i++) {
+          g = new THREE.BoxGeometry(0.032, 0.18, 0.03); g.translate(-0.45 + i * 0.15, 0.88, 2.39); add(g, paint, false, false);
+        }
+        for (const sx of [-1, 1]) {
+          g = roundedBoxGeo(0.46, 0.085, 0.06, 0.025); g.translate(sx * 0.62, 1.06, 2.37); add(g, lampF, false, false);
+          g = roundedBoxGeo(0.54, 0.16, 0.05, 0.02); g.translate(sx * 0.62, 1.06, 2.33); add(g, trimM, false);
+          g = roundedBoxGeo(0.18, 0.13, 0.05, 0.02); g.translate(sx * 0.88, 0.62, 2.38); add(g, trimM, false);
+        }
+        // the rear: a full-width light bar and a diffuser
+        g = roundedBoxGeo(1.58, 0.075, 0.05, 0.02); g.translate(0, 1.10, -2.37); add(g, lampR, false, false);
+        g = roundedBoxGeo(1.88, 0.26, 0.20, 0.06); g.translate(0, 0.50, -2.32); add(g, trimM, false);
+        // mirrors on short arms, and roof rails
+        for (const sx of [-1, 1]) {
+          g = roundedBoxGeo(0.20, 0.10, 0.13, 0.035); g.translate(sx * 1.00, 1.34, 0.72); add(g, paint);
+          g = roundedBoxGeo(0.06, 0.05, 1.90, 0.02); g.translate(sx * 0.70, 1.72, -0.32); add(g, trimM, false);
+        }
+        contactShadow(BX, BZ + 0.05, 5.5, 2.5, true, 0.079);
+      }
     }
 
     /* ── the wellness pavilion west of the pool ──────────────────────────
@@ -4851,9 +5017,11 @@ scene.background = null;
     }
 
     /* ── the children's court in the east side yard ───────────────────────
-       Soft sand turf inside a pale kerf, a timber swing frame on bronze
-       pivots, and a low climbing frame with a slide. Oak and bronze only;
-       nothing bright, nothing plastic-looking.                            */
+       Soft sand inside a limestone curb, a cedar swing frame on bronze
+       pivots, and a low climbing frame with a slide. Every timber here is the
+       scanned Quixel cedar on the villa's soffits and the bronze is the gate's
+       own, so the court belongs to the house; scanned boulders, a Quixel
+       timber bench and ground cover finish its edges.                     */
     {
       const CX2 = 22.2, CZ2 = 1.2, CW2 = 7.0, CD2 = 8.4;
       addPlane(CW2 + 1.0, CD2 + 1.0, CX2, 0.032, CZ2, M.gravel, { uv: 0.5 });
@@ -4864,53 +5032,87 @@ scene.background = null;
         color: 0xe8ddc4, roughness: 1.0, metalness: 0.0, envMapIntensity: 0.5
       });
       addPlane(CW2, CD2, CX2, 0.058, CZ2, courtSand, { uv: 0.55 });
-      // pale kerf round the court
-      addBox(CW2 + 0.2, 0.10, 0.14, CX2, 0.08, CZ2 - CD2 / 2 - 0.05, M.stonePale, { uv: 0.5 });
-      addBox(CW2 + 0.2, 0.10, 0.14, CX2, 0.08, CZ2 + CD2 / 2 + 0.05, M.stonePale, { uv: 0.5 });
-      addBox(0.14, 0.10, CD2 + 0.2, CX2 - CW2 / 2 - 0.05, 0.08, CZ2, M.stonePale, { uv: 0.5 });
-      addBox(0.14, 0.10, CD2 + 0.2, CX2 + CW2 / 2 + 0.05, 0.08, CZ2, M.stonePale, { uv: 0.5 });
+      // the limestone curb: one block course all round, 180 wide, 120 high
+      addBox(CW2 + 0.36, 0.12, 0.18, CX2, 0.075, CZ2 - CD2 / 2 - 0.09, M.stonePale, { uv: 0.5 });
+      addBox(CW2 + 0.36, 0.12, 0.18, CX2, 0.075, CZ2 + CD2 / 2 + 0.09, M.stonePale, { uv: 0.5 });
+      addBox(0.18, 0.12, CD2 + 0.36, CX2 - CW2 / 2 - 0.09, 0.075, CZ2, M.stonePale, { uv: 0.5 });
+      addBox(0.18, 0.12, CD2 + 0.36, CX2 + CW2 / 2 + 0.09, 0.075, CZ2, M.stonePale, { uv: 0.5 });
 
-      // the swing frame: two oak A-frames, an oak beam, two swings on bronze
+      // the swing frame: two cedar A-frames, a cedar beam, two swings on bronze
       {
         const sx = CX2 - 1.4, sz = CZ2 - 1.6;
         for (const s2 of [-1, 1]) {
-          addSoft(0.12, 2.0, 0.12, 0.02, sx + s2 * 0.85, 1.0, sz - 0.5, M.oakVert, { uv: 0.6, rz: s2 * -0.24 });
-          addSoft(0.12, 2.0, 0.12, 0.02, sx + s2 * 0.85, 1.0, sz + 0.5, M.oakVert, { uv: 0.6, rz: s2 * -0.24 });
+          addSoft(0.12, 2.0, 0.12, 0.02, sx + s2 * 0.85, 1.0, sz - 0.5, M.cedarVert, { uv: 0.6, rz: s2 * -0.24 });
+          addSoft(0.12, 2.0, 0.12, 0.02, sx + s2 * 0.85, 1.0, sz + 0.5, M.cedarVert, { uv: 0.6, rz: s2 * -0.24 });
           contactShadow(sx + s2 * 0.85, sz, 1.6, 1.4, true, 0.045);
         }
-        addBox(2.5, 0.13, 0.13, sx, 2.02, sz, M.oakDark, { uv: 0.6 });
+        addBox(2.5, 0.13, 0.13, sx, 2.02, sz, M.cedar, { uv: 0.6 });
         for (const sw of [-0.55, 0.55]) {
           for (const dz of [-0.05, 0.05]) {
             addBox(0.02, 1.32, 0.02, sx + sw, 1.36, sz + dz, M.bronze, { cast: false });
           }
-          addSoft(0.42, 0.05, 0.18, 0.02, sx + sw, 0.70, sz, M.oak, { uv: 0.6 });
+          addSoft(0.42, 0.055, 0.19, 0.02, sx + sw, 0.70, sz, M.oak, { uv: 0.6 });
         }
       }
-      // the climbing frame with a slide
+      // the play fort: four cedar posts, a deck with guard rails, a hipped
+      // cedar roof and a slide landing on the sand. The rails and the roof are
+      // what make it read as a playhouse rather than a table.
       {
-        const cx2 = CX2 + 1.7, cz2 = CZ2 + 1.9;
-        for (const [dx, dz] of [[-0.65, -0.55], [0.65, -0.55], [-0.65, 0.55], [0.65, 0.55]]) {
-          addBox(0.10, 1.30, 0.10, cx2 + dx, 0.65, cz2 + dz, M.oakVert, { uv: 0.6 });
+        const cx2 = CX2 + 1.7, cz2 = CZ2 + 1.9, DY = 1.12;
+        for (const [dx, dz] of [[-0.68, -0.60], [0.68, -0.60], [-0.68, 0.60], [0.68, 0.60]]) {
+          addBox(0.11, DY, 0.11, cx2 + dx, DY / 2, cz2 + dz, M.cedarVert, { uv: 0.6 });
         }
-        addBox(1.5, 0.09, 1.3, cx2, 1.32, cz2, M.oakDark, { uv: 0.6 });
-        // bronze rungs up the south face
-        for (let ry = 0.28; ry <= 1.2; ry += 0.23) {
-          addBox(1.1, 0.04, 0.04, cx2, ry, cz2 + 0.62, M.bronze, { cast: false });
-        }
-        // the slide: an angled oak deck with bronze rails, landing on the sand
-        addSoft(0.62, 0.07, 2.1, 0.02, cx2 - 0.02, 0.82, cz2 + 1.75, M.oakDark, { uv: 0.6, rx: 0.52 });
+        addBox(1.56, 0.10, 1.40, cx2, DY + 0.05, cz2, M.cedar, { uv: 0.6 });
+        // guard rails on three sides, a gap on the slide side
         for (const s2 of [-1, 1]) {
-          addSoft(0.04, 0.05, 2.0, 0.015, cx2 - 0.02 + s2 * 0.31, 1.02, cz2 + 1.75, M.bronze, { cast: false, rx: 0.52 });
+          addBox(0.05, 0.05, 1.30, cx2 + s2 * 0.72, DY + 0.62, cz2, M.cedar, { cast: false });
+          addBox(0.05, 0.05, 1.30, cx2 + s2 * 0.72, DY + 0.34, cz2, M.cedar, { cast: false });
+          for (const dz of [-0.58, 0, 0.58]) addBox(0.05, 0.62, 0.05, cx2 + s2 * 0.72, DY + 0.45, cz2 + dz, M.cedar, { cast: false });
         }
-        contactShadow(cx2, cz2, 2.6, 3.4, true, 0.045);
+        addBox(1.40, 0.05, 0.05, cx2, DY + 0.62, cz2 - 0.66, M.cedar, { cast: false });
+        addBox(1.40, 0.05, 0.05, cx2, DY + 0.34, cz2 - 0.66, M.cedar, { cast: false });
+        // the hipped roof: four cedar planes over the deck, a bronze finial
+        const apex = DY + 1.62, ey = DY + 1.02, rw = 1.02, rd = 0.94;
+        for (let q = 0; q < 4; q++) {
+          const a0 = q * Math.PI / 2 + Math.PI / 4, a1 = a0 + Math.PI / 2;
+          const p0 = [cx2 + Math.cos(a0) * rw, ey, cz2 + Math.sin(a0) * rd];
+          const p1 = [cx2 + Math.cos(a1) * rw, ey, cz2 + Math.sin(a1) * rd];
+          const g = new THREE.BufferGeometry();
+          g.setAttribute('position', new THREE.Float32BufferAttribute([
+            p0[0], ey, p0[2], p1[0], ey, p1[2], cx2, apex - 0.02, cz2,
+            cx2, apex - 0.02, cz2, p1[0], ey, p1[2], p0[0], ey, p0[2]
+          ], 3));
+          g.computeVertexNormals();
+          queue(g, M.cedar, false, true);
+        }
+        // bronze rungs up the south face, under the deck
+        for (let ry = 0.26; ry <= DY - 0.14; ry += 0.22) {
+          addBox(1.05, 0.04, 0.04, cx2, ry, cz2 + 0.66, M.bronze, { cast: false });
+        }
+        // the slide: an angled cedar deck with bronze rails, landing on the sand
+        addSoft(0.60, 0.07, 2.05, 0.02, cx2 - 0.02, 0.72, cz2 + 1.80, M.cedar, { uv: 0.6, rx: 0.54 });
+        for (const s2 of [-1, 1]) {
+          addSoft(0.04, 0.05, 1.95, 0.015, cx2 - 0.02 + s2 * 0.30, 0.90, cz2 + 1.80, M.bronze, { cast: false, rx: 0.54 });
+        }
+        contactShadow(cx2, cz2, 2.9, 3.6, true, 0.045);
       }
-      // a low bronze hoop on the court's east edge, standing on an oak post
+      // a low bronze hoop on the court's east edge, standing on a cedar post
       {
-        addBox(0.09, 1.55, 0.09, CX2 + CW2 / 2 - 0.6, 0.78, CZ2 - 2.4, M.oakVert, { uv: 0.6 });
+        addBox(0.09, 1.55, 0.09, CX2 + CW2 / 2 - 0.6, 0.78, CZ2 - 2.4, M.cedarVert, { uv: 0.6 });
         const hoop = new THREE.TorusGeometry(0.36, 0.028, 8, 20);
         hoop.rotateY(Math.PI / 2);
         hoop.translate(CX2 + CW2 / 2 - 0.6 + 0.38, 1.58, CZ2 - 2.4);
         queue(hoop, M.bronze, true, false);
+      }
+      // a cedar balance log on two bronze saddles, along the north kerb
+      {
+        const lx = CX2 - 0.4, lz = CZ2 + CD2 / 2 - 0.55;
+        const log = new THREE.CylinderGeometry(0.13, 0.14, 2.6, 14);
+        log.rotateZ(Math.PI / 2);
+        log.translate(lx, 0.26, lz);
+        queue(log, M.cedar, true, true);
+        for (const dx of [-0.9, 0.9]) addBox(0.16, 0.14, 0.30, lx + dx, 0.07, lz, M.bronze, { cast: false });
+        contactShadow(lx, lz, 2.9, 0.6, true, 0.052);
       }
     }
 
@@ -4987,7 +5189,7 @@ scene.background = null;
         roughnessMap: tex(stoneA.rough),
         color: 0xeadfca,
         roughness: 1.0, metalness: 0.0,
-        normalScale: new THREE.Vector2(1.55, 1.55),
+        normalScale: new THREE.Vector2(1.02, 1.02),
         envMapIntensity: 0.44
       }), { grime: 0.10, streak: 0.18, base: 0.26, scale: 0.34 });
 
@@ -4997,18 +5199,14 @@ scene.background = null;
         else addBox(ld, ly, lu, at, y, u, mat, opt);
       };
 
-      /* the louver ribbon: one recessed band of bronze fins under the coping,
-         running the whole wall between the piers. A continuous slot reads as
-         architecture; individual bays read as windows.                     */
+      /* the shadow gap under the coping: one continuous recess, 90 mm deep
+         and 220 mm tall. It used to be filled with 46 mm bronze fins at a
+         128 mm pitch, which at any distance moiréd into a dark striped band;
+         a smooth recess reads as a crisp architectural shadow line and costs
+         one box instead of a hundred.                                      */
       const ribbon = (axis, at, a, b, y0, y1) => {
         const w = b - a, c = (a + b) / 2;
-        put(axis, at, c, (y0 + y1) / 2, w - 0.02, y1 - y0, T - 0.24, M.dark, { cast: false });
-        const n = Math.max(3, Math.floor(w / 0.128));
-        const span = (n - 1) * 0.128;
-        for (let i = 0; i < n; i++) {
-          put(axis, at, c - span / 2 + i * 0.128, (y0 + y1) / 2,
-            0.046, y1 - y0 - 0.03, T - 0.10, M.bronze, { uv: 0.5 });
-        }
+        put(axis, at, c, (y0 + y1) / 2, w - 0.02, y1 - y0, T - 0.18, M.dark, { cast: false });
       };
 
       /* a pier: a stepped vertical, its pale cap proud of the coping */
@@ -5685,8 +5883,11 @@ scene.background = null;
       /* the scanned Paper Flower sprigs: one card in five of the procedural
          bracts is replaced by a whole scanned cluster (SUBSTITUTES.md §0), so
          the mass reads as real bougainvillea and the drawn card survives as
-         the fine detail between them */
-      const pfMats = [[], []], pfCols = [[], []];
+         the fine detail between them. Four atlases now: magenta, magenta +
+         white, white + magenta and a yellow flowering, so a run of troughs is
+         not one colour repeated.                                          */
+      const pfMats = [[], [], [], []], pfCols = [[], [], [], []];
+      let pfBias = -1;
       const bGeo = new THREE.PlaneGeometry(1, 1);
       const vd = new THREE.Object3D();
       const vc = new THREE.Color();
@@ -5707,7 +5908,7 @@ scene.background = null;
         vc.setRGB(p[0] * rr(0.9, 1.1), p[1] * rr(0.88, 1.12), p[2] * rr(0.9, 1.1));
         bCols.push(vc.clone());
         if (bMats.length % 5 === 0) {
-          const w = (bMats.length >> 2) & 1;
+          const w = pfBias >= 0 ? pfBias : ((bMats.length >> 2) & 1);
           vd.rotation.set(rr(-1.1, 1.1), rr(0, 6.3), rr(-1.6, 1.6));
           const sc = rr(0.34, 0.60) * (MOBILE ? 0.86 : 1);
           vd.scale.set(sc, sc, sc);
@@ -5760,21 +5961,11 @@ scene.background = null;
         }
       }
 
-      // 1 · the porch edge: a sheet of flower along the fascia and the curtain
-      //     that hangs off it, so the last three metres to the door are in shade
-      runner([[-4.0, 4.02, 8.3], [-2.0, 4.06, 8.36], [0.4, 4.04, 8.34], [2.4, 4.02, 8.3], [4.0, 3.98, 8.26]],
-        { r: 0.05, density: 1.6, droop: 1.1, spread: 0.52, pick: 0 });
-      for (let x = -3.9; x < 3.95; x += 0.5) {
-        runner([[x, 4.0, 8.3], [x + rr(-0.12, 0.12), 3.8, 8.4], [x + rr(-0.2, 0.2), 3.5, 8.36],
-                [x + rr(-0.26, 0.26), 3.14, 8.28], [x + rr(-0.3, 0.3), 2.92, 8.2]],
-          { r: 0.024, density: 1.3, droop: 0.6, spread: 0.3, pick: 2 });
-      }
-      // canes up both porch columns
-      for (const [px2, pz2] of [[-8.6, 8.24], [2.4, 8.24]]) {
-        runner([[px2 + 0.1, 0.05, pz2 + 0.06], [px2 + 0.14, 1.3, pz2 + 0.1], [px2 + 0.06, 2.6, pz2 + 0.08],
-                [px2 + 0.12, 3.6, pz2 + 0.06], [px2 + 0.1, 4.0, pz2 + 0.05]],
-          { r: 0.038, density: 1.2, droop: 0.45, spread: 0.3, pick: 1 });
-      }
+      // 1 · one clean run over the terrace pergola. This is the only place on
+      //     the building the bougainvillea is allowed to climb: the entry
+      //     canopy, the porch columns, the pier beside the door, the upper
+      //     windows and the rear wall are bare stone now, which is what the
+      //     villa wanted all along.
 
       // 2 · over the terrace pergola, both beams and the hanging edge
       runner([[4.4, 3.4, -9.5], [6.2, 3.44, -9.56], [8.0, 3.4, -9.5], [9.9, 3.36, -9.46]],
@@ -5790,27 +5981,9 @@ scene.background = null;
                 [px2 + 0.1, 3.1, pz2 + 0.12]], { r: 0.036, density: 1.1, droop: 0.4, spread: 0.3, pick: 0 });
       }
 
-      // 3 · the roof deck over the wing: over its glass edge, and up the pergola
-      runner([[5.0, 5.28, 3.62], [7.4, 5.34, 3.66], [9.8, 5.3, 3.62], [12.4, 5.32, 3.64], [15.4, 5.26, 3.6]],
-        { r: 0.045, density: 1.4, droop: 1.5, spread: 0.44, pick: 3 });
-      for (let x = 5.2; x < 15.2; x += 0.78) {
-        runner([[x, 5.28, 3.62], [x + rr(-0.15, 0.15), 4.9, 3.78], [x + rr(-0.2, 0.2), 4.5, 3.7]],
-          { r: 0.02, density: 1.05, droop: 0.7, spread: 0.26, pick: 5 });
-      }
+      // 3 · up the roof-deck pergola only, far from the facade
       runner([[10.6, 6.72, -4.4], [12.4, 6.76, -2.0], [14.4, 6.7, 0.6], [15.6, 6.66, 2.2]],
-        { r: 0.04, density: 1.3, droop: 1.2, spread: 0.4, pick: 1 });
-
-      // 4 · the narrow pier beside the door, ground to lintel
-      runner([[1.72, 0.05, 6.7], [1.78, 1.2, 6.68], [1.68, 2.4, 6.7], [1.74, 3.4, 6.69], [1.7, 4.0, 6.68]],
-        { r: 0.042, density: 1.4, droop: 0.45, spread: 0.34, pick: 2 });
-      runner([[3.82, 0.05, 6.72], [3.88, 1.5, 6.7], [3.78, 2.8, 6.72], [3.84, 3.9, 6.71]],
-        { r: 0.03, density: 1.1, droop: 0.55, spread: 0.28, pick: 4 });
-
-      // 5 · the rear wall beside the sliding opening, seen as you step out
-      runner([[2.3, 0.05, -6.3], [2.4, 1.3, -6.32], [2.26, 2.5, -6.3], [2.36, 3.6, -6.31]],
-        { r: 0.042, density: 1.3, droop: 0.5, spread: 0.34, pick: 1 });
-      runner([[-7.0, 0.05, -6.3], [-6.9, 1.4, -6.32], [-7.04, 2.6, -6.3], [-6.94, 3.7, -6.31]],
-        { r: 0.038, density: 1.2, droop: 0.6, spread: 0.32, pick: 5 });
+        { r: 0.04, density: 1.1, droop: 1.2, spread: 0.4, pick: 1 });
 
       function mass(x0, x1, y0, y1, z0, z1, count, pick) {
         for (let i = 0; i < count; i++) {
@@ -5819,16 +5992,8 @@ scene.background = null;
           if (i % 3 === 0) vleaf(x + rr(-0.1, 0.1), y - rr(0.02, 0.12), z + rr(-0.1, 0.1), rr(0.07, 0.15));
         }
       }
-      mass(-4.0, 4.0, 3.45, 4.1, 8.16, 8.44, MOBILE ? 260 : 620, 0);     // porch edge
-      mass(-4.0, 4.0, 2.74, 3.4, 8.14, 8.4, MOBILE ? 140 : 340, 2);       // its hanging curtain
-      mass(-8.8, -8.35, 0.4, 3.95, 8.1, 8.42, MOBILE ? 90 : 220, 1);      // porch column, west
-      mass(2.18, 2.62, 0.4, 3.95, 8.1, 8.42, MOBILE ? 90 : 220, 4);       // porch column, east
-      mass(4.2, 9.85, 2.62, 3.55, -9.72, -9.3, MOBILE ? 240 : 620, 4);    // terrace pergola
-      mass(4.9, 15.6, 4.55, 5.4, 3.55, 3.8, MOBILE ? 220 : 520, 3);       // deck glass edge
-      mass(10.5, 15.7, 6.3, 6.85, -4.5, 2.3, MOBILE ? 160 : 380, 1);      // deck pergola
-      mass(1.55, 1.98, 0.4, 4.0, 6.6, 6.86, MOBILE ? 100 : 260, 2);       // pier by the door
-      mass(2.12, 2.5, 0.4, 3.7, -6.42, -6.2, MOBILE ? 80 : 200, 1);       // rear wall
-      mass(-7.2, -6.7, 0.4, 3.7, -6.42, -6.2, MOBILE ? 70 : 180, 5);      // rear wall, west
+      mass(4.2, 9.85, 2.70, 3.55, -9.72, -9.3, MOBILE ? 170 : 430, 4);    // terrace pergola
+      mass(10.5, 15.7, 6.35, 6.85, -4.4, 2.2, MOBILE ? 90 : 210, 1);      // roof-deck pergola
 
       /* ── the terrace and roof-deck planters, planted ──────────────────────
          A green body of leaves fills each trough, and the flowers arrive as
@@ -5842,24 +6007,35 @@ scene.background = null;
         const rx = (P.kind === 'round' ? P.r * 1.55 : P.w) * 0.5;
         const rz = (P.kind === 'round' ? P.r * 1.55 : P.d) * 0.5;
         const k = MOBILE ? 0.5 : 1;
+        /* the troughs on the roof deck and the main roof are planted with
+           scanned species first (fountain grass, ribbon plant, snake plant,
+           laurel, cane palm, ground cover) and only a light flowering over
+           them, so no two roof troughs carry the same plant */
+        const roofTop = P.y > 1.0;
+        pfBias = P.pick % 4;
         /* the dome of the planting: high at the centre, low at the stone */
-        const dome = (q) => rim + (0.10 + 0.90 * (1 - q * q)) * P.spread;
+        const dome = (q) => roofTop
+          ? rim + (0.05 + 0.50 * (1 - q * q)) * P.spread
+          : rim + (0.10 + 0.90 * (1 - q * q)) * P.spread;
 
         /* the green body */
         const nl = Math.round(P.count * 0.9 * k);
         for (let i = 0; i < nl; i++) {
           const a = rnd() * 6.283, q = Math.pow(rnd(), 0.62);
-          vleaf(P.x + Math.cos(a) * q * rx, dome(q) * pf(0.32, 1),
-                P.z + Math.sin(a) * q * rz, pf(0.075, 0.155));
+          vleaf(P.x + Math.cos(a) * q * rx,
+                roofTop ? rim + (dome(q) - rim) * pf(0.35, 1) : dome(q) * pf(0.32, 1),
+                P.z + Math.sin(a) * q * rz, roofTop ? pf(0.055, 0.105) : pf(0.075, 0.155));
         }
 
         /* racemes: tight balls of bracts, denser on the sunny shoulder */
-        const nc = Math.max(5, Math.round((P.w || P.r * 2) * 3.6));
+        const nc = roofTop
+          ? Math.max(3, Math.round((P.w || P.r * 2) * 1.0))
+          : Math.max(5, Math.round((P.w || P.r * 2) * 3.6));
         for (let c = 0; c < nc; c++) {
           const a = rnd() * 6.283, q = Math.pow(rnd(), 0.45);
           const cx = P.x + Math.cos(a) * q * rx * 0.94;
           const cz = P.z + Math.sin(a) * q * rz * 0.94;
-          const cy = dome(q) * pf(0.66, 1.0);
+          const cy = roofTop ? rim + (dome(q) - rim) * pf(0.45, 1.0) : dome(q) * pf(0.66, 1.0);
           const n = Math.round(pf(17, 30) * k) + 6;
           for (let i = 0; i < n; i++) {
             const th = rnd() * 6.283, ph = Math.acos(pf(-0.7, 1));
@@ -5872,8 +6048,10 @@ scene.background = null;
           if (c % 2 === 0) vleaf(cx, cy - 0.05, cz, pf(0.08, 0.15));
         }
 
-        /* two canes arching out of the soil and spilling over the rim */
-        for (let k2 = 0; k2 < 2; k2++) {
+        /* two canes arching out of the soil and spilling over the rim, on the
+           terrace troughs only: a roof planter is read from below, so there
+           is nothing to spill over */
+        for (let k2 = 0; k2 < (roofTop ? 0 : 2); k2++) {
           const a = rnd() * 6.283, sx = Math.cos(a), sz = Math.sin(a);
           const r0 = pf(0.06, 0.22);
           runner([
@@ -5901,9 +6079,10 @@ scene.background = null;
       vLeaves.frustumCulled = false;
       world.add(vLeaves);
 
-      /* the two scanned Paper Flower sprites, over the same masses */
-      const pfTex = [loadAtlas('paperflower_pf09.webp'), loadAtlas('paperflower_pf02.webp')];
-      for (let w = 0; w < 2; w++) {
+      /* the four scanned Paper Flower atlases, over the same masses */
+      const pfTex = [loadAtlas('paperflower_pf09.webp'), loadAtlas('paperflower_pf02.webp'),
+                     loadAtlas('paperflower_pf01.webp'), loadAtlas('paperflower_pf00.webp')];
+      for (let w = 0; w < 4; w++) {
         if (!pfMats[w].length) continue;
         const mat = windify(new THREE.MeshStandardMaterial({
           map: pfTex[w], alphaTest: 0.40, side: THREE.DoubleSide,
@@ -5939,7 +6118,9 @@ scene.background = null;
        · the paving is kept clear and the height shortens at its edge
        ───────────────────────────────────────────────────────────────────── */
     {
-      const driveHalf = (t) => lerp(1.65, 1.25, t);
+      const driveHalf = (t) => t > tWALL
+        ? lerp(1.62, 1.52, clamp((t - tWALL) / (1 - tWALL)))
+        : lerp(1.65, 1.44, t);
 
       // the drive as a lookup table, for cheap "is this paving?" tests
       const DT = [];
@@ -5962,8 +6143,9 @@ scene.background = null;
 
       const paved = (x, z) => {
         if (onStreet(x, z, 2.6)) return true;                              // the city streets and their pavements
-        if (driveDist(x, z) < 0.9) return true;                            // the drive, shoulders included
+        if (driveDist(x, z) < 1.05) return true;                            // the walk, shoulders included
         if (x > -5.2 && x < 5.2 && z > G.z1 - 0.2 && z < 9.6) return true;  // the entry apron
+        if (x > -5.4 && x < 7.1 && z > 8.8 && z < 25.4) return true;        // the arrival court
         if (estateBand(x, z)) return true;                                   // the wall's footprint
         if (x > G.x0 - 1.2 && x < WING.x1 + 1.2 && z > G.z0 - 1.2 && z < S.z1 + 1.3) return true;
         if (x > -4.4 && x < 4.2 && z > S.z1 && z < 12.2) return true;   // the entrance walk
@@ -5972,6 +6154,8 @@ scene.background = null;
         // the carport court, the wellness pavilion, the play court and the
         // garden beds keep their own surfaces; no lawn tufts on them
         if (x > 5.6 && x < 13.6 && z > 11.2 && z < 17.8) return true;
+        if (x > 2.1 && x < 7.0 && z > 11.6 && z < 17.4) return true;   // its link apron
+        if (x > 5.8 && x < 10.2 && z > 16.8 && z < 25.4) return true;  // its driveway spur
         if (x > -15.0 && x < -7.9 && z > -14.7 && z < -9.1) return true;
         if (x > 17.9 && x < 26.5 && z > -3.8 && z < 6.2) return true;
         if (x > -17.4 && x < -13.0 && z > -5.0 && z < -2.2) return true;
@@ -6058,7 +6242,7 @@ scene.background = null;
         return g;
       })();
 
-      const N = Math.round((MOBILE ? 17000 : (TABLET ? 26000 : 34000)) * clamp(opts.grassDensity, 0.15, 1));
+      const N = Math.round((MOBILE ? 19000 : (TABLET ? 30000 : 40000)) * clamp(opts.grassDensity, 0.15, 1));
       const aRoot = new Float32Array(N * 3);
       const aParam = new Float32Array(N * 4);
       const aTint = new Float32Array(N);
@@ -6068,7 +6252,7 @@ scene.background = null;
         guard++;
         let x, z;
         const roll = rnd();
-        if (roll < 0.58) {
+        if (roll < 0.50) {
           // along the drive — this is where the camera actually is
           const t = 0.20 + 0.80 * Math.pow(rnd(), 0.5);
           const p = drive.getPoint(t);
@@ -6077,6 +6261,12 @@ scene.background = null;
           const side = rnd() > 0.5 ? 1 : -1;
           const off = side * (1.45 + Math.pow(rnd(), 1.25) * 22);
           x = p.x + nx * off; z = p.z + nz * off;
+        } else if (roll < 0.69) {
+          /* the rear garden behind the villa: the lawn the pool sits in. It is
+             sampled on its own so the back of the house is a lawn, not a
+             thinning-out of the front field. */
+          x = -19.5 + Math.pow(rnd(), 0.82) * 36;
+          z = -6.2 - Math.pow(rnd(), 0.82) * 23.5;
         } else if (roll < 0.96) {
           // the apron round the house, terrace and pool
           x = rr(-34, 38); z = rr(-46, 40);
@@ -6224,7 +6414,7 @@ scene.background = null;
             vec4 texel = texture2D(uTuft, vUv);
             if (texel.a < 0.36) discard;
 
-            vec3 albedo = vCol * texel.rgb * 2.30;
+            vec3 albedo = vCol * texel.rgb * 2.62;
 
             // a card's face is mostly up-facing, so the light comes from the sky
             vec3 N = normalize(vec3(0.0, 1.0, 0.0));
@@ -6232,7 +6422,7 @@ scene.background = null;
             /* a card's normal is the sky, but the sun still rakes across a mown
                lawn at 17° and lights most of each blade: at 1.16 the field sat
                in permanent half-shade and read as scrub */
-            vec3 col = albedo * (uSkyCol * 1.45 + uSunCol * ndl * 2.05);
+            vec3 col = albedo * (uSkyCol * 1.62 + uSunCol * ndl * 2.05);
             // backlit rim, where the sun comes through the thin tips
             col += albedo * uSunCol * 0.55 * smoothstep(0.35, 1.0, vUp) * ndl;
 
@@ -7011,17 +7201,15 @@ function frondGeo(ox, oy, oz, az, pitch, len, droop, twist = 0, dense = 1) {
          neighbourhood the way it always ran out of sight. The camera comes in
          along it, so this is the surface the whole first act plays over.      */
       {
-        let tGate = 1;
-        for (let i = 0; i <= 400; i++) {
-          const t = i / 400;
-          if (drive.getPoint(t).z >= ESTATE.z1 + 2) { tGate = t; break; }
-        }
+        /* the boulevard runs from the far end of the approach up to the wall,
+           never past it: inside the wall the surface is the stone walk */
+        const tGate = tWALL;
         const yOf = (p) => terrainH(p.x, p.z);
         const strip = (w, y, lift, mat, segs = 120) => {
           const pos = [], uv = [], idx = [];
           const runLen = drive.getLength();
           for (let i = 0; i <= segs; i++) {
-            const t = lerp(tGate, 1, i / segs), p = drive.getPoint(t), tan = drive.getTangent(t);
+            const t = lerp(0, tGate, i / segs), p = drive.getPoint(t), tan = drive.getTangent(t);
             const nx = -tan.z, nz = tan.x, l = Math.hypot(nx, nz) || 1;
             const yy = yOf(p) + lift;
             for (const s of [-1, 1]) {
@@ -7044,7 +7232,7 @@ function frondGeo(ox, oy, oz, az, pitch, len, droop, twist = 0, dense = 1) {
           const pos = [], uv = [], idx = [];
           const N = 120;
           for (let i = 0; i <= N; i++) {
-            const t = lerp(tGate, 1, i / N), p = drive.getPoint(t), tan = drive.getTangent(t);
+            const t = lerp(0, tGate, i / N), p = drive.getPoint(t), tan = drive.getTangent(t);
             const nx = -tan.z, nz = tan.x, l = Math.hypot(nx, nz) || 1;
             const o0 = sd * 3.62, o1 = sd * 5.78;
             for (const [o, yy] of [[o0, 0.15], [o1, 0.15]]) {
@@ -7063,7 +7251,7 @@ function frondGeo(ox, oy, oz, az, pitch, len, droop, twist = 0, dense = 1) {
         // the centre line, dashed, so the boulevard reads as a street from the
         // very first frame and the eye has a scale to walk down
         for (let i = 0; i < 24; i++) {
-          const t = lerp(tGate, 1, (i + 0.5) / 24);
+          const t = lerp(0, tGate, (i + 0.5) / 24);
           const p = drive.getPoint(t), tan = drive.getTangent(t);
           const g = new THREE.PlaneGeometry(0.16, 2.9);
           g.rotateX(-Math.PI / 2);
@@ -7075,7 +7263,7 @@ function frondGeo(ox, oy, oz, az, pitch, len, droop, twist = 0, dense = 1) {
         // lamps down each side every twenty metres, and a palm or two on the
         // outer half only: the approach itself stays a clear view of the house
         for (let i = 0; i < 6; i++) {
-          const t = lerp(tGate, 1, (i + 0.5) / 6);
+          const t = lerp(0, tGate, (i + 0.5) / 6);
           const p = drive.getPoint(t), tan = drive.getTangent(t);
           const nx = -tan.z, nz = tan.x, l = Math.hypot(nx, nz) || 1;
           for (const sd of [-1, 1]) {
@@ -7704,6 +7892,66 @@ function frondGeo(ox, oy, oz, az, pitch, len, droop, twist = 0, dense = 1) {
       megaSpot('bollard', 1.55, 0.02, 26.8, { s: 1.0, yaw: 0 });
       megaSpot('bollard', 7.45, 0.02, 26.8, { s: 1.0, yaw: 0 });
       megaSpot('bench', 12.9, 0.02, -19.9, { s: 1.0, yaw: 1.5708 });
+
+      /* the children's court: the scanned timber bench at its west edge, a run
+         of beach boulders as stepping stones in from the lawn, and ground
+         cover in the joints of the limestone curb */
+      megaSpot('bench', 18.25, 0.035, 1.55, { s: 1.0, yaw: Math.PI / 2 });
+      megaSpot('boulder', 14.2, 0.02, 2.55, { s: 0.40, yaw: 0.7 });
+      megaSpot('boulder', 15.5, 0.02, 1.95, { s: 0.36, yaw: 2.1 });
+      megaSpot('boulder', 16.7, 0.02, 1.55, { s: 0.38, yaw: 4.0 });
+      megaSpot('boulder', 17.75, 0.02, 1.35, { s: 0.34, yaw: 1.3 });
+      megaSpot('ground_cover', 18.55, 0.02, 5.75, { h: 0.26, yaw: 0.9 });
+      megaSpot('ground_cover', 25.95, 0.02, -3.25, { h: 0.24, yaw: 2.6 });
+      megaSpot('ground_cover', 18.55, 0.02, -3.25, { h: 0.25, yaw: 4.2 });
+      megaSpot('laurel', 18.15, 0.02, 6.6, { h: 1.15, yaw: 1.7 });
+      megaSpot('laurel', 26.3, 0.02, 6.35, { h: 1.05, yaw: 3.3 });
+
+      /* the roof-deck and main-roof troughs, planted species by species so no
+         two troughs carry the same thing: Quixel fountain grass, ribbon plant,
+         snake plant, spotted laurel, cane palm and ground cover, standing in
+         the soil of each trough where the flowering cards are now sparse */
+      const rfD = 4.05 + 0.45, rfR = 8.53 + 0.40;
+      const RP = (key, x, z, y, h, yaw = 0) => megaSpot(key, x, y, z, { h, yaw });
+      /* the roof deck over the wing */
+      RP('fountain_grass', 6.9, 3.0, rfD, 0.70, 0.4);
+      RP('ribbon_plant', 7.9, 3.0, rfD, 0.72, 2.2);
+      RP('laurel', 11.9, -5.45, rfD, 0.82, 1.1);
+      RP('cane_palm', 12.85, -5.45, rfD, 0.78, 3.0);
+      RP('ground_cover', 5.2, 2.6, rfD, 0.30, 0.8);
+      RP('snake_plant', 5.2, -5.2, rfD, 0.58, 2.4);
+      /* the main roof, south edge over the terrace */
+      RP('fountain_grass', -13.8, -6.95, rfR, 0.78, 0.6);
+      RP('snake_plant', -13.2, -6.95, rfR, 0.54, 2.0);
+      RP('ribbon_plant', -8.9, -6.95, rfR, 0.72, 1.2);
+      RP('laurel', -8.3, -6.95, rfR, 0.74, 3.4);
+      RP('cane_palm', -1.3, -6.95, rfR, 0.80, 0.2);
+      RP('ground_cover', -0.7, -6.95, rfR, 0.30, 1.9);
+      RP('fountain_grass', 3.1, -6.95, rfR, 0.74, 4.1);
+      RP('ribbon_plant', 3.7, -6.95, rfR, 0.68, 2.6);
+      /* the main roof, north edge */
+      RP('laurel', -13.1, 9.45, rfR, 0.78, 0.9);
+      RP('fountain_grass', -12.5, 9.45, rfR, 0.70, 2.5);
+      RP('ribbon_plant', -7.7, 9.45, rfR, 0.72, 1.6);
+      RP('snake_plant', -7.1, 9.45, rfR, 0.54, 3.3);
+      RP('cane_palm', -1.9, 9.45, rfR, 0.84, 0.4);
+      RP('ground_cover', -1.3, 9.45, rfR, 0.28, 2.1);
+      RP('laurel', 3.3, 9.45, rfR, 0.74, 3.8);
+      RP('fountain_grass', 3.9, 9.45, rfR, 0.68, 1.0);
+      /* the main roof, west edge */
+      RP('fountain_grass', -15.03, -4.9, rfR, 0.74, 1.4);
+      RP('ribbon_plant', -15.03, -4.3, rfR, 0.68, 2.7);
+      RP('laurel', -15.03, 0.1, rfR, 0.78, 0.3);
+      RP('cane_palm', -15.03, 0.7, rfR, 0.82, 3.1);
+      RP('snake_plant', -15.03, 5.1, rfR, 0.54, 1.8);
+      RP('ground_cover', -15.03, 5.7, rfR, 0.28, 0.6);
+      /* the main roof, east edge */
+      RP('ribbon_plant', 5.67, -4.9, rfR, 0.72, 0.8);
+      RP('fountain_grass', 5.67, -4.3, rfR, 0.68, 2.3);
+      RP('cane_palm', 5.67, 0.1, rfR, 0.80, 1.5);
+      RP('laurel', 5.67, 0.7, rfR, 0.74, 3.6);
+      RP('ground_cover', 5.67, 5.1, rfR, 0.28, 1.2);
+      RP('fountain_grass', 5.67, 5.7, rfR, 0.64, 4.4);
     }
 
     const megaStats = { loaded: 0, failed: 0, assets: [] };
