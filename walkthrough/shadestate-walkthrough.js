@@ -53655,19 +53655,16 @@ function makeAsphalt() {
   const hc = cv(S), hg = hc.getContext('2d');
   const a = PHOTO.asphalt;
   if (a) {
-    /*  The scan supplies the aggregate and the patched, oil-stained figure; the
-        base supplies Dubai tarmac's tone, and it is lifted here on purpose. At
-        the old soot-black the low sun's shadow had nothing to fall on and the
-        boulevard was a hole under the villa; a tarmac that holds the shadow is
-        still far darker than the grey paving it leads to. */
-    g.fillStyle = '#84868a';
+    /*  The scan is bright at source, so it is normalised before it is used: a
+        straight luminosity blend would lay a pale wash where the tarmac should
+        be dark, and the road would come out a different tone on a desktop than
+        on a phone. Multiplying it down to the drawn tarmac's own level keeps
+        the aggregate, the repair patches and the oil staining at the same
+        albedo the phone renders, so both tiers hold the low sun's shadow. */
+    g.fillStyle = '#8a8d94';
     g.fillRect(0, 0, S, S);
     g.save();
-    g.globalCompositeOperation = 'luminosity';
-    g.globalAlpha = 0.30;
-    g.drawImage(a.color, 0, 0, S, S);
-    g.globalCompositeOperation = 'soft-light';
-    g.globalAlpha = 0.10;
+    g.globalCompositeOperation = 'multiply';
     g.drawImage(a.color, 0, 0, S, S);
     g.restore();
     hg.fillStyle = '#7a7a7a'; hg.fillRect(0, 0, S, S);
