@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>House 01 — a walkthrough template</title>
 <meta name="description" content="A neutral three-beat 3D walkthrough for a residential project: street reveal, roof terrace, infinity pool.">
-<link rel="preload" href="../assets/fonts/TimelessSansVF.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/assets/fonts/TimelessSansVF.woff2" as="font" type="font/woff2" crossorigin>
 <style>
   @font-face {
     font-family: 'Timeless Sans';
-    src: url('../assets/fonts/TimelessSansVF.woff2') format('woff2-variations');
+    src: url('/assets/fonts/TimelessSansVF.woff2') format('woff2-variations');
     font-weight: 100 900;
     font-display: swap;
   }
@@ -183,7 +183,7 @@
 
 <main class="house" id="house">
   <div class="house__stage">
-    <img class="house__poster" src="poster.webp" alt="A limestone villa with a cedar sauna and an infinity pool at golden hour" width="780" height="1688" decoding="async">
+    <img class="house__poster" src="/template/poster.webp" alt="A limestone villa with a cedar sauna and an infinity pool at golden hour" width="780" height="1688" decoding="async">
     <canvas class="house-canvas" id="scene" role="img" aria-label="Three-dimensional walkthrough of a modern villa, from the street to the roof terrace and out over the infinity pool"></canvas>
     <div class="house__grade" aria-hidden="true"></div>
 
@@ -201,7 +201,7 @@
 </main>
 
 <script type="module">
-  import { createWalkthrough } from './scene.js';
+  import { createWalkthrough } from '/template/scene.js';
   const host = document.getElementById('house');
   const stage = host.querySelector('.house__stage');
   createWalkthrough(stage, { scrollTarget: host }).catch((err) => {

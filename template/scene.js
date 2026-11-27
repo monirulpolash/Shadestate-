@@ -3051,8 +3051,10 @@ function contact(x, z, w, d, opacity = 0.55, y = 0.17) {
    ───────────────────────────────────────────────────────────────────────────── */
 /* the car ships beside the scene; the Megascans props are shared with the main
    build, one directory over, so the template does not duplicate 8 MB */
-const CAR_URL = options.carUrl || './models/suv.glb';
-const PROP_BASE = options.propBase || '../walkthrough/models/';
+/* resolved against this module, not the page: the page may be reached at
+   /template or /template/, and a relative fetch would break in one of them */
+const CAR_URL = options.carUrl || new URL('./models/suv.glb', import.meta.url).href;
+const PROP_BASE = options.propBase || new URL('../walkthrough/models/', import.meta.url).href;
 
 function glbParts(buf) {
   const dv = new DataView(buf);
