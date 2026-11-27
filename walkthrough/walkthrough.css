@@ -69,6 +69,49 @@
   touch-action:pan-y;
   cursor:grab;
 }
+/*  The still of the first frame. A phone needs several seconds to compile the
+    scene's shaders; until then this is what the section shows, at the exact
+    crop the live first frame paints, so the walk opens on the house instead
+    of on a black rectangle. It fades out under the canvas the moment the real
+    frame is ready (scene.js puts `is-ready` on #walk). */
+#walk .walk__poster{
+  position:absolute;inset:0;
+  width:100%;height:100%;
+  object-fit:cover;object-position:50% 50%;
+  display:block;z-index:0;
+  opacity:1;
+  transition:opacity .9s var(--w-ease);
+  pointer-events:none;
+}
+#walk.is-ready .walk__poster{opacity:0}
+@media (min-width:861px){
+  /* desktop compiles in a blink: no still needed, and no 94 kB on the wire */
+  #walk .walk__poster{display:none}
+}
+
+/* the wait, said once, in the same voice as the HUD */
+#walk .walk__load{
+  position:absolute;z-index:4;
+  left:50%;top:clamp(18px,3.2vw,34px);transform:translateX(-50%);
+  display:flex;flex-direction:column;align-items:center;gap:10px;
+  font-size:9px;letter-spacing:.26em;text-transform:uppercase;font-weight:500;
+  color:rgba(247,244,239,.72);
+  text-shadow:0 1px 14px rgba(0,0,0,.55);
+  pointer-events:none;
+  transition:opacity .6s var(--w-ease);
+}
+#walk .walk__load i{
+  display:block;width:92px;height:1px;overflow:hidden;
+  background:rgba(255,255,255,.18);
+}
+#walk .walk__load i::after{
+  content:"";display:block;height:100%;width:100%;
+  background:linear-gradient(90deg,rgba(227,198,143,0),#E3C68F,rgba(227,198,143,0));
+  transform:translateX(-100%);
+  animation:walkSweep 1.2s linear infinite;
+}
+@keyframes walkSweep{to{transform:translateX(100%)}}
+#walk.is-ready .walk__load{opacity:0}
 #walk .walk__canvas.is-ready{opacity:1}
 #walk .walk__canvas.is-dragging{cursor:grabbing}
 
@@ -274,6 +317,8 @@
 #walk.no-webgl .walk__canvas,
 #walk.no-webgl .hud,
 #walk.no-webgl .copy{display:none}
+#walk.no-webgl .walk__poster{display:none}
+#walk.no-webgl .walk__load{display:none}
 #walk.no-webgl .fallback{display:block}
 #walk.no-webgl .walk__grade{display:none}
 #walk.no-webgl .walk__veil{opacity:0}

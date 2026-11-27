@@ -5964,7 +5964,14 @@ scene.background = null;
     const addPoint = (x, y, z, intensity, dist, color = warm, castShadow = false) => {
       const l = new THREE.PointLight(color, intensity, dist, 2);
       l.position.set(x, y, z);
-      if (castShadow) {
+      /*  A shadow-casting point light is a cube map: six faces of the whole
+          estate, baked into the first frame, per light. Four of them were
+          costing more than the sun's 768² map and everything else in the
+          first frame put together (measured: first frame 13.3 s -> 7.1 s
+          under software GL). A phone keeps the light and loses the cube map;
+          the lamp still lights the room, the wall behind it just does not
+          draw a second shadow of the sofa. */
+      if (castShadow && !LEAN) {
         l.castShadow = true;
         const sm = 512;
         l.shadow.mapSize.set(sm, sm);
@@ -8379,6 +8386,12 @@ function frondGeo(ox, oy, oz, az, pitch, len, droop, twist = 0, dense = 1) {
     if (opts.models !== false) {
       const wave1 = () => {
         if (destroyed) return;
+        /*  A 4 GB phone gets no scanned props at all: the 10 first-wave GLBs
+            are ~1.7 MB to fetch and parse and ~20 MB of textures to hold,
+            right when the phone is already paying for the first frame. The
+            procedural stand-ins are already standing in every one of those
+            spots, so the scene is complete without them. */
+        if (LOWRAM) { megaStats.deferred = 'low-ram'; return; }
         megaPlaceModels(MEGA_WAVE1);
         if (LOWRAM) { megaStats.deferred = 'low-ram'; return; }
         /* wave two waits for the wave-one requests to have had the link to
@@ -8757,6 +8770,7 @@ function tick() {
     // the world never moves: bake the shadow map once, then stop updating
     renderer.shadowMap.autoUpdate = false;
     canvas.classList.add('is-ready');
+    container.classList.add('is-ready');
     canvas.classList.remove('is-loading');
     /* a lean phone: the deferred scans, then the scratch canvases handed back */
     if (LEAN) {
@@ -8774,6 +8788,24 @@ readProgress();
 pSmooth = pTarget;
 applyCamera(pSmooth, 1);
 paintOverlays(pSmooth);
+
+/*  A phone's first frame is mostly shader compilation, and on a driver that
+    supports KHR_parallel_shader_compile (Chrome on Android, Safari 16+) those
+    programs link off the main thread. Kick them off here, keep the main thread
+    free for the poster fade and the first scroll, and never wait longer than
+    this: a driver without the extension resolves at once, and a slow one gets
+    a synchronous compile in drawFrame() anyway. */
+if (LEAN && typeof renderer.compileAsync === 'function') {
+  let compiled = false;
+  try {
+    await Promise.race([
+      renderer.compileAsync(scene, camera).then(() => { compiled = true; }),
+      new Promise((r) => setTimeout(r, 2200))
+    ]);
+  } catch (_) { compiled = false; }
+  ctxStats.asyncCompile = compiled;
+}
+
 clock.start();
 schedule();
 
@@ -8891,8 +8923,12 @@ function destroy() {
 /* the debug/screenshot hook the page harness and the render scripts use */
 window.__shade = handle;
 
-window.addEventListener('error', (e) => fail(e.error || e.message), { signal });
-window.addEventListener('unhandledrejection', (e) => fail(e.reason), { signal });
+/*  Only a fault during the build is ours: once the first frame has painted, an
+    unrelated script on the page (a font CDN, an analytics tag, a Framer
+    override) must not be able to blank a working scene. */
+const failIfBooting = (err) => { if (!started) fail(err); };
+window.addEventListener('error', (e) => failIfBooting(e.error || e.message), { signal });
+window.addEventListener('unhandledrejection', (e) => failIfBooting(e.reason), { signal });
 
 return handle;
     } catch (err) {
@@ -8919,10 +8955,16 @@ return handle;
     armed = true;
     Promise.resolve(createWalkthrough(host, {})).catch((e) => console.error(e));
   };
+/*  On a phone the section is taller than the viewport and a scroll is one
+    thumb-flick: 800 px of runway means the build starts after the section is
+    already on screen. Start it two screens out instead, so the poster has time
+    to become the scene before the thumb arrives. */
+  const runway = (window.matchMedia && window.matchMedia('(max-width: 820px)').matches)
+    ? '1800px 0px' : '800px 0px';
   if ('IntersectionObserver' in window) {
     const io = new IntersectionObserver((entries) => {
       for (const e of entries) if (e.isIntersecting) { io.disconnect(); go(); }
-    }, { rootMargin: '800px 0px' });
+    }, { rootMargin: runway });
     io.observe(host);
   } else {
     go();
