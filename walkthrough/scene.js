@@ -8603,7 +8603,12 @@ function applyCamera(t, dt) {
   if (!REDUCED && opts.interactive) { camera.rotateY(lookYaw); camera.rotateX(lookPitch); }
 
   const aspect = camera.aspect;
-  const portrait = aspect < 1.1 ? lerp(1, 1.46, clamp((1.1 - aspect) / 0.7)) : 1;
+  /*  A portrait frame multiplies the vertical field of view so a 18.7 m facade
+      still fits the width. 1.46 fitted it with room to spare and left a third
+      of a phone screen as empty road under the house; 1.30 crops the frame to
+      the building, which is how the approach reads in a portrait editorial
+      shot, and still holds the whole porch, the vine and the garage bay. */
+  const portrait = aspect < 1.1 ? lerp(1, 1.30, clamp((1.1 - aspect) / 0.7)) : 1;
   const f = fov * portrait;
   if (Math.abs(camera.fov - f) > 0.01) { camera.fov = f; camera.updateProjectionMatrix(); }
 
@@ -8611,7 +8616,7 @@ function applyCamera(t, dt) {
      view ray on the exterior half of the take, so a 30 m facade still fits the
      frame at the approach and the door is centred by the time we reach it */
   if (portrait > 1.02 && t < 0.48) {
-    const k = 1 + 0.06 * portrait * (1 - smoothstep(0.26, 0.47, t));
+    const k = 1 + 0.035 * portrait * (1 - smoothstep(0.26, 0.47, t));
     tmpPos.sub(tmpTgt).multiplyScalar(k).add(tmpTgt);
     camera.position.copy(tmpPos);
   }
