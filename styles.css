@@ -369,7 +369,10 @@ html.is-locked, body.is-locked { overflow: hidden; }
 .presence .section-note { color: var(--bone-45); }
 .presence__head { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr); gap: clamp(24px, 5vw, 72px); align-items: end; margin-bottom: clamp(28px, 4vw, 52px); }
 .presence__stage { position: relative; height: clamp(460px, 74vh, 760px); border: var(--hair) solid var(--glass-rim-dark); border-radius: var(--r-panel); overflow: hidden; background: #111111; box-shadow: 0 30px 70px rgba(0, 0, 0, .45), inset 0 1px 0 rgba(255, 255, 255, .08); }
-.presence__stage canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; }
+/*  Vertical panning belongs to the page: `touch-action: none` here made the map
+    a dead zone the thumb could not scroll past, which is the whole page locking
+    up under the finger. Pan-y keeps a horizontal drag for the map's own orbit. */
+.presence__stage canvas { display: block; width: 100%; height: 100%; touch-action: pan-y; cursor: grab; }
 .presence__stage canvas:active { cursor: grabbing; }
 .presence__ui { position: absolute; inset: 0; pointer-events: none; }
 .presence__legend { position: absolute; left: clamp(14px, 2vw, 26px); bottom: clamp(14px, 2vw, 26px); display: flex; flex-wrap: wrap; gap: 14px 18px; font-size: 9px; letter-spacing: .14em; text-transform: uppercase; color: var(--bone-45); }
