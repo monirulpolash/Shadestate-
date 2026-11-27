@@ -238,7 +238,10 @@
   line-height:1.02;letter-spacing:-.035em;
   color:var(--alabaster);
   text-wrap:balance;
-  text-shadow:0 2px 34px rgba(0,0,0,.42);
+  /*  With one line and nothing under it, the line has to hold against pale
+      stone, a cream sofa and the sky alike: a tight shadow for the letter
+      edge, a wide one for the light behind it. */
+  text-shadow:0 1px 2px rgba(0,0,0,.55),0 2px 16px rgba(0,0,0,.5),0 6px 44px rgba(0,0,0,.42);
 }
 #walk .copy__line--xl{font-size:clamp(52px,11vw,148px);font-style:normal;letter-spacing:-.045em}
 #walk .copy__note{

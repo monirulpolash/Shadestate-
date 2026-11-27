@@ -9362,7 +9362,7 @@ export default function ShadestateWalkthrough(props: Props) {
                                     lineHeight: 0.98,
                                     letterSpacing: b.center ? "-0.045em" : "-0.030em",
                                     textWrap: "balance" as any,
-                                    textShadow: "0 2px 34px rgba(0,0,0,.42)",
+                                    textShadow: "0 1px 2px rgba(0,0,0,.55), 0 2px 16px rgba(0,0,0,.5), 0 6px 44px rgba(0,0,0,.42)",
                                 }}
                             >
                                 {b.head}
