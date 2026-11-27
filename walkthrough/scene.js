@@ -5970,8 +5970,9 @@ scene.background = null;
           first frame put together (measured: first frame 13.3 s -> 7.1 s
           under software GL). A phone keeps the light and loses the cube map;
           the lamp still lights the room, the wall behind it just does not
-          draw a second shadow of the sofa. */
-      if (castShadow && !LEAN) {
+          draw a second shadow of the sofa. A laptop or desktop keeps both,
+          whatever its core count. */
+      if (castShadow && !MOBILE) {
         l.castShadow = true;
         const sm = 512;
         l.shadow.mapSize.set(sm, sm);
@@ -8386,12 +8387,13 @@ function frondGeo(ox, oy, oz, az, pitch, len, droop, twist = 0, dense = 1) {
     if (opts.models !== false) {
       const wave1 = () => {
         if (destroyed) return;
-        /*  A 4 GB phone gets no scanned props at all: the 10 first-wave GLBs
+        /*  A phone gets no scanned props at all: the 10 first-wave GLBs
             are ~1.7 MB to fetch and parse and ~20 MB of textures to hold,
             right when the phone is already paying for the first frame. The
             procedural stand-ins are already standing in every one of those
-            spots, so the scene is complete without them. */
-        if (LOWRAM) { megaStats.deferred = 'low-ram'; return; }
+            spots, so the scene is complete without them. A laptop, even a
+            small one, keeps wave one and skips only wave two below. */
+        if (MOBILE) { megaStats.deferred = 'phone'; return; }
         megaPlaceModels(MEGA_WAVE1);
         if (LOWRAM) { megaStats.deferred = 'low-ram'; return; }
         /* wave two waits for the wave-one requests to have had the link to
