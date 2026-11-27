@@ -9129,13 +9129,23 @@ return handle;
       .then((inst) => { window.__shadestateWalk = inst; })
       .catch((e) => console.error(e));
   };
-  /*  Build now, in the idle time that follows the page's own load. Arming on a
-      resting thumb — the old gate — is what held the first frame back until the
-      reader stopped scrolling at the section, and that wait is exactly the
-      "it takes time to load" he reported. The build is staged across idle
-      slices and paints its first frame under the poster even while the section
-      is still below the fold, so arriving at the section costs nothing: the
-      canvas is already there. If the thumb somehow beats the build, the poster
-      holds the frame and the canvas takes over underneath it. */
-  go();
+  /*  index.html fetches this module in the idle window after its own load and
+      asks for the build at once (`window.__shadeBuildNow`): the walkthrough is
+      that page's destination, the build is staged across idle slices, and its
+      first frame paints under the poster while the section is still below the
+      fold, so arriving there costs nothing. Arming on a resting thumb — the old
+      gate — is what used to hold that frame back until the reader stopped
+      scrolling, and that wait is the "it takes time to load" he reported.
+      Every other page that carries the same markup (a project page with the
+      walkthrough far down) builds when the section comes within two screens,
+      and starts while the thumb is still moving rather than when it stops. */
+  if (window.__shadeBuildNow) { go(); return; }
+  if ('IntersectionObserver' in window) {
+    const io = new IntersectionObserver((entries) => {
+      for (const e of entries) if (e.isIntersecting) { io.disconnect(); go(); }
+    }, { rootMargin: '1800px 0px' });
+    io.observe(host);
+  } else {
+    go();
+  }
 })();

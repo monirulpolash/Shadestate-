@@ -645,6 +645,8 @@
       if (loaded) return;
       loaded = true;
       warm();
+      /* the walkthrough is this page's destination: build it, do not wait for it */
+      window.__shadeBuildNow = true;
       import('/walkthrough/scene.js').catch(function () {});
     };
 
