@@ -2026,7 +2026,11 @@ async function createWalkthrough(container, options = {}) {
         with altitude, so the skyline sinks into the ground haze while the
         house, at eye level, stays crisp. One varying and a multiply, on every
         material that already carries fog; the sky has its own gradient. */
-    if (!THREE.ShaderChunk.__shadeHeightFog) {
+    if (!MOBILE && !THREE.ShaderChunk.__shadeHeightFog) {
+      /*  A phone keeps the stock fog chunk: the same atmosphere, without an
+          extra varying and a smoothstep in every fragment program. Its skyline
+          already carries its own height haze in the city shader, so the air on
+          the phone is unchanged and the first frame stays where it was. */
       THREE.ShaderChunk.__shadeHeightFog = true;
       THREE.ShaderChunk.fog_pars_vertex = '#ifdef USE_FOG\n\tvarying float vFogDepth;\n\tvarying float vFogH;\n#endif';
       THREE.ShaderChunk.fog_vertex = `#ifdef USE_FOG
