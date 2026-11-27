@@ -8970,7 +8970,14 @@ if (LEAN && typeof renderer.compileAsync === 'function') {
 }
 
 clock.start();
-schedule();
+/*  The first frame is the one expensive paint: it compiles every program and
+    draws the whole scene once, and on a weak phone that is the largest single
+    block this page has. Take it in an idle window rather than in the middle of
+    a scroll — the browser hands out idle time only when it is not busy
+    following a thumb — so the block lands where nobody feels it. The timeout
+    bounds the wait: a reader who scrolls without pause still gets its frame. */
+if (typeof requestIdleCallback === 'function') requestIdleCallback(schedule, { timeout: 2500 });
+else schedule();
 
 /* ── scratch canvases ──────────────────────────────────────────────────────
    Half the canvases this file bakes are intermediates: a height field a normal
