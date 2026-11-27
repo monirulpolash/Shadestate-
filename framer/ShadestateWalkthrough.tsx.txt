@@ -648,17 +648,19 @@ function makeAsphalt() {
   const hc = cv(S), hg = hc.getContext('2d');
   const a = PHOTO.asphalt;
   if (a) {
-    /* Luminosity over a warm mid-grey: the scan supplies the aggregate and the
-       patched, oil-stained figure; the base supplies Dubai tarmac's tone, so
-       the street does not go either blue-grey or soot-black. */
-    g.fillStyle = '#5c5b58';
+    /*  The scan supplies the aggregate and the patched, oil-stained figure; the
+        base supplies Dubai tarmac's tone, and it is lifted here on purpose. At
+        the old soot-black the low sun's shadow had nothing to fall on and the
+        boulevard was a hole under the villa; a tarmac that holds the shadow is
+        still far darker than the grey paving it leads to. */
+    g.fillStyle = '#84868a';
     g.fillRect(0, 0, S, S);
     g.save();
     g.globalCompositeOperation = 'luminosity';
-    g.globalAlpha = 0.78;
+    g.globalAlpha = 0.30;
     g.drawImage(a.color, 0, 0, S, S);
     g.globalCompositeOperation = 'soft-light';
-    g.globalAlpha = 0.34;
+    g.globalAlpha = 0.10;
     g.drawImage(a.color, 0, 0, S, S);
     g.restore();
     hg.fillStyle = '#7a7a7a'; hg.fillRect(0, 0, S, S);
@@ -668,11 +670,13 @@ function makeAsphalt() {
       rough: a.rough ? photoCanvas(a.rough, 512) : null
     };
   }
-  g.fillStyle = '#5c5854'; g.fillRect(0, 0, S, S);
+  /*  the drawn tarmac (a phone loads no secondary scans): a grey asphalt that
+      keeps the aggregate, the faint patch line and the low sun's shadow */
+  g.fillStyle = '#797b7e'; g.fillRect(0, 0, S, S);
   hg.fillStyle = '#7a7a7a'; hg.fillRect(0, 0, S, S);
   for (let i = 0; i < 24000; i++) {
     const v = rnd();
-    g.fillStyle = v > 0.55 ? `rgba(190,186,178,${rr(0.03, 0.10).toFixed(3)})` : `rgba(24,22,20,${rr(0.03, 0.11).toFixed(3)})`;
+    g.fillStyle = v > 0.55 ? `rgba(198,194,186,${rr(0.03, 0.11).toFixed(3)})` : `rgba(28,26,24,${rr(0.03, 0.11).toFixed(3)})`;
     const s = rr(0.8, 2.2);
     g.fillRect(rnd() * S, rnd() * S, s, s);
     if (v > 0.7) hg.fillStyle = `rgba(${rnd() > 0.5 ? 190 : 60},${rnd() > 0.5 ? 190 : 60},${rnd() > 0.5 ? 190 : 60},.18)`;
@@ -756,45 +760,57 @@ function makeConcrete() {
 function makePaving() {
   const S = TS(512), c = cv(S), g = c.getContext('2d');
   const hc = cv(S), hg = hc.getContext('2d');
-  g.fillStyle = '#cfc7b7'; g.fillRect(0, 0, S, S);
+  /*  The ground is concrete, not the villa's stone. The house is pale warm
+      limestone; the drive, the arrival court, the carport and the sidewalks are
+      a cool grey paver with a real joint, so the wall reads against the ground
+      it stands on instead of dissolving into it. Four pavers by four: the
+      half-metre format the walk has always had, 2 m a tile from gate to door. */
+  g.fillStyle = '#b5babd'; g.fillRect(0, 0, S, S);
   hg.fillStyle = '#9a9a9a'; hg.fillRect(0, 0, S, S);
-  // 4 × 4 pavers, each a slightly different warm grey, with a recessed joint
-  const n = 4, t = S / n;
+  const n = 4, t = S / n, jw = 2.8;
   for (let j = 0; j < n; j++) {
     for (let i = 0; i < n; i++) {
-      const l = rr(-9, 9), warm = rr(-4, 5);
-      g.fillStyle = `rgb(${200 + l + warm},${193 + l},${180 + l - warm})`;
-      g.fillRect(i * t + 1.2, j * t + 1.2, t - 2.4, t - 2.4);
-      hg.fillStyle = `rgb(${168 + l},168,168)`;
-      hg.fillRect(i * t + 1.2, j * t + 1.2, t - 2.4, t - 2.4);
+      const l = rr(-7, 7), cool = rr(-2.5, 2.5);
+      g.fillStyle = `rgb(${Math.round(179 + l - cool)},${Math.round(184 + l)},${Math.round(189 + l + cool)})`;
+      g.fillRect(i * t + jw / 2, j * t + jw / 2, t - jw, t - jw);
+      hg.fillStyle = `rgb(${168 + Math.round(l)},168,168)`;
+      hg.fillRect(i * t + jw / 2, j * t + jw / 2, t - jw, t - jw);
     }
   }
-  /* a different crop of real travertine into each of the sixteen pavers, so a
-     deck never repeats one piece of stone sixteen times */
-  const trav = PHOTO.travertine;
-  if (trav) {
-    photoCrops(g, trav.color, S, n, { mode: 'luminosity', alpha: 0.62, srcTiles: 3 });
-    photoCrops(g, trav.color, S, n, { mode: 'soft-light', alpha: 0.25, srcTiles: 3 });
-    /* the joints survive the photo: re-cut the recess line and its lit edge */
-    g.save();
-    for (let j = 0; j < n; j++) {
-      g.fillStyle = 'rgba(150,138,116,.55)';
-      g.fillRect(0, j * t - 1.1, S, 2.2);
-      g.fillRect(j * t - 1.1, 0, 2.2, S);
-      g.fillStyle = 'rgba(255,252,244,.30)';
-      g.fillRect(0, j * t + 1.1, S, 0.9);
-      g.fillRect(j * t + 1.1, 0, 0.9, S);
-      hg.fillStyle = 'rgba(46,46,46,.9)';
-      hg.fillRect(0, j * t - 1.1, S, 2.2);
-      hg.fillRect(j * t - 1.1, 0, 2.2, S);
-    }
-    g.restore();
+  /*  the cast slab's own blotching: soft, wide, faintly darker and lighter
+      patches, so at grazing light a paver field never reads as a flat fill */
+  for (let i = 0; i < 70; i++) {
+    const x = rnd() * S, y = rnd() * S, r = rr(24, 120);
+    const grd = g.createRadialGradient(x, y, 0, x, y, r);
+    grd.addColorStop(0, rnd() > 0.45 ? 'rgba(96,101,104,.10)' : 'rgba(228,232,232,.10)');
+    grd.addColorStop(1, 'rgba(0,0,0,0)');
+    g.fillStyle = grd; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill();
   }
-  for (let i = 0; i < 9000; i++) {
-    g.fillStyle = rnd() > 0.5 ? `rgba(255,252,242,${rr(0.02, 0.07).toFixed(3)})` : `rgba(120,112,96,${rr(0.02, 0.08).toFixed(3)})`;
-    g.fillRect(rnd() * S, rnd() * S, rr(1, 2), rr(1, 2));
+  /* fine aggregate: the even tooth of a pressed slab */
+  for (let i = 0; i < 13000; i++) {
+    g.fillStyle = rnd() > 0.5 ? `rgba(238,241,241,${rr(0.03, 0.08).toFixed(3)})` : `rgba(56,60,62,${rr(0.03, 0.09).toFixed(3)})`;
+    const s = rr(0.7, 1.9);
+    g.fillRect(rnd() * S, rnd() * S, s, s);
   }
-  return { map: c, normal: normalFromHeight(hc, 1.1) };
+  /*  the joints over the aggregate: a recess, its far edge catching the low sun,
+      and a damp darkened margin just inside each paver, so the format reads at
+      distance and the field has a wet working edge rather than a drawn grid */
+  for (let k = 0; k <= n; k++) {
+    const p = k * t;
+    g.fillStyle = 'rgba(74,79,82,.9)';
+    g.fillRect(0, p - jw / 2, S, jw);
+    g.fillRect(p - jw / 2, 0, jw, S);
+    g.fillStyle = 'rgba(236,239,239,.26)';
+    g.fillRect(0, p + jw / 2, S, 0.9);
+    g.fillRect(p + jw / 2, 0, 0.9, S);
+    hg.fillStyle = 'rgba(28,28,28,.95)';
+    hg.fillRect(0, p - jw / 2, S, jw);
+    hg.fillRect(p - jw / 2, 0, jw, S);
+    g.fillStyle = 'rgba(66,74,78,.14)';
+    g.fillRect(0, p + jw / 2 + 0.9, S, t * 0.05);
+    g.fillRect(p + jw / 2 + 0.9, 0, t * 0.05, S);
+  }
+  return { map: c, normal: normalFromHeight(hc, 1.0) };
 }
 
 /* ── a city facade ─────────────────────────────────────────────────────────
@@ -2763,6 +2779,9 @@ scene.background = null;
     const palmFrondTex = tex(makePalmFrondTex(), { srgb: true });
     const aoTex = tex(makeContactShadowTexture());
     const aoBandTex = tex(makeContactBandTexture());
+    /* one paver field, two finishes: the drive in cool grey, the rear deck warm */
+    const paveMap = tex(pave.map, { srgb: true });
+    const paveNormal = tex(pave.normal);
 
     /** Same texture with the grain turned through 90 degrees, for panels and
         slats whose long axis runs up the v of a world-space UV.            */
@@ -2936,19 +2955,28 @@ scene.background = null;
         map: tex(asph.map, { srgb: true }),
         normalMap: asph.normal ? tex(asph.normal) : null,
         roughnessMap: asph.rough ? tex(asph.rough) : null,
-        color: 0x7a7671,
+        color: 0xd2d2d0,
         roughness: asph.rough ? 1.0 : 0.97, metalness: 0.0,
         normalScale: new THREE.Vector2(1.8, 1.8),
         envMapIntensity: 0.20
       }),
-      /* the drive and the walk: Quixel limestone pavers */
+      /*  The drive, the arrival court, the carport and the sidewalks: a cool
+          grey concrete paver, deliberately not the villa's limestone. */
       pave: new THREE.MeshStandardMaterial({
-        map: photoTex('limestone', 'color', true, 1024) || tex(pave.map, { srgb: true }),
-        normalMap: photoTex('limestone', 'normal') || tex(pave.normal),
-        roughnessMap: photoTex('limestone', 'rough'),
-        color: photoTex('limestone', 'color') ? 0xf7f2e6 : 0xc6bfb0,
-        roughness: photoTex('limestone', 'rough') ? 1.0 : 0.9, metalness: 0.0,
-        normalScale: new THREE.Vector2(0.7, 0.7),
+        map: paveMap,
+        normalMap: paveNormal,
+        color: 0xffffff, roughness: 0.94, metalness: 0.0,
+        normalScale: new THREE.Vector2(0.9, 0.9),
+        envMapIntensity: 0.42
+      }),
+      /*  The rear terrace and the pool deck: the same paver, warmer and a touch
+          lighter, so the water side reads as a deck rather than as the wall
+          carried on to the floor. */
+      deck: new THREE.MeshStandardMaterial({
+        map: paveMap,
+        normalMap: paveNormal,
+        color: 0xe6ded0, roughness: 0.92, metalness: 0.0,
+        normalScale: new THREE.Vector2(0.8, 0.8),
         envMapIntensity: 0.5
       }),
       /* worn thermoplastic, not fresh paint: the lane lines were the brightest
@@ -3829,8 +3857,11 @@ scene.background = null;
     // terrace + pool
     const POOL = { x0: -3.2, x1: 8.4, z0: -19.6, z1: -9.8, w: -0.34 };
 
-    addBox(22, 0.4, 4.0, 1.5, -0.2, -7.9, M.stonePale, { uv: 0.42 });
-    addBox(21, 0.42, 0.3, 1.5, -0.2, -6.05, M.stonePale, { uv: 0.42 });
+    /*  The rear terrace and the pool deck are laid in the same grey paver as the
+        drive, warmed a little: the deck is floor, not wall, and the villa's pale
+        stone has to separate from the ground it stands on at both ends. */
+    addBox(22, 0.4, 4.0, 1.5, -0.2, -7.9, M.deck, { uv: 0.42 });
+    addBox(21, 0.42, 0.3, 1.5, -0.2, -6.05, M.deck, { uv: 0.42 });
     const pw = 0.34;
     {
       const px = (POOL.x0 + POOL.x1) / 2, pz = (POOL.z0 + POOL.z1) / 2;
@@ -3842,10 +3873,10 @@ scene.background = null;
       addBox(0.2, 1.62, d, POOL.x0 + 0.1, -0.95, pz, M.poolWall, { cast: false, uv: 0.55 });
       addBox(0.2, 1.62, d, POOL.x1 - 0.1, -0.95, pz, M.poolWall, { cast: false, uv: 0.55 });
     }
-    addBox(POOL.x1 - POOL.x0 + pw * 2, 0.28, pw, (POOL.x0 + POOL.x1) / 2, -0.34, POOL.z1 + pw / 2, M.stonePale, { uv: 0.42 });
-    addBox(POOL.x1 - POOL.x0 + pw * 2, 0.28, pw, (POOL.x0 + POOL.x1) / 2, -0.34, POOL.z0 - pw / 2, M.stonePale, { uv: 0.42 });
-    addBox(pw, 0.28, POOL.z1 - POOL.z0, POOL.x0 - pw / 2, -0.34, (POOL.z0 + POOL.z1) / 2, M.stonePale, { uv: 0.42 });
-    addBox(pw, 0.28, POOL.z1 - POOL.z0, POOL.x1 + pw / 2, -0.34, (POOL.z0 + POOL.z1) / 2, M.stonePale, { uv: 0.42 });
+    addBox(POOL.x1 - POOL.x0 + pw * 2, 0.28, pw, (POOL.x0 + POOL.x1) / 2, -0.34, POOL.z1 + pw / 2, M.deck, { uv: 0.42 });
+    addBox(POOL.x1 - POOL.x0 + pw * 2, 0.28, pw, (POOL.x0 + POOL.x1) / 2, -0.34, POOL.z0 - pw / 2, M.deck, { uv: 0.42 });
+    addBox(pw, 0.28, POOL.z1 - POOL.z0, POOL.x0 - pw / 2, -0.34, (POOL.z0 + POOL.z1) / 2, M.deck, { uv: 0.42 });
+    addBox(pw, 0.28, POOL.z1 - POOL.z0, POOL.x1 + pw / 2, -0.34, (POOL.z0 + POOL.z1) / 2, M.deck, { uv: 0.42 });
 
     /* ── pool basin: tilework, a bench in the deep end, a waterline band ── */
     const WATER_Y = -0.255;
@@ -8867,16 +8898,22 @@ let rafId = 0;
 let destroyed = false;
 
 /* One frame at a time: the loop parks itself the moment the section leaves the
-   viewport, so scrolling never competes with a second live WebGL loop. */
+   viewport, so scrolling never competes with a second live WebGL loop. The one
+   exception is the first frame: the build now starts while the section is still
+   below the fold, and that frame has to paint there, under the poster, or the
+   reader arrives at a section that has not rendered yet. Once it is painted the
+   loop parks exactly as before. */
 function schedule() {
-  if (rafId || paused || !visible || destroyed) return;
+  if (rafId || paused || destroyed) return;
+  if (!visible && started) return;
   rafId = requestAnimationFrame(tick);
 }
 
 function tick() {
   rafId = 0;
   const dt = Math.min(0.1, clock.getDelta());
-  if (paused || !visible || destroyed || contextLost) return;
+  if (paused || destroyed || contextLost) return;
+  if (!visible && started) return;
   elapsed += dt;
 
   /* autoplay: a slow pass over the take, ping-pong or looping */

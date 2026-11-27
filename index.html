@@ -614,30 +614,63 @@
 <script src="script.js" defer></script>
 <script type="module" src="map/presence.js"></script>
 <script type="module">
-  /*  The walkthrough is three.js plus a 460 kB scene, ~1.7 MB of JavaScript that
-      nothing on the first screen needs. Parsing and compiling it at page load is
-      a main-thread bill the hero pays for, so it is fetched only when the
-      section is two screens away. scene.js mounts itself when it loads, and it
-      arms its build on a resting thumb, so this changes when the work happens,
-      not what happens. */
+  /*  The walkthrough is three.js plus a 460 kB scene: ~1.7 MB of JavaScript the
+      first screen never needs, but that the reader must not wait for either.
+      Waiting for the section is what he felt as "it takes time to load".
+
+      So the work starts at page open, always below the fold's own bill: once the
+      page has loaded, the two modules are warmed with modulepreload (fetched and
+      parsed, not executed, lowest priority), and the build is then started from
+      the first idle window. scene.js mounts itself, stages its build across idle
+      slices and renders the first frame, so by the time a thumb reaches the
+      section the canvas is already painted underneath the poster. */
   (function () {
     var walk = document.getElementById('walk');
     if (!walk) return;
-    var started = false;
+    var loaded = false, prefetched = false;
+    var idle = window.requestIdleCallback || function (fn) { return setTimeout(fn, 1400); };
+
+    var warm = function () {
+      if (prefetched) return;
+      prefetched = true;
+      ['/walkthrough/vendor/three.module.js', '/walkthrough/scene.js'].forEach(function (href) {
+        var link = document.createElement('link');
+        link.rel = 'modulepreload';
+        link.href = href;
+        document.head.appendChild(link);
+      });
+    };
+
     var load = function () {
-      if (started) return;
-      started = true;
+      if (loaded) return;
+      loaded = true;
+      warm();
       import('/walkthrough/scene.js').catch(function () {});
     };
+
+    /*  Nothing here runs before the page's own load: the hero art, the fonts and
+       the map are the bill that decides FCP and LCP, and they are paid first.
+       The scene then gets the idle time that follows. */
+    var begin = function () {
+      warm();
+      idle(load, { timeout: 1200 });
+    };
+    if (document.readyState === 'complete') {
+      idle(begin, { timeout: 800 });
+    } else {
+      window.addEventListener('load', function () { idle(begin, { timeout: 800 }); }, { once: true });
+    }
+
+    /*  A reader who arrives faster than the build (a deep link, a back button, a
+       long flick) still gets the module the moment the section is within one
+       screen, instead of after a 2 400 px runway. */
     if ('IntersectionObserver' in window) {
       var io = new IntersectionObserver(function (entries) {
         for (var i = 0; i < entries.length; i++) {
           if (entries[i].isIntersecting) { io.disconnect(); load(); return; }
         }
-      }, { rootMargin: '2400px 0px' });
+      }, { rootMargin: '100% 0px' });
       io.observe(walk);
-    } else {
-      load();
     }
   })();
 </script>
