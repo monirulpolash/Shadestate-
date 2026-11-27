@@ -43,14 +43,18 @@ if (stage && canvas && window.SHADE_PROJECTS) {
   /* ── renderer / scene ──────────────────────────────────────────────── */
   let renderer;
   try {
-    renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, powerPreference: 'high-performance' });
+    /*  A phone renders this map every frame while it is on screen, next to the
+        walkthrough's own context. Multisampling and a 1.25× buffer are a desktop
+        luxury: at 3.26 dpr on a 390 px wide screen they cost four times the
+        fragments for an edge nobody sees. */
+    renderer = new THREE.WebGLRenderer({ canvas, antialias: !NARROW, alpha: false, powerPreference: 'high-performance' });
   } catch (err) {
     stage.classList.add('no-webgl');
     document.documentElement.classList.add('no-webgl');
   }
 
   if (renderer) {
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, NARROW ? 1.25 : 1.5));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, NARROW ? 1.0 : 1.5));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.0;
@@ -330,12 +334,18 @@ if (stage && canvas && window.SHADE_PROJECTS) {
     });
 
     /* ── sizing, visibility, loop ────────────────────────────────────── */
+    /*  A label's own size does not change while the map turns, but reading
+        offsetWidth does force the browser to lay the page out again. Measure
+        each label once, on the first frame it is placed and after a resize. */
+    const labelBoxes = new Map();
+
     function resize() {
       const w = stage.clientWidth, h = stage.clientHeight;
       if (!w || !h) return;
       renderer.setSize(w, h, false);
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
+      labelBoxes.clear();
     }
     window.addEventListener('resize', resize);
     resize();
@@ -377,7 +387,9 @@ if (stage && canvas && window.SHADE_PROJECTS) {
         let dx = parseFloat(el.style.getPropertyValue('--dx')) || 20;
         let dy = parseFloat(el.style.getPropertyValue('--dy')) || -34;
         if (label) {
-          const w = label.offsetWidth, h = label.offsetHeight;
+          let box = labelBoxes.get(label);
+          if (!box) { box = { w: label.offsetWidth, h: label.offsetHeight }; labelBoxes.set(label, box); }
+          const w = box.w, h = box.h;
           const pad = 10, topPad = NARROW ? 34 : 10;
           const lx = Math.min(stage.clientWidth - w - pad, Math.max(pad, pt.x + dx));
           const ly = Math.min(stage.clientHeight - h - pad, Math.max(topPad, pt.y + dy));
@@ -402,9 +414,15 @@ if (stage && canvas && window.SHADE_PROJECTS) {
       rafId = requestAnimationFrame(frame);
     }
 
+    /*  A phone gets thirty frames a second here, not sixty. The map is a slow
+        orbit of pins with no motion the eye can resolve at 60, and half the
+        frames leaves the main thread for the finger. */
+    let lastDraw = 0;
     function frame(now) {
       rafId = 0;
       if (!visible || paused) return;
+      if (NARROW && now - lastDraw < 32) { rafId = requestAnimationFrame(frame); return; }
+      lastDraw = now;
       const dt = Math.min(0.05, (now - t0) / 1000); t0 = now;
 
       if (auto && !selected) rig.tTheta += dt * 0.035;

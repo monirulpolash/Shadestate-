@@ -631,6 +631,33 @@
 <script src="site.js" defer></script>
 <script src="script.js" defer></script>
 <script type="module" src="map/presence.js"></script>
-<script type="module" src="walkthrough/scene.js"></script>
+<script type="module">
+  /*  The walkthrough is three.js plus a 460 kB scene, ~1.7 MB of JavaScript that
+      nothing on the first screen needs. Parsing and compiling it at page load is
+      a main-thread bill the hero pays for, so it is fetched only when the
+      section is two screens away. scene.js mounts itself when it loads, and it
+      arms its build on a resting thumb, so this changes when the work happens,
+      not what happens. */
+  (function () {
+    var walk = document.getElementById('walk');
+    if (!walk) return;
+    var started = false;
+    var load = function () {
+      if (started) return;
+      started = true;
+      import('/walkthrough/scene.js').catch(function () {});
+    };
+    if ('IntersectionObserver' in window) {
+      var io = new IntersectionObserver(function (entries) {
+        for (var i = 0; i < entries.length; i++) {
+          if (entries[i].isIntersecting) { io.disconnect(); load(); return; }
+        }
+      }, { rootMargin: '2400px 0px' });
+      io.observe(walk);
+    } else {
+      load();
+    }
+  })();
+</script>
 </body>
 </html>
