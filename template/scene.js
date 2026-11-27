@@ -2782,6 +2782,16 @@ const WATER_OUT = WATER_POST ? '' : 'gl_FragColor = acesSRGB(gl_FragColor.rgb * 
   world.add(waterMesh);
   var water = waterMesh;
 
+  /* pool: false — the same terrace, laid as lawn instead of water. The switch
+     the config promises actually switches: the surface goes, the basin is
+     capped at deck level, and nothing else in the scene changes. */
+  if (CFG.pool === false) {
+    water.visible = false;
+    spillSheet.visible = false;
+    slab(M.lawn, POOL.x1 - POOL.x0 + 0.9, POOL.z1 - POOL.z0 + 0.9, px, DECK_Y + 0.005, pz, 0.08, { cast: false });
+    box(M.coping, POOL.x1 - POOL.x0 + 1.6, 0.2, 0.42, px, DECK_Y + 0.02, POOL.z0 - 0.21, { cast: false });
+  }
+
   waterUniforms.uTime = WIND.time;
   spillSheet.material.uniforms.uTime = WIND.time;
   (window.__house || (window.__house = {})).water = waterUniforms;
