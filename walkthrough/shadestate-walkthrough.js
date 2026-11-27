@@ -55262,7 +55262,7 @@ async function createWalkthrough(container, options = {}) {
     sun.castShadow = true;
     /* a 4 GB phone gets a 768 px shadow map: 0.6 MB instead of 4 MB of depth,
        and at 390 css px there is no edge anyone can see */
-    const SM = LEAN ? (LOWRAM ? 768 : 1024) : (TABLET ? 1536 : 2048);
+    const SM = LEAN ? (LOWRAM ? 512 : 1024) : (TABLET ? 1536 : 2048);
     ctxStats.shadowMap = SM;
     sun.shadow.mapSize.set(SM, SM);
     sun.shadow.camera.left = -44;
@@ -56063,6 +56063,10 @@ scene.background = null;
         side: THREE.DoubleSide, envMapIntensity: 0.32
       }), { amp: 0.05, freq: 1.15, height: 3.8, base: 0.5, soft: 0.34 }),
       dates: new THREE.MeshStandardMaterial({ color: 0xb06b2c, roughness: 0.58, metalness: 0.0, envMapIntensity: 0.7 }),
+      /*  One green-to-husk-brown material for every coconut in the scene; the
+          per-fruit variation rides on vertex colour, so the whole bunch is one
+          merged mesh and one draw call. */
+      coconut: new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.66, metalness: 0.0, envMapIntensity: 0.5 }),
       ao: new THREE.MeshBasicMaterial({ map: aoTex, transparent: true, opacity: 0.5, depthWrite: false }),
       aoSoft: new THREE.MeshBasicMaterial({ map: aoTex, transparent: true, opacity: 0.26, depthWrite: false }),
       aoBand: new THREE.MeshBasicMaterial({
@@ -56080,6 +56084,11 @@ scene.background = null;
     let photoPhase2 = false;
     function schedulePhotoUpgrade() {
       if (photoPhase2 || !LEAN || !photoBase) return;
+      /*  A 4 GB phone stops at the first wave. Swapping a material's map after
+          the first frame costs a fresh shader program and a texture upload, and
+          on a weak GPU that lands as a second of frozen scroll. The procedural
+          maps it already has are the whole look at 390 px. */
+      if (MOBILE && LOWRAM) return;
       photoPhase2 = true;
       const go = () => {
         if (destroyed) return;
@@ -56126,8 +56135,15 @@ scene.background = null;
       };
       /* idle, and after the first frame has actually painted */
       const kick = () => {
-        if (typeof requestIdleCallback === 'function') requestIdleCallback(go, { timeout: 4000 });
-        else setTimeout(go, 1600);
+        /*  Never while the thumb is moving: the swap recompiles programs, and a
+            compile in the middle of a flick is what a phone renders as "stuck". */
+        const whenStill = () => {
+          if (destroyed) return;
+          if (performance.now() - lastScrollAt < 1600) { setTimeout(whenStill, 400); return; }
+          if (typeof requestIdleCallback === 'function') requestIdleCallback(go, { timeout: 4000 });
+          else setTimeout(go, 1600);
+        };
+        whenStill();
       };
       if (typeof requestAnimationFrame === 'function') requestAnimationFrame(() => requestAnimationFrame(kick));
       else kick();
@@ -56692,7 +56708,7 @@ scene.background = null;
     // loose pebbles on the outer verge only: the walk inside the wall stays clear
     {
       const geo = new THREE.IcosahedronGeometry(1, 0);
-      const count = MOBILE ? 90 : 170;
+      const count = LOWRAM ? 46 : (MOBILE ? 90 : 170);
       const pebbleMat = new THREE.MeshStandardMaterial({ color: 0x9d9483, roughness: 0.92, metalness: 0, envMapIntensity: 0.35 });
       const inst = new THREE.InstancedMesh(geo, pebbleMat, count);
       inst.receiveShadow = true;
@@ -57280,7 +57296,7 @@ scene.background = null;
         parts[set].push({ x, y, z, w, h, d, col });
       };
 
-      const N = MOBILE ? 150 : 320;
+      const N = LOWRAM ? 64 : (MOBILE ? 150 : 320);
       for (let i = 0; i < N; i++) {
         /* Three rings, all the way round the house: the low waterfront
            neighbourhood close in, the downtown mass behind it, and the far
@@ -57876,7 +57892,7 @@ scene.background = null;
     /* ── timber slat screen along the wing ──────────────────────────────── */
     {
       const slatGeo = new THREE.BoxGeometry(0.045, 1, 0.12);
-      const count = MOBILE ? 78 : 118;
+      const count = LOWRAM ? 32 : (MOBILE ? 78 : 118);
       const slatMat = new THREE.MeshStandardMaterial({
         map: texV(oakWood.map, [1, 0.4]),
         normalMap: texV(oakWood.normal, [1, 0.4]),
@@ -59017,7 +59033,15 @@ scene.background = null;
     const addPoint = (x, y, z, intensity, dist, color = warm, castShadow = false) => {
       const l = new THREE.PointLight(color, intensity, dist, 2);
       l.position.set(x, y, z);
-      if (castShadow) {
+      /*  A shadow-casting point light is a cube map: six faces of the whole
+          estate, baked into the first frame, per light. Four of them were
+          costing more than the sun's 768² map and everything else in the
+          first frame put together (measured: first frame 13.3 s -> 7.1 s
+          under software GL). A phone keeps the light and loses the cube map;
+          the lamp still lights the room, the wall behind it just does not
+          draw a second shadow of the sofa. A laptop or desktop keeps both,
+          whatever its core count. */
+      if (castShadow && !MOBILE) {
         l.castShadow = true;
         const sm = 512;
         l.shadow.mapSize.set(sm, sm);
@@ -59622,7 +59646,7 @@ scene.background = null;
       /* the lawn: a lean phone carries 9–12k tufts instead of 19k. The blades
          are drawn wider (see uBladeW) so the same ground still reads as turf,
          which is a tenth of the vertex work for no visible hole */
-      const N = Math.round((LEAN ? (LOWRAM ? 9000 : 12000) : (TABLET ? 30000 : 40000)) * clamp(opts.grassDensity, 0.15, 1));
+      const N = Math.round((LEAN ? (LOWRAM ? 4200 : 12000) : (TABLET ? 30000 : 40000)) * clamp(opts.grassDensity, 0.15, 1));
       ctxStats.grassTufts = N;
       const aRoot = new Float32Array(N * 3);
       const aParam = new Float32Array(N * 4);
@@ -60097,7 +60121,7 @@ scene.background = null;
       // the core: cards through the middle of the mass, turned every way, so
       // the crown is a volume with shade in it rather than a shell round a hole
       {
-        const n = MOBILE ? 150 : 320;
+        const n = LOWRAM ? 56 : (MOBILE ? 150 : 320);
         for (let i = 0; i < n; i++) {
           const a = rnd() * Math.PI * 2, b = Math.acos(rr(-1, 1));
           const k = Math.pow(rnd(), 0.7) * 0.72;
@@ -60355,6 +60379,40 @@ function frondGeo(ox, oy, oz, az, pitch, len, droop, twist = 0, dense = 1) {
         queue(f.geo, M.palmLeaf, true, false);
       }
 
+      /*  Coconuts: the bunch a date palm carries under its crown. Six to ten
+          husks hung just below the fronds where the light catches them. Bigger
+          than a real nut on purpose: at 390 px a true 15 cm coconut is a single
+          pixel, and the point of him asking for them is that you can see them.
+          Queued into one merged mesh per material, so the quartet of palms adds
+          no draw call. */
+      {
+        const nB = 2;
+        for (let b = 0; b < nB; b++) {
+          const az = (b / nB) * Math.PI * 2 + rr(-0.55, 0.55);
+          const rad = 0.46 * scale;
+          const cx = top.x + Math.cos(az) * rad;
+          const cz = top.z + Math.sin(az) * rad;
+          const cy = top.y - 0.86 * scale;
+          const n = LOWRAM ? 6 : 6 + Math.round(rnd() * 4);
+          for (let k = 0; k < n; k++) {
+            const r = (0.15 + rr(-0.012, 0.02)) * scale;
+            const g = new THREE.SphereGeometry(r, 6, 5);
+            const ang = (k / n) * Math.PI * 2 + rr(-0.35, 0.35);
+            const out = rr(0.04, 0.17) * scale;
+            const drop = rr(0, 0.34) * scale;
+            g.translate(cx + Math.cos(ang) * out, cy - drop, cz + Math.sin(ang) * out);
+            const t = drop / (0.34 * scale);           // green at the crown, husk lower
+            const col = new THREE.Color().setHSL(0.17 - 0.095 * t, 0.46 + 0.10 * t, 0.28 - 0.09 * t).convertSRGBToLinear();
+            const ca = new Float32Array(g.attributes.position.count * 3);
+            for (let v = 0; v < g.attributes.position.count; v++) {
+              ca[v * 3] = col.r; ca[v * 3 + 1] = col.g; ca[v * 3 + 2] = col.b;
+            }
+            g.setAttribute('color', new THREE.BufferAttribute(ca, 3));
+            queue(g, M.coconut, true, false);
+          }
+        }
+      }
+
       // dates: three small clusters tucked under the crownshaft
       for (let c = 0; c < 3; c++) {
         const az = rr(0, 6.3), rad = 0.26 * scale;
@@ -60394,7 +60452,7 @@ function frondGeo(ox, oy, oz, az, pitch, len, droop, twist = 0, dense = 1) {
 
     // the palms are their own materials, so the quartet switches as one group
     setPalms = (on) => {
-      for (const m of [M.palmBark, M.palmCrown, M.palmLeaf, M.palmRachis, M.palmDry, M.dates]) {
+      for (const m of [M.palmBark, M.palmCrown, M.palmLeaf, M.palmRachis, M.palmDry, M.dates, M.coconut]) {
         const mesh = BUCKET_MESH.get(m);
         if (mesh) mesh.visible = !!on;
       }
@@ -61432,6 +61490,13 @@ function frondGeo(ox, oy, oz, az, pitch, len, droop, twist = 0, dense = 1) {
     if (opts.models !== false) {
       const wave1 = () => {
         if (destroyed) return;
+        /*  A phone gets no scanned props at all: the 10 first-wave GLBs
+            are ~1.7 MB to fetch and parse and ~20 MB of textures to hold,
+            right when the phone is already paying for the first frame. The
+            procedural stand-ins are already standing in every one of those
+            spots, so the scene is complete without them. A laptop, even a
+            small one, keeps wave one and skips only wave two below. */
+        if (MOBILE) { megaStats.deferred = 'phone'; return; }
         megaPlaceModels(MEGA_WAVE1);
         if (LOWRAM) { megaStats.deferred = 'low-ram'; return; }
         /* wave two waits for the wave-one requests to have had the link to
@@ -61557,6 +61622,8 @@ if (opts.height != null) section.style.height = (typeof opts.height === 'number'
 const rect0 = scrollHost.getBoundingClientRect();
 const visible0 = rect0.top < window.innerHeight + 240 && rect0.bottom > -240;
 let pTarget = STOPS[opts.startStop] ?? 0, pSmooth = pTarget, lastApplied = -1, visible = visible0, started = false;
+/* when the page last moved, for the deferred work that must not run mid-flick */
+let lastScrollAt = 0;
 let autoP = pSmooth, autoDir = 1;
 let lookYaw = 0, lookPitch = 0, lookYawTarget = 0, lookPitchTarget = 0;
 let dragging = false, lastX = 0, lastY = 0, pointerX = 0, pointerY = 0;
@@ -61603,7 +61670,8 @@ function scrollY() {
 
 function readProgress() {
   if (!opts.scrollDriven) return;
-  pTarget = clamp((scrollY() - trackTop) / trackSpan);
+  const p = clamp((scrollY() - trackTop) / trackSpan);
+  if (p !== pTarget) { pTarget = p; lastScrollAt = performance.now(); }
 }
 
 function paintOverlays(p) {
@@ -61635,6 +61703,13 @@ function paintOverlays(p) {
 
 let exposure = 0.82;
 
+/*  The frame governor. A phone that cannot hold the budget loses resolution
+    before it loses frames: the section is a scroll-driven film, and a soft frame
+    that keeps up reads far better than a sharp one that stutters. One step every
+    twenty frames, never back up (stepping up again oscillates), and only on the
+    lean tier, so a desktop keeps the pixels it paid for. */
+let govFrames = 0, govSpan = 0, govStep = 0;
+
 function applyCamera(t, dt) {
   const fov = cameraAt(t);
   camera.position.copy(tmpPos);
@@ -61643,7 +61718,12 @@ function applyCamera(t, dt) {
   if (!REDUCED && opts.interactive) { camera.rotateY(lookYaw); camera.rotateX(lookPitch); }
 
   const aspect = camera.aspect;
-  const portrait = aspect < 1.1 ? lerp(1, 1.46, clamp((1.1 - aspect) / 0.7)) : 1;
+  /*  A portrait frame multiplies the vertical field of view so a 18.7 m facade
+      still fits the width. 1.46 fitted it with room to spare and left a third
+      of a phone screen as empty road under the house; 1.30 crops the frame to
+      the building, which is how the approach reads in a portrait editorial
+      shot, and still holds the whole porch, the vine and the garage bay. */
+  const portrait = aspect < 1.1 ? lerp(1, 1.30, clamp((1.1 - aspect) / 0.7)) : 1;
   const f = fov * portrait;
   if (Math.abs(camera.fov - f) > 0.01) { camera.fov = f; camera.updateProjectionMatrix(); }
 
@@ -61651,7 +61731,7 @@ function applyCamera(t, dt) {
      view ray on the exterior half of the take, so a 30 m facade still fits the
      frame at the approach and the door is centred by the time we reach it */
   if (portrait > 1.02 && t < 0.48) {
-    const k = 1 + 0.06 * portrait * (1 - smoothstep(0.26, 0.47, t));
+    const k = 1 + 0.035 * portrait * (1 - smoothstep(0.26, 0.47, t));
     tmpPos.sub(tmpTgt).multiplyScalar(k).add(tmpTgt);
     camera.position.copy(tmpPos);
   }
@@ -61805,11 +61885,28 @@ function tick() {
 
   drawFrame();
 
+  if (LEAN) {
+    govFrames++;
+    govSpan += dt * 1000;
+    if (govFrames >= (govStep ? 10 : 20)) {
+      const avg = govSpan / govFrames;
+      govFrames = 0; govSpan = 0;
+      if (avg > 26 && govStep < 3) {
+        govStep++;
+        const next = Math.max(0.7, Math.round((renderer.getPixelRatio() - 0.15) * 100) / 100);
+        renderer.setPixelRatio(next);
+        ctxStats.dpr = next;
+        resize();
+      }
+    }
+  }
+
   if (!started) {
     started = true;
     // the world never moves: bake the shadow map once, then stop updating
     renderer.shadowMap.autoUpdate = false;
     canvas.classList.add('is-ready');
+    container.classList.add('is-ready');
     canvas.classList.remove('is-loading');
     /* a lean phone: the deferred scans, then the scratch canvases handed back */
     if (LEAN) {
@@ -61827,6 +61924,24 @@ readProgress();
 pSmooth = pTarget;
 applyCamera(pSmooth, 1);
 paintOverlays(pSmooth);
+
+/*  A phone's first frame is mostly shader compilation, and on a driver that
+    supports KHR_parallel_shader_compile (Chrome on Android, Safari 16+) those
+    programs link off the main thread. Kick them off here, keep the main thread
+    free for the poster fade and the first scroll, and never wait longer than
+    this: a driver without the extension resolves at once, and a slow one gets
+    a synchronous compile in drawFrame() anyway. */
+if (LEAN && typeof renderer.compileAsync === 'function') {
+  let compiled = false;
+  try {
+    await Promise.race([
+      renderer.compileAsync(scene, camera).then(() => { compiled = true; }),
+      new Promise((r) => setTimeout(r, 2200))
+    ]);
+  } catch (_) { compiled = false; }
+  ctxStats.asyncCompile = compiled;
+}
+
 clock.start();
 schedule();
 
@@ -61944,8 +62059,12 @@ function destroy() {
 /* the debug/screenshot hook the page harness and the render scripts use */
 window.__shade = handle;
 
-window.addEventListener('error', (e) => fail(e.error || e.message), { signal });
-window.addEventListener('unhandledrejection', (e) => fail(e.reason), { signal });
+/*  Only a fault during the build is ours: once the first frame has painted, an
+    unrelated script on the page (a font CDN, an analytics tag, a Framer
+    override) must not be able to blank a working scene. */
+const failIfBooting = (err) => { if (!started) fail(err); };
+window.addEventListener('error', (e) => failIfBooting(e.error || e.message), { signal });
+window.addEventListener('unhandledrejection', (e) => failIfBooting(e.reason), { signal });
 
 return handle;
     } catch (err) {
