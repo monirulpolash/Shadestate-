@@ -130,8 +130,10 @@
 }
 #walk .walk__bloom{
   position:absolute;inset:0;pointer-events:none;
+  /* a neutral lift in the middle of the frame, never an amber wash: on a phone
+     this is the only grade over the scene */
   background:
-    radial-gradient(60% 48% at 50% 54%,rgba(255,206,150,.55) 0%,rgba(255,186,120,.16) 38%,rgba(255,186,120,0) 72%);
+    radial-gradient(60% 48% at 50% 54%,rgba(255,246,236,.34) 0%,rgba(255,240,226,.10) 38%,rgba(255,240,226,0) 72%);
   mix-blend-mode:screen;
   opacity:0;
 }

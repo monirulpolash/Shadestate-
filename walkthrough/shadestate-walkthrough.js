@@ -55025,7 +55025,42 @@ async function createWalkthrough(container, options = {}) {
     renderer.autoClear = true;
 
     const scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0xe3d6c0, 0.00215);
+    scene.fog = new THREE.FogExp2(0xd9d8d2, 0.00230);
+
+    /*  Height-based haze. three's fog is depth-only, which lays the same veil
+        on the villa and on a tower a kilometre out at the same distance. The
+        air is not like that: the mist sits in the first twenty metres and thins
+        with altitude, so the skyline sinks into the ground haze while the
+        house, at eye level, stays crisp. One varying and a multiply, on every
+        material that already carries fog; the sky has its own gradient. */
+    if (!THREE.ShaderChunk.__shadeHeightFog) {
+      THREE.ShaderChunk.__shadeHeightFog = true;
+      THREE.ShaderChunk.fog_pars_vertex = '#ifdef USE_FOG\n\tvarying float vFogDepth;\n\tvarying float vFogH;\n#endif';
+      THREE.ShaderChunk.fog_vertex = `#ifdef USE_FOG
+        vFogDepth = - mvPosition.z;
+        {
+          vec4 fogW = vec4(transformed, 1.0);
+          #ifdef USE_INSTANCING
+            fogW = instanceMatrix * fogW;
+          #endif
+          vFogH = (modelMatrix * fogW).y;
+        }
+      #endif`;
+      THREE.ShaderChunk.fog_pars_fragment = THREE.ShaderChunk.fog_pars_fragment
+        .replace('varying float vFogDepth;', 'varying float vFogDepth;\n\tvarying float vFogH;');
+      THREE.ShaderChunk.fog_fragment = `#ifdef USE_FOG
+        #ifdef FOG_EXP2
+          float fogFactor = 1.0 - exp( - fogDensity * fogDensity * vFogDepth * vFogDepth );
+        #else
+          float fogFactor = smoothstep( fogNear, fogFar, vFogDepth );
+        #endif
+        /* the haze pools low: full strength at the ground, 60% of it at 45 m,
+           which is what puts the far city behind the air without touching the
+           house in the foreground */
+        fogFactor *= mix( 1.0, 0.60, smoothstep( 2.0, 45.0, vFogH ) );
+        gl_FragColor.rgb = mix( gl_FragColor.rgb, fogColor, fogFactor );
+      #endif`;
+    }
     /* hooks the look controls fill in later (sky rebuild, palm toggle) */
     let setSky = null;
     let setPalms = () => {};
@@ -55050,17 +55085,20 @@ async function createWalkthrough(container, options = {}) {
 
     const SKY_PRESETS = {
       morning: {
-        /* Rayleigh scatter: a muted mid blue overhead that desaturates as the
-           ray path lengthens, crossing a warm, slightly grey desert haze at the
-           ridge. The old cobalt was a poster blue, not air. */
-        stops: [[0, '#3d6b9c'], [78, '#4170a1'], [58, '#4776a7'], [38, '#5484b1'],
-          [24, '#668fba'], [15, '#7ba2c4'], [10, '#93b4d0'], [6.5, '#aec6da'],
-          [5.0, '#c4d2dc'], [3.8, '#d8d9cf'], [2.8, '#e6dec9'], [2.0, '#efe3c9'],
-          [1.2, '#f5e9cd'], [0.5, '#f9eed5']],
-        horizon: '#e3d8c4', below: ['#e0d5c1', '#c0b49c', '#8f8571', '#4c4639'],
-        sun: [-0.86, 0.30, 0.41], sunCol: [1.55, 1.02, 0.64], sunInt: 4.6, light: 0xffd2a0,
-        sunGlow: 'rgba(255,247,224,.88)', lit: [253, 249, 238], shade: [186, 194, 210],
-        fog: 0xe3d6c0
+        /*  The committed look: a low sun in the west, roughly eighteen degrees
+            up, raking across the approach facade while the carport and entry
+            side fall into cool shade. The sky is blue overhead and only goes
+            pale at the ridge; the light is white-warm, not orange, so the
+            limestone stays the pale stone it is. Rayleigh scatter, muted mid
+            blue desaturating down the long ray path into a neutral haze. */
+        stops: [[0, '#3b6a9e'], [78, '#3f6da2'], [58, '#4573a8'], [38, '#5181b2'],
+          [24, '#638cbb'], [15, '#78a0c5'], [10, '#90b1cf'], [6.5, '#a9c3d8'],
+          [5.0, '#c6d1d8'], [3.8, '#d3d8d4'], [2.8, '#dfe0da'], [2.0, '#e9e8e1'],
+          [1.2, '#f0eee6'], [0.5, '#f5f3ea']],
+        horizon: '#dfdcd2', below: ['#dedbd2', '#bfbcb2', '#8f8d84', '#4c4b45'],
+        sun: [-0.86, 0.30, 0.41], sunCol: [1.50, 1.13, 0.88], sunInt: 4.75, light: 0xffd2a0,
+        sunGlow: 'rgba(255,250,240,.88)', lit: [253, 251, 246], shade: [184, 193, 209],
+        fog: 0xd9d8d2
       },
       noon: {
         stops: [[0, '#396aa2'], [78, '#3d6ea6'], [58, '#4476ac'], [38, '#5082b4'],
@@ -55273,16 +55311,20 @@ async function createWalkthrough(container, options = {}) {
     sun.shadow.camera.far = 220;
     sun.shadow.bias = -0.00035;
     sun.shadow.normalBias = 0.03;
+    /* a longer, softer penumbra than the default: the low sun draws shadows
+       three times the height of what casts them, and a hard edge reads as CG */
+    sun.shadow.radius = 2;
     scene.add(sun, sun.target);
 
     /*  the sky's own fill. A desert afternoon is not a studio: the shadow side
         of a wall is still lit by the whole dome, and at 0.17 it read as black.
         The hemisphere now carries the sky colour and a warm sand bounce, which
         is what makes shadows blue-warm instead of dead. */
-    scene.add(new THREE.HemisphereLight(0xc6d8ea, 0xa89066, MOBILE ? 0.52 : 0.66));
+    scene.add(new THREE.HemisphereLight(0xc4d2e2, 0x9a948a, MOBILE ? 0.60 : 0.74));
     {
-      /* one weak ambient term for the last of the ground bounce */
-      const amb = new THREE.AmbientLight(0xe4d9c4, MOBILE ? 0.15 : 0.22);
+      /* one weak ambient term, neutral: the last of the ground bounce, never a
+         warm wash over the stone */
+      const amb = new THREE.AmbientLight(0xe0dcd2, MOBILE ? 0.14 : 0.20);
       scene.add(amb);
     }
 
@@ -57169,9 +57211,9 @@ scene.background = null;
       }
 
       const cityUniforms = {
-        uHaze: { value: new THREE.Color(0xd9d0bd) },
-        uHazeLow: { value: new THREE.Color(0xe4dbc8) },
-        uRim: { value: new THREE.Color(0.62, 0.46, 0.30) }
+        uHaze: { value: new THREE.Color(0xd2d6d7) },
+        uHazeLow: { value: new THREE.Color(0xdcdedb) },
+        uRim: { value: new THREE.Color(0.52, 0.50, 0.46) }
       };
 
       const cityMat = new THREE.MeshStandardMaterial({
@@ -59053,21 +59095,21 @@ scene.background = null;
       scene.add(l);
       return l;
     };
-    addPoint(0.0, 4.2, 3.4, MOBILE ? 14 : 22, 18, warm, true);
-    addPoint(-3.6, 3.4, -2.4, MOBILE ? 16 : 26, 22, warm, true);
-    addPoint(0.6, 2.5, -0.6, MOBILE ? 7 : 10, 9, warm, true);
-    addPoint(9.0, 2.6, -1.6, MOBILE ? 8 : 12, 14, warm, true);
+    addPoint(0.0, 4.2, 3.4, MOBILE ? 17 : 26, 18, warm, true);
+    addPoint(-3.6, 3.4, -2.4, MOBILE ? 19 : 31, 22, warm, true);
+    addPoint(0.6, 2.5, -0.6, MOBILE ? 8.5 : 12, 9, warm, true);
+    addPoint(9.0, 2.6, -1.6, MOBILE ? 9.5 : 14, 14, warm, true);
     addPoint(2.0, -0.7, -14.0, MOBILE ? 5 : 8, 13, 0xbfe2d8);
     // the light well: cool daylight falling into the hall
     addPoint(-5.6, 7.7, -2.1, MOBILE ? 10 : 18, 14, 0xdce6f2);
     // the upper floor, seen through the glass
-    addPoint(-4.2, 6.6, 6.0, MOBILE ? 9 : 14, 12, 0xffc290);
-    addPoint(1.0, 3.4, 4.8, MOBILE ? 6 : 10, 11, 0xffc79a);
+    addPoint(-4.2, 6.6, 6.0, MOBILE ? 10.5 : 16.5, 12, 0xffc290);
+    addPoint(1.0, 3.4, 4.8, MOBILE ? 7 : 12, 11, 0xffc79a);
     addPoint(-6.4, 6.4, -3.4, MOBILE ? 7 : 11, 12, 0xffc290);
 
     // a recessed spot washing the framed work on the rear wall
     {
-      const spot = new THREE.SpotLight(0xffc89c, MOBILE ? 10 : 20, 11, 0.5, 0.78, 2);
+      const spot = new THREE.SpotLight(0xffc89c, MOBILE ? 12 : 24, 11, 0.5, 0.78, 2);
       spot.position.set(-9.35, 6.9, -4.6);
       spot.target.position.set(-9.35, 1.9, -5.9);
       scene.add(spot, spot.target);
@@ -61022,7 +61064,7 @@ function frondGeo(ox, oy, oz, az, pitch, len, droop, twist = 0, dense = 1) {
         const brightMat = new THREE.ShaderMaterial({
           uniforms: {
             tDiffuse: { value: null },
-            uThreshold: { value: 1.18 },
+            uThreshold: { value: 1.30 },
             uKnee: { value: 0.86 }
           },
           vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }`,
@@ -61066,16 +61108,16 @@ function frondGeo(ox, oy, oz, az, pitch, len, droop, twist = 0, dense = 1) {
             tScene: { value: null },
             tBloom: { value: null },
             uBTexel: { value: new THREE.Vector2(1 / 256, 1 / 256) },
-            uBloom: { value: 0.17 },
-            uVeil: { value: 0.055 },
+            uBloom: { value: 0.11 },
+            uVeil: { value: 0.028 },
             uExposure: { value: 0.84 },
-            uSaturation: { value: 0.125 },
-            uContrast: { value: 0.095 },
+            uSaturation: { value: 0.06 },
+            uContrast: { value: 0.075 },
             uBrightness: { value: 0.004 },
             uVignetteFrom: { value: 0.62 },
             uVignetteTo: { value: 1.28 },
-            uVignetteColor: { value: new THREE.Color(0x14110d) },
-            uVignette: { value: 0.55 },
+            uVignetteColor: { value: new THREE.Color(0x0f1113) },
+            uVignette: { value: 0.30 },
             uVigAspect: { value: new THREE.Vector2(1, 1) },
             uSeed: { value: 0 },
             uFade: { value: 1 }
@@ -61147,7 +61189,7 @@ function frondGeo(ox, oy, oz, az, pitch, len, droop, twist = 0, dense = 1) {
               /* split tone: the shadows cool a hair, the highlights warm, which
                  is what makes a golden-hour frame read as film rather than
                  as a render */
-              c *= mix(vec3(0.982, 0.995, 1.022), vec3(1.034, 1.010, 0.972),
+              c *= mix(vec3(0.985, 0.996, 1.016), vec3(1.030, 1.008, 0.976),
                        smoothstep(0.10, 0.88, luma));
               c = mix(vec3(luma), c, 1.0 + uSaturation);
               c = 0.5 + (1.0 + uContrast) * (c - 0.5);
@@ -61695,13 +61737,13 @@ function paintOverlays(p) {
   const warmUp = smoothstep(0.53, 0.60, p) * (1 - smoothstep(0.70, 0.76, p));
   if (veil) veil.style.opacity = (0.09 + dark * 0.30).toFixed(3);
   if (grade) grade.style.opacity = (0.82 + dark * 0.18 - warmUp * 0.16).toFixed(3);
-  if (bloomEl) bloomEl.style.opacity = (warmUp * 0.42 + smoothstep(0.86, 0.98, p) * 0.14).toFixed(3);
+  if (bloomEl) bloomEl.style.opacity = (warmUp * 0.30 + smoothstep(0.86, 0.98, p) * 0.10).toFixed(3);
 
   if (dust) dust.uniforms.uOpacity.value = smoothstep(0.54, 0.63, p) * (1 - smoothstep(0.80, 0.86, p)) * (MOBILE ? 0.40 : 0.48);
   if (opts.onProgress) { try { opts.onProgress(p, stage); } catch (_) { /* host's problem */ } }
 }
 
-let exposure = 0.82;
+let exposure = 0.83;
 
 /*  The frame governor. A phone that cannot hold the budget loses resolution
     before it loses frames: the section is a scroll-driven film, and a soft frame
@@ -61738,7 +61780,7 @@ function applyCamera(t, dt) {
 
   const dark = smoothstep(0.508, 0.538, t) * (1 - smoothstep(0.556, 0.61, t));
   const inside = smoothstep(0.56, 0.64, t) * (1 - smoothstep(0.74, 0.78, t));
-  const target = 0.82 - dark * 0.22 + inside * 0.30;
+  const target = 0.83 - dark * 0.22 + inside * 0.30;
   exposure += (target - exposure) * Math.min(1, dt * 6);
   renderer.toneMappingExposure = exposure;
   if (post) post.compMat.uniforms.uExposure.value = exposure;

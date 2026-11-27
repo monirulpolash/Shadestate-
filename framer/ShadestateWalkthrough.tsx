@@ -5,11 +5,10 @@
     walkthrough/scene.js). three.js comes from npm.
 
     Drop the component on the canvas, size it, and set the controls in the
-    right-hand panel: Copy, Camera, Look, Performance. The copy rides over the
+    right-hand panel: Copy, Camera, Look, Performance. One line rides over the
     canvas at each stop of the take — location, exterior, interior, amenities,
-    pricing — with a glass spec pill under each headline, exactly as the
-    template lays it out, so a buyer can rewrite every line and every pill in
-    the Properties panel.
+    developments — and nothing else, so the scene keeps the frame. A buyer can
+    rewrite every line in the Properties panel.
 */
 import * as React from "react"
 import { useEffect, useRef, useState } from "react"
@@ -24,6 +23,12 @@ const __THREE__ = THREE_NPM as any
     strict network, a preview with no egress — every surface falls back to the
     procedural map it had before, because the loader is all-or-nothing per set. */
 const TEXTURE_BASE = "https://shadestate.vercel.app/walkthrough/textures/"
+
+/*  The still of the opening frame. A phone needs a few seconds to compile the
+    scene; this is what the section shows until then, at the exact crop the live
+    first frame paints. Served from the template site with the same CORS rule as
+    the maps, and simply absent if that host is unreachable. */
+const POSTER_SRC = "https://shadestate.vercel.app/walkthrough/poster-approach.webp"
 
 /*  The Megascans props: boulders, palms, sansevierias, vessels. Same origin and
     the same CORS rule as the photo maps; each one is optional, so a network
@@ -115,16 +120,25 @@ const lerp = (a, b, t) => a + (b - a) * t;
    builds them at half size. Everything else keeps its authored resolution. */
 let NRM_CAP = 0;
 let LITE_TEX = false;
+/* a 4 GB phone (or a low-core machine) draws the lite scene under a stricter
+   budget: half-size procedural canvases, no secondary maps, a 768 px shadow */
+let LOWRAM = false;
+let LEAN = false;
+/* every canvas this scene bakes, so the backing stores can be released once
+   their pixels are on the GPU (see releaseCanvases) */
+const CANVAS_KEEP = [];
 
 const cv = (w, h = w) => {
   const c = document.createElement('canvas');
   c.width = w; c.height = h;
+  CANVAS_KEEP.push(c);
   const get = c.getContext.bind(c);
   c.getContext = (type, opts) => get(type, type === '2d' ? { willReadFrequently: true, ...(opts || {}) } : opts);
   return c;
 };
 
 function tex(canvasEl, { repeat = [1, 1], srgb = false } = {}) {
+  canvasEl.__asTex = true;        // releaseScratchCanvases must leave this one
   const t = new THREE.CanvasTexture(canvasEl);
   t.wrapS = t.wrapT = THREE.RepeatWrapping;
   t.repeat.set(repeat[0], repeat[1]);
@@ -193,13 +207,27 @@ function normalFromHeight(src, strength = 2.0, maxSize = 0) {
    roughness maps are 512 everywhere because they are sampled through a tiled,
    high-frequency UV.
    ───────────────────────────────────────────────────────────────────────────── */
-const PHOTO = { asphalt: null, travertine: null, oak: null, grass: null };
+const PHOTO = {
+  asphalt: null, travertine: null, oak: null, grass: null,
+  stucco: null, plaster: null, limestone: null, pooltile: null, conc: null, cedar: null
+};
 const PHOTO_MANIFEST = {
   asphalt: { color: ['@768', '@512'], normal: ['@512', '@512'] },
   travertine: { color: ['@1k', '@512'], normal: ['@512', '@512'], rough: ['@512', '@512'] },
   oak: { color: ['@1k', '@512'], normal: ['@512', '@512'], rough: ['@512', '@512'] },
-  grass: { color: ['@768', '@512'] }
+  grass: { color: ['@768', '@512'] },
+  /* the 2026-11-26 Quixel pass: every remaining architectural surface */
+  stucco: { color: ['@1k', '@512'], normal: ['@512', '@512'], rough: ['@512', '@512'] },
+  plaster: { color: ['@1k', '@512'], normal: ['@512', '@512'], rough: ['@512', '@512'] },
+  limestone: { color: ['@1k', '@512'], normal: ['@512', '@512'], rough: ['@512', '@512'] },
+  pooltile: { color: ['@1k', '@512'], normal: ['@512', '@512'], rough: ['@512', '@512'] },
+  conc: { color: ['@1k', '@512'], normal: ['@512', '@512'], rough: ['@512', '@512'] },
+  cedar: { color: ['@1k', '@512'], normal: ['@512', '@512'], rough: ['@512', '@512'] }
 };
+
+/* the six surfaces the first two seconds actually look at; everything else
+   arrives after the first frame (see loadPhotos and schedulePhotoUpgrade) */
+const PHOTO_CORE = ['oak', 'travertine', 'limestone', 'plaster', 'stucco', 'cedar'];
 
 function loadPhoto(url, timeout = 5000) {
   return new Promise((resolve) => {
@@ -216,16 +244,59 @@ function loadPhoto(url, timeout = 5000) {
   });
 }
 
-/** Fetch every set at once; a set without a colour map is dropped whole. */
-async function loadPhotos(base, lite) {
+/*  Where the atlases live. Set at boot from the host's textureBase (the Framer
+    component passes the Vercel origin), so the sprite cards resolve in every
+    host. A card whose atlas never arrives simply keeps its drawn twin. */
+let TEX_BASE = './textures/';
+const _atlasCache = new Map();
+function loadAtlas(name) {
+  if (_atlasCache.has(name)) return _atlasCache.get(name);
+  const t = new THREE.Texture();
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping;
+  t.minFilter = THREE.LinearMipmapLinearFilter;
+  t.anisotropy = 4;
+  t.needsUpdate = true;
+  _atlasCache.set(name, t);
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.decoding = 'async';
+  img.onload = () => { t.image = img; t.needsUpdate = true; };
+  img.src = TEX_BASE + name;
+  return t;
+}
+
+/** Fetch a set of photo scans; a set without a colour map is dropped whole.
+
+    Two phases, because the first frame is what the user is waiting for:
+
+    · phase one loads the colour of the six surfaces the camera meets in the
+      first two seconds (the villa's stone, the floor, the plaster and the
+      cedar soffit) and nothing else;
+    · phase two, run from idle after the first frame, brings the normals and
+      the remaining surfaces, and swaps them into the materials in place.
+
+    A lean device also skips the roughness maps entirely: the lite tier gets
+    one colour and one light normal, which is what halves the texture memory. */
+async function loadPhotos(base, lite, keys = null, onlyKinds = null) {
   if (!base) return;
   const tier = lite ? 1 : 0;
   const jobs = [];
   for (const [key, kinds] of Object.entries(PHOTO_MANIFEST)) {
+    if (keys && !keys.includes(key)) continue;
     jobs.push((async () => {
-      const out = {};
-      await Promise.all(Object.entries(kinds).map(async ([kind, sizes]) => {
-        out[kind] = await loadPhoto(base + key + '-' + kind + sizes[tier] + '.webp');
+      const out = PHOTO[key] || {};
+      const want = Object.entries(kinds).filter(([kind]) => {
+        if (onlyKinds && !onlyKinds.includes(kind)) return false;
+        /* a lean device takes the colour and one light normal, never the
+           roughness map: a third of the pixels and half the VRAM */
+        if (lite && kind === 'rough') return false;
+        if (out[kind]) return false;              // phase one already has it
+        return true;
+      });
+      await Promise.all(want.map(async ([kind, sizes]) => {
+        const img = await loadPhoto(base + key + '-' + kind + sizes[tier] + '.webp');
+        if (img) out[kind] = img;
       }));
       if (out.color) PHOTO[key] = out;
     })());
@@ -250,6 +321,22 @@ function photoUnder(ctx, img, size, { tiles = 1, mode = 'multiply', alpha = 1, d
     }
   }
   ctx.restore();
+}
+
+/** A loaded photo set as a three.js map, or null when the scan did not arrive.
+    Every caller treats null as "keep the drawn surface", so a blocked network
+    only costs detail, never the scene. */
+const _photoTexCache = new Map();
+function photoTex(key, kind, srgb = false, size = 512) {
+  const set = PHOTO[key];
+  if (!set || !set[kind]) return null;
+  const id = key + '|' + kind + '|' + size;
+  let t = _photoTexCache.get(id);
+  if (!t) {
+    t = tex(photoCanvas(set[kind], size), { srgb });
+    _photoTexCache.set(id, t);
+  }
+  return t;
 }
 
 /** The same, but each cell takes a different crop, so a 4×4 deck of pavers is
@@ -283,8 +370,12 @@ function photoCanvas(img, size = 512) {
 /* ─────────────────────────────────────────────────────────────────────────────
    3 · procedural textures
    ───────────────────────────────────────────────────────────────────────────── */
+/* a lean device bakes every canvas at half resolution: the same drawing, a
+   quarter of the pixels to fill, upload and keep in VRAM (a 4 GB phone) */
+const TS = (v) => (LEAN ? Math.max(64, Math.round(v / 2)) : v);
+
 function makeStone(base = '#e7dfd0', poreRGB = '124,110,90') {
-  const S = 1024;
+  const S = TS(1024);
   const c = cv(S), g = c.getContext('2d');
   const hc = cv(S), hg = hc.getContext('2d');
   g.fillStyle = base; g.fillRect(0, 0, S, S);
@@ -345,7 +436,7 @@ function makeStone(base = '#e7dfd0', poreRGB = '124,110,90') {
  * draws a line along every course.
  */
 function makeAshlar(base = [233, 225, 210], courses = 5) {
-  const S = 1024, ch = S / courses;
+  const S = TS(1024), ch = S / courses;
   const c = cv(S), g = c.getContext('2d');
   const hc = cv(S), hg = hc.getContext('2d');
   const rc = cv(256), rg = rc.getContext('2d');
@@ -452,7 +543,7 @@ function makeAshlar(base = [233, 225, 210], courses = 5) {
     water, so it is a warm, light stone rather than a dark ceramic: the water
     takes its aqua from what sunlight does to this, not from a tinted tile. */
 function makePoolTile() {
-  const S = 512, n = 10, t = S / n;
+  const S = TS(512), n = 10, t = S / n;
   const c = cv(S), g = c.getContext('2d');
   const hc = cv(S), hg = hc.getContext('2d');
   g.fillStyle = '#c9bfa9'; g.fillRect(0, 0, S, S);          // grout line
@@ -484,7 +575,7 @@ function makePoolTile() {
 }
 
 function makeOakFloor() {
-  const S = 1024, c = cv(S), g = c.getContext('2d');
+  const S = TS(1024), c = cv(S), g = c.getContext('2d');
   /* the scanned board floor, warmed toward the interior's oak grade. Its own
      plank seams and grain do the work; the drawing below stays as the
      fallback when the scan is not reachable. */
@@ -553,7 +644,7 @@ function makeOakFloor() {
 }
 
 function makeAsphalt() {
-  const S = 512, c = cv(S), g = c.getContext('2d');
+  const S = TS(512), c = cv(S), g = c.getContext('2d');
   const hc = cv(S), hg = hc.getContext('2d');
   const a = PHOTO.asphalt;
   if (a) {
@@ -589,8 +680,56 @@ function makeAsphalt() {
   return { map: c, normal: normalFromHeight(hc, 0.55) };
 }
 
+/** A monocrystalline module: 6 × 10 half-cells under glass, dark navy with the
+    faintest blue cast, a silver busbar grid and the two junction lines. Drawn
+    once, tiled across every panel on the roof. */
+function makePvPanel() {
+  const S = TS(512), c = cv(S), g = c.getContext('2d');
+  const cols = 6, rows = 10, pad = 7;
+  const cw = (S - pad * 2) / cols, ch = (S - pad * 2) / rows;
+  // the sheet under the cells: near-black, a touch of blue
+  g.fillStyle = '#0b0f16'; g.fillRect(0, 0, S, S);
+  g.fillStyle = '#111722'; g.fillRect(pad * 0.5, pad * 0.5, S - pad, S - pad);
+  for (let j = 0; j < rows; j++) {
+    for (let i = 0; i < cols; i++) {
+      const x = pad + i * cw, y = pad + j * ch;
+      const v = rr(0.90, 1.10);
+      g.fillStyle = `rgb(${Math.round(17 * v)},${Math.round(24 * v)},${Math.round(41 * v)})`;
+      g.fillRect(x + 1.1, y + 1.1, cw - 2.2, ch - 2.2);
+      // the cell's own fine finger grid, running across the short side
+      g.strokeStyle = 'rgba(148,158,172,.16)'; g.lineWidth = 0.7;
+      for (let k = 1; k < 6; k++) {
+        const fy = y + (ch * k) / 6;
+        g.beginPath(); g.moveTo(x + 2, fy); g.lineTo(x + cw - 2, fy); g.stroke();
+      }
+      // a soft sheen along the top-left of each cell, the anti-reflective coat
+      const grd = g.createLinearGradient(x, y, x + cw, y + ch);
+      grd.addColorStop(0, 'rgba(96,126,170,.16)');
+      grd.addColorStop(0.45, 'rgba(60,86,128,.04)');
+      grd.addColorStop(1, 'rgba(8,12,20,0)');
+      g.fillStyle = grd; g.fillRect(x + 1.1, y + 1.1, cw - 2.2, ch - 2.2);
+    }
+  }
+  // busbars: three silver ribbons down the module, and the cell gaps
+  g.fillStyle = 'rgba(176,184,196,.85)';
+  for (const fx of [0.167, 0.5, 0.833]) g.fillRect(S * fx - 1.6, pad, 3.2, S - pad * 2);
+  g.strokeStyle = 'rgba(150,160,175,.42)'; g.lineWidth = 1.4;
+  for (let i = 0; i <= cols; i++) {
+    const x = pad + i * cw;
+    g.beginPath(); g.moveTo(x, pad); g.lineTo(x, S - pad); g.stroke();
+  }
+  for (let j = 0; j <= rows; j++) {
+    const y = pad + j * ch;
+    g.beginPath(); g.moveTo(pad, y); g.lineTo(S - pad, y); g.stroke();
+  }
+  // the anodised frame line at the very edge of the laminate
+  g.strokeStyle = 'rgba(188,194,204,.55)'; g.lineWidth = 2;
+  g.strokeRect(3, 3, S - 6, S - 6);
+  return { map: c };
+}
+
 function makeConcrete() {
-  const S = 512, c = cv(S), g = c.getContext('2d');
+  const S = TS(512), c = cv(S), g = c.getContext('2d');
   const hc = cv(S), hg = hc.getContext('2d');
   g.fillStyle = '#b9b3a6'; g.fillRect(0, 0, S, S);
   hg.fillStyle = '#8a8a8a'; hg.fillRect(0, 0, S, S);
@@ -615,7 +754,7 @@ function makeConcrete() {
 }
 
 function makePaving() {
-  const S = 512, c = cv(S), g = c.getContext('2d');
+  const S = TS(512), c = cv(S), g = c.getContext('2d');
   const hc = cv(S), hg = hc.getContext('2d');
   g.fillStyle = '#cfc7b7'; g.fillRect(0, 0, S, S);
   hg.fillStyle = '#9a9a9a'; hg.fillRect(0, 0, S, S);
@@ -665,7 +804,7 @@ function makePaving() {
    a railing; the cool one is an office with a ribbon of glass and stone piers
    between the bays. A few windows are lit, for the dusk presets.            */
 function makeFacade({ wall = [214, 205, 190], glass = [58, 72, 84], balcony = true } = {}) {
-  const S = 512, B = 4, t = S / B;
+  const S = TS(512), B = 4, t = S / B;
   const c = cv(S), g = c.getContext('2d');
   const em = cv(S), eg = em.getContext('2d');
   g.fillStyle = `rgb(${wall[0]},${wall[1]},${wall[2]})`; g.fillRect(0, 0, S, S);
@@ -737,7 +876,7 @@ function makeFacade({ wall = [214, 205, 190], glass = [58, 72, 84], balcony = tr
 }
 
 function makeGravel() {
-  const S = 768, c = cv(S), g = c.getContext('2d');
+  const S = TS(768), c = cv(S), g = c.getContext('2d');
   const hc = cv(S), hg = hc.getContext('2d');
   g.fillStyle = '#918776'; g.fillRect(0, 0, S, S);
   hg.fillStyle = '#7a7a7a'; hg.fillRect(0, 0, S, S);
@@ -759,7 +898,7 @@ function makeGravel() {
 function makeMeadow() {
   const hc = cv(512), hg = hc.getContext('2d');
   hg.fillStyle = '#808080'; hg.fillRect(0, 0, 512, 512);
-  const S = 1024, c = cv(S), g = c.getContext('2d');
+  const S = TS(1024), c = cv(S), g = c.getContext('2d');
   g.fillStyle = '#aeb37c'; g.fillRect(0, 0, S, S);
   for (let i = 0; i < 1200; i++) {
     const x = rnd() * S, y = rnd() * S, r = rr(20, 130), t = rnd();
@@ -789,7 +928,7 @@ function makeMeadow() {
    The land outside the wall is a dune field, not a lawn; this is the surface
    the ground shader mixes toward where the dunes rise and the grass thins. */
 function makeDuneSand() {
-  const S = 512, c = cv(S), g = c.getContext('2d');
+  const S = TS(512), c = cv(S), g = c.getContext('2d');
   const hc = cv(S), hg = hc.getContext('2d');
   g.fillStyle = '#b7a685'; g.fillRect(0, 0, S, S);
   hg.fillStyle = '#808080'; hg.fillRect(0, 0, S, S);
@@ -887,13 +1026,15 @@ function makeGrassTuft() {
         const lean = side * rr(0.04, 0.55) + rr(-0.12, 0.12);
         const dry = rnd() < 0.17;
         const tone = rr(0.72, 1.12);
+        /* an irrigated Gulf lawn in warm afternoon light: olive-sage, never
+           the bottle green that reads as plastic at ten metres */
         const greens = dry
-          ? [`rgba(${Math.round(88 * tone)},${Math.round(84 * tone)},${Math.round(52 * tone)},1)`,
-             `rgba(${Math.round(150 * tone)},${Math.round(140 * tone)},${Math.round(88 * tone)},1)`,
-             `rgba(${Math.round(196 * tone)},${Math.round(184 * tone)},${Math.round(132 * tone)},1)`]
-          : [`rgba(${Math.round(54 * tone)},${Math.round(72 * tone)},${Math.round(30 * tone)},1)`,
-             `rgba(${Math.round(102 * tone)},${Math.round(128 * tone)},${Math.round(58 * tone)},1)`,
-             `rgba(${Math.round(168 * tone)},${Math.round(188 * tone)},${Math.round(108 * tone)},1)`];
+          ? [`rgba(${Math.round(104 * tone)},${Math.round(96 * tone)},${Math.round(62 * tone)},1)`,
+             `rgba(${Math.round(162 * tone)},${Math.round(150 * tone)},${Math.round(102 * tone)},1)`,
+             `rgba(${Math.round(206 * tone)},${Math.round(194 * tone)},${Math.round(146 * tone)},1)`]
+          : [`rgba(${Math.round(66 * tone)},${Math.round(76 * tone)},${Math.round(44 * tone)},1)`,
+             `rgba(${Math.round(116 * tone)},${Math.round(128 * tone)},${Math.round(74 * tone)},1)`,
+             `rgba(${Math.round(182 * tone)},${Math.round(184 * tone)},${Math.round(124 * tone)},1)`];
         blade(bx, baseY, bx + lean * hgt, baseY - hgt, CELL * rr(0.006, 0.012), greens, g);
       }
     }
@@ -908,13 +1049,13 @@ function makeGrassTuft() {
    root, with enough mottling that a 6 m tile never shows a seam. One plane,
    one draw call, and the tufts merge into a lawn. */
 function makeLawnMat() {
-  const S = 1024, c = cv(S), g = c.getContext('2d');
+  const S = TS(1024), c = cv(S), g = c.getContext('2d');
   /* a real mown lawn under the instanced blades: the scan gives the thatch and
      soil shadow between tufts that a flat fill cannot, and the drawn blades
      below give the depth the camera reads at the pool edge */
   const grassPhoto = PHOTO.grass;
   if (grassPhoto) {
-    g.fillStyle = '#4b5527';
+    g.fillStyle = '#6a7440';
     g.fillRect(0, 0, S, S);
     g.save();
     g.globalCompositeOperation = 'luminosity';
@@ -925,7 +1066,7 @@ function makeLawnMat() {
     g.drawImage(grassPhoto.color, 0, 0, S, S);
     g.restore();
   } else {
-    g.fillStyle = '#5d6b30';
+    g.fillStyle = '#6f7a44';
     g.fillRect(0, 0, S, S);
   }
 
@@ -933,7 +1074,7 @@ function makeLawnMat() {
   for (let i = 0; i < 260; i++) {
     const x = rnd() * S, y = rnd() * S, r = rr(40, 190), t = rnd();
     const grd = g.createRadialGradient(x, y, 0, x, y, r);
-    grd.addColorStop(0, t > 0.55 ? 'rgba(84,104,44,.30)' : t > 0.25 ? 'rgba(30,44,14,.34)' : 'rgba(120,124,62,.22)');
+    grd.addColorStop(0, t > 0.55 ? 'rgba(104,118,62,.22)' : t > 0.25 ? 'rgba(58,68,36,.15)' : 'rgba(146,148,88,.24)');
     grd.addColorStop(1, 'rgba(0,0,0,0)');
     g.fillStyle = grd; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill();
   }
@@ -954,7 +1095,7 @@ function makeLawnMat() {
     }
   };
   const tones = [
-    [56, 74, 32], [72, 90, 40], [88, 104, 46], [106, 120, 56], [128, 134, 68], [158, 150, 88]
+    [66, 78, 42], [82, 94, 50], [98, 110, 58], [116, 126, 66], [138, 140, 82], [166, 158, 104]
   ];
   for (let i = 0; i < 26000; i++) {
     const x = rnd() * S, y = rnd() * S;
@@ -1101,7 +1242,7 @@ function makeLeafCluster() {
 }
 
 function makeBarkTextures() {
-  const S = 512, c = cv(S), g = c.getContext('2d');
+  const S = TS(512), c = cv(S), g = c.getContext('2d');
   const hc = cv(S), hg = hc.getContext('2d');
   const rc = cv(256), rg = rc.getContext('2d');
 
@@ -1205,7 +1346,7 @@ function makeWaterNormal(S = 512) {
 }
 
 function makeLinen(tint = [226, 218, 203]) {
-  const S = 512, c = cv(S), g = c.getContext('2d');
+  const S = TS(512), c = cv(S), g = c.getContext('2d');
   g.fillStyle = `rgb(${tint[0]},${tint[1]},${tint[2]})`; g.fillRect(0, 0, S, S);
   for (let i = 0; i < 14000; i++) {
     const x = rnd() * S, y = rnd() * S;
@@ -1221,7 +1362,7 @@ function makeLinen(tint = [226, 218, 203]) {
 
 /** Nubby loop-pile bouclé, the texture the whole sofa is built from. */
 function makeBoucle(tint = [238, 230, 216]) {
-  const S = 512, c = cv(S), g = c.getContext('2d');
+  const S = TS(512), c = cv(S), g = c.getContext('2d');
   const hc = cv(S), hg = hc.getContext('2d');
   g.fillStyle = `rgb(${tint[0]},${tint[1]},${tint[2]})`; g.fillRect(0, 0, S, S);
   hg.fillStyle = '#808080'; hg.fillRect(0, 0, S, S);
@@ -1277,6 +1418,38 @@ function makeRug() {
   return { map: c, normal: normalFromHeight(hcS, 0.5) };
 }
 
+/** The entry mat: charcoal coir, woven one way, bound on all four edges.
+    Reads as a mat at 1.5 m and costs one 512 canvas. */
+function makeDoormat() {
+  const S = TS(512), c = cv(S), g = c.getContext('2d');
+  const hc = cv(256), hg = hc.getContext('2d');
+  g.fillStyle = '#403d37'; g.fillRect(0, 0, S, S);
+  hg.fillStyle = '#808080'; hg.fillRect(0, 0, S, S);
+  // the coir ribs, one direction, slightly uneven like a real mat
+  for (let y = 0; y < S; y += 5) {
+    const t = rr(0.84, 1.14);
+    g.fillStyle = `rgba(${Math.round(84 * t)},${Math.round(80 * t)},${Math.round(70 * t)},.92)`;
+    g.fillRect(0, y + rr(0, 1.4), S, rr(2.2, 3.4));
+    hg.fillStyle = rnd() > 0.5 ? 'rgba(198,198,198,.55)' : 'rgba(70,70,70,.5)';
+    hg.fillRect(0, y, S, 2.6);
+  }
+  // cross threads, sparse and dark, so the weave holds together
+  for (let x = 0; x < S; x += 13) {
+    g.strokeStyle = 'rgba(20,19,17,.30)';
+    g.lineWidth = rr(1.0, 1.8);
+    g.beginPath(); g.moveTo(x + rr(-1, 1), 0); g.lineTo(x + rr(-1, 1), S); g.stroke();
+  }
+  for (let i = 0; i < 7000; i++) {
+    g.fillStyle = rnd() > 0.5 ? 'rgba(126,120,108,.20)' : 'rgba(14,14,12,.22)';
+    g.fillRect(rnd() * S, rnd() * S, rr(1, 3), rr(0.8, 2));
+  }
+  // the bound border: a band in near-black round the four edges
+  g.strokeStyle = '#22211e';
+  g.lineWidth = 14;
+  g.strokeRect(7, 7, S - 14, S - 14);
+  return { map: c, normal: normalFromHeight(hc, 0.35) };
+}
+
 /** A minimal framed work: warm paper, one ochre field, one ink line. */
 function makeArtwork() {
   const W = 384, H = 512, c = cv(W, H), g = c.getContext('2d');
@@ -1321,7 +1494,7 @@ function makeArtwork() {
  * grain as a real surface rather than a picture of one.
  */
 function makeWoodGrain(base = [150, 96, 54], dark = [74, 42, 22], light = [196, 145, 96]) {
-  const S = 1024, c = cv(S), g = c.getContext('2d');
+  const S = TS(1024), c = cv(S), g = c.getContext('2d');
   const hc = cv(S), hg = hc.getContext('2d');
   g.fillStyle = `rgb(${base[0]},${base[1]},${base[2]})`; g.fillRect(0, 0, S, S);
   hg.fillStyle = '#8a8a8a'; hg.fillRect(0, 0, S, S);
@@ -1381,7 +1554,7 @@ function makeWoodGrain(base = [150, 96, 54], dark = [74, 42, 22], light = [196, 
 
 /** Date-palm trunk: overlapping leaf-base diamonds down a dusty grey column. */
 function makePalmBark() {
-  const S = 512, c = cv(S), g = c.getContext('2d');
+  const S = TS(512), c = cv(S), g = c.getContext('2d');
   const hc = cv(S), hg = hc.getContext('2d');
   g.fillStyle = '#6f6555'; g.fillRect(0, 0, S, S);
   hg.fillStyle = '#8a8a8a'; hg.fillRect(0, 0, S, S);
@@ -1476,7 +1649,7 @@ function makePalmFrondTex() {
 
 /** Fine cypress needles on a card: a dark body, a thousand short sprays. */
 function makeNeedleCluster() {
-  const S = 256, c = cv(S), g = c.getContext('2d');
+  const S = TS(256), c = cv(S), g = c.getContext('2d');
   g.clearRect(0, 0, S, S);
   const cx = S / 2, cy = S / 2;
   for (let i = 0; i < 40; i++) {
@@ -1503,7 +1676,7 @@ function makeNeedleCluster() {
 /** The surface of a dense cypress: dark, vertically streaked, almost black in
     the shade. Used on the revolved body so it does not read as painted green. */
 function makeCypressSurface() {
-  const S = 512, c = cv(S), g = c.getContext('2d');
+  const S = TS(512), c = cv(S), g = c.getContext('2d');
   g.fillStyle = '#465c36'; g.fillRect(0, 0, S, S);
   for (let i = 0; i < 1800; i++) {
     const x = rnd() * S, y = rnd() * S, len = rr(10, 60), t = rr(0.65, 1.5);
@@ -1524,7 +1697,7 @@ function makeCypressSurface() {
 
 /** Soft radial shade for a contact shadow decal. */
 function makeContactShadowTexture() {
-  const S = 128, c = cv(S), g = c.getContext('2d');
+  const S = TS(128), c = cv(S), g = c.getContext('2d');
   const grd = g.createRadialGradient(S / 2, S / 2, 0, S / 2, S / 2, S / 2);
   grd.addColorStop(0, 'rgba(0,0,0,.60)');
   grd.addColorStop(0.38, 'rgba(0,0,0,.42)');
@@ -1549,7 +1722,7 @@ function makeContactBandTexture() {
 
 /** Soft radial veil, used for lens glare at the big openings. */
 function makeGlowTexture() {
-  const S = 256, c = cv(S), g = c.getContext('2d');
+  const S = TS(256), c = cv(S), g = c.getContext('2d');
   const grd = g.createRadialGradient(S / 2, S / 2, 0, S / 2, S / 2, S / 2);
   grd.addColorStop(0, 'rgba(255,238,210,1)');
   grd.addColorStop(0.35, 'rgba(255,228,190,.55)');
@@ -1580,7 +1753,19 @@ const MEGA_ASSETS = {
   boulder:        { wind: 0, shadow: true },
   sandstone:      { wind: 0, shadow: true },
   clay_vase:      { wind: 0, shadow: true },
-  wood_vase:      { wind: 0, shadow: true }
+  wood_vase:      { wind: 0, shadow: true },
+  /* the 2026-11-26 planting + props pass (SUBSTITUTES.md §1–§4) */
+  yucca_a:        { wind: 0.030, shadow: true, soft: 0.42 },
+  fan_palm:       { wind: 0.055, shadow: true, soft: 0.44 },
+  cane_palm:      { wind: 0.050, shadow: true, soft: 0.42 },
+  tropical_palm:  { wind: 0.060, shadow: true, soft: 0.46 },
+  laurel:         { wind: 0.028, shadow: true, soft: 0.44 },
+  ground_cover:   { wind: 0.018, shadow: false, soft: 0.46 },
+  pot_bowl:       { wind: 0, shadow: true },
+  pot_taper:      { wind: 0, shadow: true },
+  median:         { wind: 0, shadow: true },
+  bollard:        { wind: 0, shadow: true },
+  bench:          { wind: 0, shadow: true }
 };
 
 function glbChunks(buf) {
@@ -1721,6 +1906,19 @@ async function createWalkthrough(container, options = {}) {
   const lite = opts.quality === 'lite' || (opts.quality === 'auto' && (hostW <= 820 ||
     (navigator.maxTouchPoints > 1 && window.innerWidth < 1100)));
   const MOBILE = lite;
+  /* ── the lean budget ─────────────────────────────────────────────────────
+     A phone gets lite. A 4 GB phone, or any machine that reports four cores
+     or fewer, gets the same scene under a stricter budget: half-size bakes,
+     no secondary maps, a smaller shadow map, a leaner lawn and no far
+     Megascans layer. `navigator.deviceMemory` is Chromium-only, so cores are
+     the second signal.                                                     */
+  LOWRAM = (navigator.deviceMemory || 8) <= 4 || (navigator.hardwareConcurrency || 8) <= 4;
+  LEAN = MOBILE || LOWRAM;
+  /* what this boot actually cost, for the perf harness and the README */
+  const ctxStats = {
+    lowram: LOWRAM, lean: LEAN, dpr: 0, shadowMap: 0, scratchCanvasesFreed: 0, scratchMbFreed: 0,
+    photoWaitMs: 0, grassTufts: 0, megascansDeferred: 0
+  };
   /* tablet sits between the phone tier and the full desktop tier */
   const TABLET = !MOBILE && opts.quality === 'auto' && Math.min(hostW, window.innerWidth) <= 1024;
   /* the drawing buffer is never larger than this, whatever the device reports:
@@ -1728,25 +1926,30 @@ async function createWalkthrough(container, options = {}) {
      quarter of the fragments of a 2× buffer. */
   /* the panel's Max pixel ratio is a ceiling, never a floor for a weaker tier:
      a 1.5 setting on a phone still caps at the lite tier's 1.25 */
-  const TIER_DPR = MOBILE ? 1.25 : (TABLET ? 1.4 : 1.75);
+  const TIER_DPR = LOWRAM ? 1.0 : (MOBILE ? 1.25 : (TABLET ? 1.4 : 1.75));
   const DPR_MAX = opts.dprMax != null ? Math.min(opts.dprMax, TIER_DPR) : TIER_DPR;
   /* a phone gets half-size normal maps: four times fewer pixels to derive, and
      four times less texture memory for the same look at a 390 px canvas */
-  LITE_TEX = MOBILE;
-  NRM_CAP = MOBILE ? 512 : (TABLET ? 768 : 0);
+  LITE_TEX = LEAN;
+  NRM_CAP = LEAN ? 256 : (TABLET ? 768 : 0);
 
   /* Photo scans start downloading now, in parallel with three.js, the renderer
      and the procedural canvases. They are only awaited just before the
      materials are built, and never for longer than 2.5 s: a phone on a slow
      connection gets the all-procedural scene rather than a blank canvas. */
   let photos = null;
+  let photoBase = null;
   {
     let base = opts.textureBase;
     if (!base) {
       try { base = new URL('./textures/', import.meta.url).href; }
       catch (_) { base = './textures/'; }
     }
-    photos = loadPhotos(base, MOBILE).catch(() => null);
+    TEX_BASE = base;
+    photoBase = base;
+    photos = LEAN
+      ? loadPhotos(base, true, PHOTO_CORE, ['color']).catch(() => null)
+      : loadPhotos(base, false).catch(() => null);
   }
 
   const section = container;
@@ -1808,14 +2011,49 @@ async function createWalkthrough(container, options = {}) {
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, DPR_MAX));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 0.82;
+    renderer.toneMappingExposure = 1.16;
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.info.autoReset = false;
     renderer.autoClear = true;
 
     const scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0xd9d0bd, 0.0027);
+    scene.fog = new THREE.FogExp2(0xd9d8d2, 0.00230);
+
+    /*  Height-based haze. three's fog is depth-only, which lays the same veil
+        on the villa and on a tower a kilometre out at the same distance. The
+        air is not like that: the mist sits in the first twenty metres and thins
+        with altitude, so the skyline sinks into the ground haze while the
+        house, at eye level, stays crisp. One varying and a multiply, on every
+        material that already carries fog; the sky has its own gradient. */
+    if (!THREE.ShaderChunk.__shadeHeightFog) {
+      THREE.ShaderChunk.__shadeHeightFog = true;
+      THREE.ShaderChunk.fog_pars_vertex = '#ifdef USE_FOG\n\tvarying float vFogDepth;\n\tvarying float vFogH;\n#endif';
+      THREE.ShaderChunk.fog_vertex = `#ifdef USE_FOG
+        vFogDepth = - mvPosition.z;
+        {
+          vec4 fogW = vec4(transformed, 1.0);
+          #ifdef USE_INSTANCING
+            fogW = instanceMatrix * fogW;
+          #endif
+          vFogH = (modelMatrix * fogW).y;
+        }
+      #endif`;
+      THREE.ShaderChunk.fog_pars_fragment = THREE.ShaderChunk.fog_pars_fragment
+        .replace('varying float vFogDepth;', 'varying float vFogDepth;\n\tvarying float vFogH;');
+      THREE.ShaderChunk.fog_fragment = `#ifdef USE_FOG
+        #ifdef FOG_EXP2
+          float fogFactor = 1.0 - exp( - fogDensity * fogDensity * vFogDepth * vFogDepth );
+        #else
+          float fogFactor = smoothstep( fogNear, fogFar, vFogDepth );
+        #endif
+        /* the haze pools low: full strength at the ground, 60% of it at 45 m,
+           which is what puts the far city behind the air without touching the
+           house in the foreground */
+        fogFactor *= mix( 1.0, 0.60, smoothstep( 2.0, 45.0, vFogH ) );
+        gl_FragColor.rgb = mix( gl_FragColor.rgb, fogColor, fogFactor );
+      #endif`;
+    }
     /* hooks the look controls fill in later (sky rebuild, palm toggle) */
     let setSky = null;
     let setPalms = () => {};
@@ -1840,34 +2078,40 @@ async function createWalkthrough(container, options = {}) {
 
     const SKY_PRESETS = {
       morning: {
-        stops: [[0, '#3f74ad'], [78, '#4378b2'], [58, '#487eb8'], [38, '#4f88c2'],
-          [24, '#5b95cb'], [15, '#6ba5d5'], [10, '#7aaed9'], [6.5, '#90bddc'],
-          [5.0, '#a3c8dc'], [3.8, '#bcd2d6'], [2.8, '#d3d6c8'], [2.0, '#e4dcc4'],
-          [1.2, '#f1e4c8'], [0.5, '#f9edd3']],
-        horizon: '#ded4bf', below: ['#d9d0bd', '#b9b09b', '#8b8270', '#4b4538'],
-        sun: [-0.86, 0.30, 0.41], sunCol: [1.55, 1.02, 0.64], sunInt: 4.6, light: 0xffd2a0,
-        sunGlow: 'rgba(255,247,224,.88)', lit: [253, 249, 238], shade: [176, 187, 208],
-        fog: 0xd9d0bd
+        /*  The committed look: a low sun in the west, roughly eighteen degrees
+            up, raking across the approach facade while the carport and entry
+            side fall into cool shade. The sky is blue overhead and only goes
+            pale at the ridge; the light is white-warm, not orange, so the
+            limestone stays the pale stone it is. Rayleigh scatter, muted mid
+            blue desaturating down the long ray path into a neutral haze. */
+        stops: [[0, '#3b6a9e'], [78, '#3f6da2'], [58, '#4573a8'], [38, '#5181b2'],
+          [24, '#638cbb'], [15, '#78a0c5'], [10, '#90b1cf'], [6.5, '#a9c3d8'],
+          [5.0, '#c6d1d8'], [3.8, '#d3d8d4'], [2.8, '#dfe0da'], [2.0, '#e9e8e1'],
+          [1.2, '#f0eee6'], [0.5, '#f5f3ea']],
+        horizon: '#dfdcd2', below: ['#dedbd2', '#bfbcb2', '#8f8d84', '#4c4b45'],
+        sun: [-0.86, 0.30, 0.41], sunCol: [1.50, 1.13, 0.88], sunInt: 4.75, light: 0xffd2a0,
+        sunGlow: 'rgba(255,250,240,.88)', lit: [253, 251, 246], shade: [184, 193, 209],
+        fog: 0xd9d8d2
       },
       noon: {
-        stops: [[0, '#2f66a8'], [78, '#3370af'], [58, '#3a78b8'], [38, '#4485c4'],
-          [24, '#4f92ce'], [15, '#5fa2d8'], [10, '#6fafe0'], [6.5, '#84bde5'],
-          [5.0, '#9bcbe8'], [3.8, '#b6d8e4'], [2.8, '#cfe0d8'], [2.0, '#e2e6cf'],
-          [1.2, '#f0eccf'], [0.5, '#f8f0d8']],
-        horizon: '#e2dbc8', below: ['#ded9c8', '#c0baa4', '#958c76', '#544d3f'],
+        stops: [[0, '#396aa2'], [78, '#3d6ea6'], [58, '#4476ac'], [38, '#5082b4'],
+          [24, '#6291bd'], [15, '#77a5c8'], [10, '#8db5d3'], [6.5, '#a6c5dc'],
+          [5.0, '#bdd4e0'], [3.8, '#d3dade'], [2.8, '#e2e0d3'], [2.0, '#ece6d3'],
+          [1.2, '#f3ecd8'], [0.5, '#f8f1de']],
+        horizon: '#e6dfcd', below: ['#e2dccb', '#c6bfa9', '#978e79', '#554e40'],
         sun: [-0.55, 0.78, 0.30], sunCol: [1.45, 1.26, 1.02], sunInt: 5.4, light: 0xfff4e2,
-        sunGlow: 'rgba(255,252,240,.92)', lit: [253, 252, 248], shade: [172, 184, 206],
-        fog: 0xded9c8
+        sunGlow: 'rgba(255,252,240,.92)', lit: [253, 252, 248], shade: [180, 190, 208],
+        fog: 0xe6dfcd
       },
       golden: {
-        stops: [[0, '#3a5f96'], [78, '#3f66a0'], [58, '#466faa'], [38, '#537fb6'],
-          [24, '#6490c2'], [15, '#7fa2cc'], [10, '#9ab4d2'], [6.5, '#b8c3cd'],
-          [5.0, '#d0cbc2'], [3.8, '#e2d2b6'], [2.8, '#edd6ac'], [2.0, '#f4dcac'],
-          [1.2, '#f9e3b6'], [0.5, '#fdecc8']],
-        horizon: '#e2d2b8', below: ['#dccbac', '#c2ac8c', '#96826a', '#4e4638'],
+        stops: [[0, '#3a5c8e'], [78, '#3f6296'], [58, '#466a9d'], [38, '#5477a8'],
+          [24, '#6785b3'], [15, '#8296bb'], [10, '#9fa9c0'], [6.5, '#bcb9ba'],
+          [5.0, '#d2c5b2'], [3.8, '#e0caa9'], [2.8, '#e9cf9f'], [2.0, '#efd5a3'],
+          [1.2, '#f5ddae'], [0.5, '#fae5c0']],
+        horizon: '#e6d3b6', below: ['#e1cfb4', '#c6ae90', '#98836b', '#4f4739'],
         sun: [-0.94, 0.16, 0.32], sunCol: [1.75, 1.02, 0.52], sunInt: 4.2, light: 0xffc78a,
-        sunGlow: 'rgba(255,236,198,.90)', lit: [255, 236, 208], shade: [168, 168, 190],
-        fog: 0xdccbac
+        sunGlow: 'rgba(255,236,198,.90)', lit: [255, 236, 208], shade: [178, 175, 190],
+        fog: 0xe6d3b4
       },
       dusk: {
         stops: [[0, '#22355e'], [78, '#263a64'], [58, '#2c426d'], [38, '#394f7c'],
@@ -2047,7 +2291,10 @@ async function createWalkthrough(container, options = {}) {
     sun.position.copy(SUN_DIR).multiplyScalar(120);
     sun.target.position.set(-1, 0, -1);
     sun.castShadow = true;
-    const SM = MOBILE ? 1024 : (TABLET ? 1536 : 2048);
+    /* a 4 GB phone gets a 768 px shadow map: 0.6 MB instead of 4 MB of depth,
+       and at 390 css px there is no edge anyone can see */
+    const SM = LEAN ? (LOWRAM ? 512 : 1024) : (TABLET ? 1536 : 2048);
+    ctxStats.shadowMap = SM;
     sun.shadow.mapSize.set(SM, SM);
     sun.shadow.camera.left = -44;
     sun.shadow.camera.right = 44;
@@ -2057,9 +2304,22 @@ async function createWalkthrough(container, options = {}) {
     sun.shadow.camera.far = 220;
     sun.shadow.bias = -0.00035;
     sun.shadow.normalBias = 0.03;
+    /* a longer, softer penumbra than the default: the low sun draws shadows
+       three times the height of what casts them, and a hard edge reads as CG */
+    sun.shadow.radius = 2;
     scene.add(sun, sun.target);
 
-    scene.add(new THREE.HemisphereLight(0xb2c8de, 0x7d6a4e, MOBILE ? 0.17 : 0.23));
+    /*  the sky's own fill. A desert afternoon is not a studio: the shadow side
+        of a wall is still lit by the whole dome, and at 0.17 it read as black.
+        The hemisphere now carries the sky colour and a warm sand bounce, which
+        is what makes shadows blue-warm instead of dead. */
+    scene.add(new THREE.HemisphereLight(0xc4d2e2, 0x9a948a, MOBILE ? 0.60 : 0.74));
+    {
+      /* one weak ambient term, neutral: the last of the ground bounce, never a
+         warm wash over the stone */
+      const amb = new THREE.AmbientLight(0xe0dcd2, MOBILE ? 0.14 : 0.20);
+      scene.add(amb);
+    }
 
     /* Rebuild the sky, the light and the environment for a preset. Used by the
        Framer look controls; costs one canvas pass and one PMREM bake. */
@@ -2192,31 +2452,67 @@ const SKY_DOME_FRAG = /* glsl */`
     return f;
   }
 
+  /*  A photographic sky, not a painted one: two decks whose edges are
+      feathered over a third of their own range, a sun-side tap that shades the
+      cumulus bases, and forward scatter on the sunward rim. Nothing here uses
+      a hard smoothstep narrower than the noise scale, which is what drew the
+      cartoon cut-outs.                                                       */
   vec4 cloudSky(vec3 dn, vec3 sun, float t, float warm, vec3 hor, float cover) {
     if (dn.y <= 0.0) return vec4(0.0);
-    vec2 cp = dn.xz / (dn.y + 0.18) * 12.5 + vec2(t * 0.004, t * 0.0015);
-    float f  = cfbm(cp * 0.42) * 0.87 + cfbm(cp * 1.5 + 31.7) * 0.13;
-    float clus = smoothstep(0.32, 0.80, cfbm(cp * 0.16 + 5.3));
-    // clouds gather low in the view and leave the zenith blue, the way a Gulf
-    // morning reads: a broken deck over the horizon, clean sky overhead
-    float cov = mix(0.62, 0.30, clamp(cover, 0.0, 1.0)) + mix(0.20, -0.12, clus)
-      + smoothstep(0.22, 0.85, dn.y) * 0.10;
+    float el = clamp(dn.y, 0.0, 1.0);
+    float cv = clamp(cover, 0.0, 1.0);
+    /* the azimuth is divided by height, so clouds compress toward the horizon
+       exactly as a real deck does; drift is slow and mostly lateral */
+    vec2 cp = dn.xz / (dn.y + 0.16) * 8.2 + vec2(t * 0.0034, t * 0.0011);
     vec2 sdir = normalize(sun.xz + vec2(1e-4));
-    vec2 sp = cp + sdir * 0.30;
-    float f2 = cfbm(sp * 0.42) * 0.87 + cfbm(sp * 1.5 + 31.7) * 0.13;
-    float dens = smoothstep(cov, cov + 0.26, f);
-    if (dens <= 0.002) return vec4(0.0);
-    float shadow = clamp((f2 - cov) / 0.34, 0.0, 1.0);
-    float body = pow(dens, 1.6);
-    float lit = clamp(1.0 - 0.72 * shadow - 0.26 * body, 0.0, 1.0);
+
+    /* ── high cirrus: a thin streaked sheet, only where the eye can see it ── */
+    vec2 sp = cp * vec2(0.26, 0.85) + vec2(2.7, 9.4);
+    float ci = cfbm(sp * 0.52) * 0.60 + cfbm(sp * 1.65 + 17.3) * 0.40;
+    float aCi = smoothstep(0.46, 0.86, ci) * smoothstep(0.04, 0.36, el) * (0.11 + 0.16 * cv);
+
+    /* ── cumulus: a broken deck over a clear zenith ───────────────────────── */
+    vec2 q = cp * 0.62;
+    float cu = cfbm(q) * 0.78 + cfbm(q * 2.4 + 31.7) * 0.22;
+    /* clusters: one corner of the sky carries the weather, the rest stays open */
+    float clus = cfbm(q * 0.21 + 5.3);
+    float thr = mix(0.63, 0.47, cv) + (clus - 0.5) * 0.16 + smoothstep(0.45, 1.0, el) * 0.05;
+    float dens = smoothstep(thr - 0.12, thr + 0.30, cu);
+    dens *= smoothstep(0.012, 0.20, dn.y);          // melt into the horizon haze
+    dens = pow(dens, 1.15) * uCloud;
+
+    if (dens + aCi <= 0.004) return vec4(0.0);
+
+    /* the same field tapped toward the sun: how much cloud stands between this
+       sample and the sun decides how much of it is in shade */
+    float near = cfbm((q + sdir * 0.22)) * 0.78 + cfbm((q + sdir * 0.22) * 2.4 + 31.7) * 0.22;
+    float shadow = clamp((near - thr + 0.16) / 0.30, 0.0, 1.0);
+    float body = pow(dens, 2.0);
+    float lit = clamp(0.90 - 0.30 * shadow - 0.20 * body, 0.0, 1.0);
+
+    vec3 sunC = mix(vec3(1.0, 0.975, 0.93), vec3(1.0, 0.72, 0.46), warm);
+    vec3 litC = mix(vec3(0.88, 0.89, 0.925), sunC * 1.05, 0.55);
+    vec3 shdC = mix(vec3(0.56, 0.59, 0.665), vec3(0.62, 0.56, 0.55), warm * 0.7);
+    vec3 cc = mix(shdC, litC, lit);
+
+    /* forward scatter: the silver lining lives on the thin sunward edge, and a
+       little of the sun's colour bleeds through the whole deck */
     float g = max(dot(dn, sun), 0.0);
-    float ph = pow(g, 6.0) * 0.55 + pow(g, 26.0) * 0.9;
-    float sss = ph * (1.0 - dens) * 1.7 + ph * 0.22;
-    vec3 sunC = mix(vec3(1.0, 0.98, 0.94), vec3(1.0, 0.66, 0.42), warm);
-    vec3 baseC = mix(vec3(0.40, 0.47, 0.62), vec3(0.36, 0.31, 0.42), warm);
-    vec3 cc = mix(baseC, sunC * 1.18, lit) + sunC * sss;
-    cc = mix(cc, hor * 0.9, 0.12 * (1.0 - lit));
-    float a = smoothstep(0.0, 0.22, dens) * smoothstep(0.004, 0.09, dn.y) * 0.97 * uCloud;
+    float phase = pow(g, 7.0) * 0.5 + pow(g, 32.0) * 0.8;
+    cc += sunC * phase * (0.35 + 0.85 * (1.0 - dens)) * (0.55 + 0.45 * warm);
+    cc += sunC * 0.10 * (1.0 - body) * warm;
+    cc = mix(cc, hor * 1.02, 0.14 * (1.0 - lit));
+
+    /* feather the deck into the sky at both ends: no edge survives */
+    float a = dens * 0.86 * smoothstep(0.004, 0.13, dn.y);
+
+    /* cirrus over the cumulus, thin and warm-white */
+    if (aCi > 0.004) {
+      vec3 ciC = mix(vec3(0.86, 0.88, 0.93), vec3(1.0, 0.94, 0.86), 0.45 + 0.55 * warm);
+      ciC += vec3(1.0, 0.92, 0.82) * pow(g, 10.0) * 0.35;
+      cc = mix(cc, ciC, aCi * (1.0 - a * 0.65));
+      a = max(a, aCi * 0.72);
+    }
     return vec4(cc, a);
   }
 
@@ -2241,11 +2537,14 @@ const SKY_DOME_FRAG = /* glsl */`
     float sd = 1.0 - smoothstep(0.8, 1.12, sa);
     float mu = sqrt(max(1.0 - sa * sa, 0.0));
     float limb = 0.82 + 0.18 * mu;
-    vec3 core = mix(vec3(1.0, 0.98, 0.94) * 3.2, vec3(1.0, 0.72, 0.4) * 2.4, uWarm * uWarm);
-    vec3 rim  = mix(vec3(1.0, 0.9, 0.7) * 1.6, vec3(1.0, 0.48, 0.18) * 1.3, uWarm * uWarm);
-    col = mix(col, mix(rim, core, limb) * limb * 1.15 * uSunCol, sd);
-    col += mix(vec3(1.0, 0.9, 0.75), vec3(1.0, 0.55, 0.25), uWarm) * exp(-max(sa - 1.0, 0.0) * 1.6) * 0.55 * uSunCol;
-    col += uSunCol * (pow(sg, 220.0) * 0.35 + pow(sg, 24.0) * 0.10);
+    vec3 core = mix(vec3(1.0, 0.98, 0.94) * 2.35, vec3(1.0, 0.74, 0.44) * 1.85, uWarm * uWarm);
+    vec3 rim  = mix(vec3(1.0, 0.9, 0.72) * 1.30, vec3(1.0, 0.52, 0.22) * 1.10, uWarm * uWarm);
+    col = mix(col, mix(rim, core, limb) * limb * 1.05 * uSunCol, sd);
+    col += mix(vec3(1.0, 0.9, 0.75), vec3(1.0, 0.55, 0.25), uWarm) * exp(-max(sa - 1.0, 0.0) * 1.45) * 0.46 * uSunCol;
+    col += uSunCol * (pow(sg, 220.0) * 0.26 + pow(sg, 24.0) * 0.085);
+    /* the broad atmospheric scatter around the sun that a real sky carries:
+       warm, wide and weak, so it reads as air rather than a glow sprite */
+    col += mix(vec3(1.0, 0.86, 0.70), vec3(1.0, 0.62, 0.34), uWarm) * pow(sg, 3.2) * (0.055 + 0.055 * uWarm) * uSunCol;
 
     // the warm band the sun lays along the ridge, and the haze at the horizon
     col += vec3(1.0, 0.76, 0.57) * 0.20 * uWarm * exp(-abs(dn.y) * 9.0)
@@ -2430,8 +2729,10 @@ scene.background = null;
     await nextTick();
 
     /* ── materials ─────────────────────────────────────────────────────── */
-    if (photos && !PHOTO.asphalt) {
-      await Promise.race([photos, new Promise((r) => setTimeout(r, 2500))]);
+    /* the first frame is not held for a slow scan: a lean device waits 900 ms
+       for the six colours it needs and not a millisecond longer */
+    if (photos) {
+      await Promise.race([photos, new Promise((r) => setTimeout(r, LEAN ? 900 : 2500))]);
     }
     const stoneA = makeAshlar([221, 211, 194], 5);
     const stoneB = makeStone('#ded4c1', '118,104,86');
@@ -2469,25 +2770,32 @@ scene.background = null;
     }
 
     const M = {
+      /* the villa's travertine: the drawn block structure carries the joints,
+         and the scanned Quixel normal and roughness carry the stone itself */
       stone: weather(new THREE.MeshStandardMaterial({
         map: tex(stoneA.map, { srgb: true }),
-        normalMap: tex(stoneA.normal),
-        roughnessMap: tex(stoneA.rough),
+        normalMap: photoTex('travertine', 'normal') || tex(stoneA.normal),
+        roughnessMap: photoTex('travertine', 'rough') || tex(stoneA.rough),
         roughness: 1.0, metalness: 0.0,
-        normalScale: new THREE.Vector2(1.55, 1.55),
+        normalScale: new THREE.Vector2(0.95, 0.95),
         envMapIntensity: 0.42
-      }), { grime: 0.09, streak: 0.15, base: 0.18, scale: 0.30 }),
+      }), { grime: 0.10, streak: 0.18, base: 0.20, scale: 0.30 }),
+      /* the pale limestone: Quixel Grey Stone Tile, its joints and all */
       stonePale: weather(new THREE.MeshStandardMaterial({
-        map: tex(stoneB.map, { srgb: true }),
-        normalMap: tex(stoneB.normal),
-        roughness: 0.9, metalness: 0.0,
-        normalScale: new THREE.Vector2(0.45, 0.45),
+        map: photoTex('limestone', 'color', true, 1024) || tex(stoneB.map, { srgb: true }),
+        normalMap: photoTex('limestone', 'normal') || tex(stoneB.normal),
+        roughnessMap: photoTex('limestone', 'rough'),
+        color: photoTex('limestone', 'color') ? 0xfdfaf3 : 0xffffff,
+        roughness: photoTex('limestone', 'rough') ? 1.0 : 0.9, metalness: 0.0,
+        normalScale: new THREE.Vector2(0.85, 0.85),
         envMapIntensity: 0.5
       }), { grime: 0.07, streak: 0.12, base: 0.15, scale: 0.34 }),
       concrete: weather(new THREE.MeshStandardMaterial({
-        map: tex(conc.map, { srgb: true }),
-        normalMap: tex(conc.normal),
-        roughness: 0.86, metalness: 0.0,
+        map: photoTex('conc', 'color', true, 1024) || tex(conc.map, { srgb: true }),
+        normalMap: photoTex('conc', 'normal') || tex(conc.normal),
+        roughnessMap: photoTex('conc', 'rough'),
+        roughness: photoTex('conc', 'rough') ? 1.0 : 0.86, metalness: 0.0,
+        normalScale: new THREE.Vector2(1.0, 1.0),
         envMapIntensity: 0.8
       }), { grime: 0.2, streak: 0.3, base: 0.3, scale: 0.5 }),
       oakFloor: new THREE.MeshStandardMaterial({
@@ -2550,7 +2858,41 @@ scene.background = null;
       stoneVessel: new THREE.MeshStandardMaterial({ color: 0xa89b86, roughness: 0.66, metalness: 0.0, envMapIntensity: 0.8 }),
       brass: new THREE.MeshStandardMaterial({ color: 0xb08a4e, roughness: 0.26, metalness: 1.0, envMapIntensity: 1.7 }),
       bronze: new THREE.MeshStandardMaterial({ color: 0x5b4632, roughness: 0.33, metalness: 0.92, envMapIntensity: 1.5 }),
-      plaster: new THREE.MeshStandardMaterial({ color: 0xf1eade, roughness: 0.96, metalness: 0.0, envMapIntensity: 0.2 }),
+      /* inside and under the slabs: scanned plaster, never a flat fill */
+      plaster: new THREE.MeshStandardMaterial({
+        map: photoTex('plaster', 'color', true, 1024),
+        normalMap: photoTex('plaster', 'normal'),
+        roughnessMap: photoTex('plaster', 'rough'),
+        color: photoTex('plaster', 'color') ? 0xf6f0e5 : 0xf1eade,
+        roughness: photoTex('plaster', 'rough') ? 1.0 : 0.96,
+        metalness: 0.0, envMapIntensity: 0.2
+      }),
+      /* the roof frieze and every rendered soffit: Quixel stucco */
+      stucco: new THREE.MeshStandardMaterial({
+        map: photoTex('stucco', 'color', true, 1024),
+        normalMap: photoTex('stucco', 'normal'),
+        roughnessMap: photoTex('stucco', 'rough'),
+        color: photoTex('stucco', 'color') ? 0xf4efe4 : 0xefe9dd,
+        roughness: photoTex('stucco', 'rough') ? 1.0 : 0.94,
+        metalness: 0.0, envMapIntensity: 0.24
+      }),
+      /* west-red cedar: the soffit slats and the pergola rafters */
+      cedar: new THREE.MeshStandardMaterial({
+        map: photoTex('cedar', 'color', true, 1024),
+        normalMap: photoTex('cedar', 'normal'),
+        roughnessMap: photoTex('cedar', 'rough'),
+        color: photoTex('cedar', 'color') ? 0xd7b48f : 0xb98a5e,
+        roughness: photoTex('cedar', 'rough') ? 1.0 : 0.62,
+        metalness: 0.0, envMapIntensity: 0.55
+      }),
+      cedarVert: new THREE.MeshStandardMaterial({
+        map: photoTex('cedar', 'color', true, 1024),
+        normalMap: photoTex('cedar', 'normal'),
+        roughnessMap: photoTex('cedar', 'rough'),
+        color: photoTex('cedar', 'color') ? 0xd7b48f : 0xb98a5e,
+        roughness: photoTex('cedar', 'rough') ? 1.0 : 0.62,
+        metalness: 0.0, envMapIntensity: 0.55
+      }),
       glass: (() => {
         const m = new THREE.MeshPhysicalMaterial({
           color: 0xb3c8c6, metalness: 0.0, roughness: 0.02,
@@ -2580,28 +2922,34 @@ scene.background = null;
       gravel: new THREE.MeshStandardMaterial({
         map: tex(grav.map, { srgb: true }),
         normalMap: tex(grav.normal),
+        color: 0xd8cdb8,
         roughness: 1.0, metalness: 0.0,
         normalScale: new THREE.Vector2(1.1, 1.1),
         envMapIntensity: 0.55
       }),
+      /* weathered charcoal, not chalk: the scan is bright, the road is not */
       asphalt: new THREE.MeshStandardMaterial({
         map: tex(asph.map, { srgb: true }),
         normalMap: asph.normal ? tex(asph.normal) : null,
         roughnessMap: asph.rough ? tex(asph.rough) : null,
-        color: 0xffffff,
-        roughness: asph.rough ? 1.0 : 0.95, metalness: 0.0,
-        normalScale: new THREE.Vector2(1.5, 1.5),
-        envMapIntensity: 0.34
+        color: 0x7a7671,
+        roughness: asph.rough ? 1.0 : 0.97, metalness: 0.0,
+        normalScale: new THREE.Vector2(1.8, 1.8),
+        envMapIntensity: 0.20
       }),
+      /* the drive and the walk: Quixel limestone pavers */
       pave: new THREE.MeshStandardMaterial({
-        map: tex(pave.map, { srgb: true }),
-        normalMap: tex(pave.normal),
-        color: 0xc6bfb0,
-        roughness: 0.9, metalness: 0.0,
-        normalScale: new THREE.Vector2(0.85, 0.85),
+        map: photoTex('limestone', 'color', true, 1024) || tex(pave.map, { srgb: true }),
+        normalMap: photoTex('limestone', 'normal') || tex(pave.normal),
+        roughnessMap: photoTex('limestone', 'rough'),
+        color: photoTex('limestone', 'color') ? 0xf7f2e6 : 0xc6bfb0,
+        roughness: photoTex('limestone', 'rough') ? 1.0 : 0.9, metalness: 0.0,
+        normalScale: new THREE.Vector2(0.7, 0.7),
         envMapIntensity: 0.5
       }),
-      line: new THREE.MeshStandardMaterial({ color: 0xd9d3c2, roughness: 0.88, metalness: 0.0, envMapIntensity: 0.42 }),
+      /* worn thermoplastic, not fresh paint: the lane lines were the brightest
+         thing in the frame after the sky */
+      line: new THREE.MeshStandardMaterial({ color: 0xa89f8d, roughness: 0.92, metalness: 0.0, envMapIntensity: 0.34 }),
       glassDark: new THREE.MeshStandardMaterial({
         color: 0x2e3c42, metalness: 0.42, roughness: 0.13, envMapIntensity: 1.45
       }),
@@ -2665,10 +3013,12 @@ scene.background = null;
       linenB: new THREE.MeshStandardMaterial({ map: tex(linenB, { srgb: true }), roughness: 0.95, metalness: 0.0, envMapIntensity: 0.4 }),
       dark: new THREE.MeshStandardMaterial({ color: 0x24211d, roughness: 0.7, metalness: 0.1, envMapIntensity: 0.5 }),
       poolWall: caustic(new THREE.MeshStandardMaterial({
-        map: tex(poolTile.map, { srgb: true }),
-        normalMap: tex(poolTile.normal),
-        normalScale: new THREE.Vector2(0.7, 0.7),
-        color: 0xfaf6ec, roughness: 0.62, metalness: 0.0, envMapIntensity: 0.5
+        map: photoTex('pooltile', 'color', true, 1024) || tex(poolTile.map, { srgb: true }),
+        normalMap: photoTex('pooltile', 'normal') || tex(poolTile.normal),
+        roughnessMap: photoTex('pooltile', 'rough'),
+        normalScale: new THREE.Vector2(0.9, 0.9),
+        color: photoTex('pooltile', 'color') ? 0xffffff : 0xfaf6ec,
+        roughness: photoTex('pooltile', 'rough') ? 1.0 : 0.62, metalness: 0.0, envMapIntensity: 0.5
       })),
       leaf: (() => {
         const leafTex = makeLeafCluster();
@@ -2748,6 +3098,10 @@ scene.background = null;
         side: THREE.DoubleSide, envMapIntensity: 0.32
       }), { amp: 0.05, freq: 1.15, height: 3.8, base: 0.5, soft: 0.34 }),
       dates: new THREE.MeshStandardMaterial({ color: 0xb06b2c, roughness: 0.58, metalness: 0.0, envMapIntensity: 0.7 }),
+      /*  One green-to-husk-brown material for every coconut in the scene; the
+          per-fruit variation rides on vertex colour, so the whole bunch is one
+          merged mesh and one draw call. */
+      coconut: new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.66, metalness: 0.0, envMapIntensity: 0.5 }),
       ao: new THREE.MeshBasicMaterial({ map: aoTex, transparent: true, opacity: 0.5, depthWrite: false }),
       aoSoft: new THREE.MeshBasicMaterial({ map: aoTex, transparent: true, opacity: 0.26, depthWrite: false }),
       aoBand: new THREE.MeshBasicMaterial({
@@ -2755,6 +3109,80 @@ scene.background = null;
         side: THREE.DoubleSide
       })
     };
+
+    /* ── phase two: the rest of the scans, once the first frame is up ──────
+       On a lean device the scene is drawn from six colour scans. This runs from
+       idle after that frame: it fetches the normals and the surfaces that were
+       skipped, then swaps them into the materials that are already on screen —
+       a map assignment per material, no rebuild. A texture that never arrives
+       leaves the material exactly as it was drawn.                          */
+    let photoPhase2 = false;
+    function schedulePhotoUpgrade() {
+      if (photoPhase2 || !LEAN || !photoBase) return;
+      /*  A 4 GB phone stops at the first wave. Swapping a material's map after
+          the first frame costs a fresh shader program and a texture upload, and
+          on a weak GPU that lands as a second of frozen scroll. The procedural
+          maps it already has are the whole look at 390 px. */
+      if (MOBILE && LOWRAM) return;
+      photoPhase2 = true;
+      const go = () => {
+        if (destroyed) return;
+        loadPhotos(photoBase, true, null, ['color', 'normal']).then(() => {
+          if (destroyed) return;
+          const put = (mat, key, opts = {}) => {
+            const set = PHOTO[key];
+            if (!mat || !set || !set.color) return;
+            const size = 256;
+            try {
+              if (mat.map && mat.map.isTexture) mat.map.dispose();
+              mat.map = tex(photoCanvas(set.color, size), { srgb: true });
+              if (set.normal) {
+                if (mat.normalMap && mat.normalMap.isTexture) mat.normalMap.dispose();
+                mat.normalMap = tex(photoCanvas(set.normal, size));
+                mat.normalScale = new THREE.Vector2(opts.ns || 0.85, opts.ns || 0.85);
+              }
+            } catch (_) { return; }
+            mat.needsUpdate = true;
+          };
+          /* the floor is baked, so its own builder runs again over the scans */
+          try {
+            if (PHOTO.oak && PHOTO.oak.color) {
+              const o = makeOakFloor();
+              if (M.oakFloor.map) M.oakFloor.map.dispose();
+              M.oakFloor.map = tex(o.map, { srgb: true });
+              if (o.normal) {
+                if (M.oakFloor.normalMap) M.oakFloor.normalMap.dispose();
+                M.oakFloor.normalMap = tex(photoCanvas(PHOTO.oak.normal, 256));
+                M.oakFloor.normalScale = new THREE.Vector2(0.7, 0.7);
+              }
+              M.oakFloor.needsUpdate = true;
+            }
+          } catch (_) {}
+          put(M.plaster, 'plaster');
+          put(M.stucco, 'stucco');
+          put(M.cedar, 'cedar');
+          put(M.cedarVert, 'cedar');
+          put(M.concrete, 'conc', { ns: 0.8 });
+          put(M.stone, 'limestone');
+          put(M.poolWall, 'pooltile', { ns: 0.9 });
+          photoPhase2 = 'done';
+        }).catch(() => { photoPhase2 = false; });
+      };
+      /* idle, and after the first frame has actually painted */
+      const kick = () => {
+        /*  Never while the thumb is moving: the swap recompiles programs, and a
+            compile in the middle of a flick is what a phone renders as "stuck". */
+        const whenStill = () => {
+          if (destroyed) return;
+          if (performance.now() - lastScrollAt < 1600) { setTimeout(whenStill, 400); return; }
+          if (typeof requestIdleCallback === 'function') requestIdleCallback(go, { timeout: 4000 });
+          else setTimeout(go, 1600);
+        };
+        whenStill();
+      };
+      if (typeof requestAnimationFrame === 'function') requestAnimationFrame(() => requestAnimationFrame(kick));
+      else kick();
+    }
 
     /* ── the land shader ────────────────────────────────────────────────────
        One surface carries the whole country: lawn on the estate pad, dune sand
@@ -3236,52 +3664,99 @@ scene.background = null;
     buildGround(span(XS, -EXT, POOLG.x0), span(ZS, POOLG.z0, POOLG.z1));
     buildGround(span(XS, POOLG.x1, EXT), span(ZS, POOLG.z0, POOLG.z1));
 
-    // gravel drive — a ribbon following the same spline the camera flies
+    /* ── the way in: gravel outside the gate, laid stone from the gate to the
+       door ────────────────────────────────────────────────────────────────
+       The approach spline carries the camera the whole way in, so it also
+       carries the surface: past the wall the boulevard's tarmac takes over,
+       and the moment the drive crosses the estate line it becomes a laid
+       limestone walk. One material, one ribbon, joints from the scan, and a
+       pale border each side so the walk reads as architecture rather than a
+       painted lane. No tarmac, no lane paint, no loose stone inside the wall. */
     const drivePts = [
       [30, 150], [26, 128], [22.5, 108], [19.5, 92], [17, 78], [14.5, 64],
       [12, 52], [9.2, 41], [6.4, 31], [4.0, 23], [2.2, 16.5], [1.0, 12.6], [0.3, 10.4], [0, 8.8]
     ].map(([x, z]) => new THREE.Vector3(x, 0, z));
     const drive = new THREE.CatmullRomCurve3(drivePts, false, 'centripetal', 0.5);
+
+    /* where the drive crosses the wall: the surface changes here */
+    let tWALL = 1;
+    for (let i = 0; i <= 600; i++) {
+      const t = i / 600;
+      if (drive.getPoint(t).z <= ESTATE.z1) { tWALL = t; break; }
+    }
     {
-      const N = 200, pos = [], uv = [], idx = [];
-      for (let i = 0; i <= N; i++) {
-        const t = i / N;
-        const p = drive.getPoint(t);
-        const tan = drive.getTangent(t);
-        const nrm = new THREE.Vector3(-tan.z, 0, tan.x).normalize();
-        const w = lerp(1.65, 1.25, t);
-        for (const s of [-1, 1]) {
-          pos.push(p.x + nrm.x * w * s, 0.035 + (t > 0.95 ? (t - 0.95) * 1.0 : 0), p.z + nrm.z * w * s);
-          uv.push(s * 1.1 + 0.55, t * 34);
+      const N = 240;
+      const band = (t0, t1, wOf, lift, mat, uvS) => {
+        const pos = [], uv = [], idx = [];
+        for (let i = 0; i <= N; i++) {
+          const t = lerp(t0, t1, i / N);
+          const p = drive.getPoint(t), tan = drive.getTangent(t);
+          const nx = -tan.z, nz = tan.x, l = Math.hypot(nx, nz) || 1;
+          const w = wOf(t);
+          for (const s of [-1, 1]) {
+            const px = p.x + (nx / l) * w * s, pz = p.z + (nz / l) * w * s;
+            pos.push(px, lift, pz);
+            uv.push(px * uvS, pz * uvS);
+          }
+          if (i < N) { const a = i * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
         }
-        if (i < N) { const a = i * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
-      }
-      const geo = new THREE.BufferGeometry();
-      geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-      geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
-      geo.setIndex(idx);
-      geo.computeVertexNormals();
-      const path = new THREE.Mesh(geo, M.gravel);
-      path.receiveShadow = true;
-      world.add(path);
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+        geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+        geo.setIndex(idx);
+        geo.computeVertexNormals();
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.receiveShadow = true;
+        world.add(mesh);
+        return mesh;
+      };
+      /* outside the wall: the gravel verge the boulevard's tarmac sits in */
+      band(0.001, tWALL, (t) => lerp(1.65, 1.44, t), 0.035, M.gravel, 0.42);
+      /* inside the wall: the walk. Three metres of limestone, world-scaled so
+         the pavers are a constant 2 m format from the gate to the door. */
+      band(tWALL, 1, (t) => lerp(1.58, 1.46, (t - tWALL) / (1 - tWALL)), 0.044, M.pave, 0.5);
+      /* a pale border each side, 40 mm proud, so the walk has an edge */
+      const edge = (side) => {
+        const pos = [], uv = [], idx = [];
+        for (let i = 0; i <= N; i++) {
+          const t = lerp(tWALL, 1, i / N);
+          const p = drive.getPoint(t), tan = drive.getTangent(t);
+          const nx = -tan.z, nz = tan.x, l = Math.hypot(nx, nz) || 1;
+          const w = lerp(1.58, 1.46, i / N);
+          for (const q of [0, 1]) {
+            const o = (w + 0.02 + q * 0.16) * side;
+            pos.push(p.x + (nx / l) * o, 0.048 + q * 0.026, p.z + (nz / l) * o);
+            uv.push(q, i * 0.5);
+          }
+          if (i < N) { const a = i * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+        }
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+        geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+        geo.setIndex(idx);
+        geo.computeVertexNormals();
+        queue(geo, M.stonePale, false, true, 1);
+      };
+      edge(1); edge(-1);
     }
 
-    // loose pebbles on the drive shoulders — instanced, no shadow cost
+    // loose pebbles on the outer verge only: the walk inside the wall stays clear
     {
       const geo = new THREE.IcosahedronGeometry(1, 0);
-      const count = MOBILE ? 180 : 380;
+      const count = LOWRAM ? 46 : (MOBILE ? 90 : 170);
       const pebbleMat = new THREE.MeshStandardMaterial({ color: 0x9d9483, roughness: 0.92, metalness: 0, envMapIntensity: 0.35 });
       const inst = new THREE.InstancedMesh(geo, pebbleMat, count);
       inst.receiveShadow = true;
       const d = new THREE.Object3D();
       for (let i = 0; i < count; i++) {
-        const t = Math.pow(rnd(), 0.8);
+        const t = Math.pow(rnd(), 0.8) * (tWALL - 0.01);
         const p = drive.getPoint(t);
         const tan = drive.getTangent(t);
         const nrm = new THREE.Vector3(-tan.z, 0, tan.x).normalize();
         const side = rnd() > 0.5 ? 1 : -1;
-        // the shoulder only: start clear of the gravel ribbon itself
-        const off = (lerp(1.65, 1.25, t) + lerp(0.06, 0.55, rnd())) * side;
+        // the verge only: outside the boulevard's asphalt and its walk, so no
+        // stone ever lies on the driving surface
+        const off = (3.95 + lerp(0.05, 1.35, Math.pow(rnd(), 0.8))) * side;
         d.position.set(p.x + nrm.x * off, 0.02, p.z + nrm.z * off);
         const s = rr(0.045, 0.11);
         d.scale.set(s * rr(1, 2.0), s * rr(0.45, 0.8), s * rr(1, 2.0));
@@ -3332,45 +3807,9 @@ scene.background = null;
       ribbon(road, M.gravel, 2.35, 0.03, 120, 150, 0.42);
       ribbon(road, asphalt, 1.72, 0.055, 120, 150, 0.40);
 
-      /* the kerb stones either side of the gravel drive, from the gate to the
-         entry court: two thin pale ribbons laid on the shoulder */
-      const kerbMat = M.stonePale;
-      const kerb = (side) => {
-        const pos = [], uv = [], idx = [];
-        const N = 60;
-        for (let i = 0; i <= N; i++) {
-          const t = 0.905 + 0.095 * (i / N);
-          const p = drive.getPoint(t), tan = drive.getTangent(t);
-          const nx = -tan.z, nz = tan.x;
-          const l = Math.hypot(nx, nz) || 1;
-          const off = lerp(1.30, 1.52, i / N) * side;
-          for (const q of [-1, 1]) {
-            const oo = off + q * 0.11;
-            pos.push(p.x + (nx / l) * oo, 0.075, p.z + (nz / l) * oo);
-            uv.push(q * 0.5 + 0.5, i * 0.6);
-          }
-          if (i < N) { const a = i * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
-        }
-        const geo = new THREE.BufferGeometry();
-        geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-        geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
-        geo.setIndex(idx);
-        geo.computeVertexNormals();
-        queue(geo, kerbMat, false, true, 1);
-      };
-      kerb(1); kerb(-1);
-
-      // and the kerb stones sit in a soft shadow of their own
-      for (let i = 0; i <= 11; i++) {
-        const t = 0.905 + 0.095 * (i / 11);
-        const p = drive.getPoint(t), tan = drive.getTangent(t);
-        const nx = -tan.z, nz = tan.x;
-        const l = Math.hypot(nx, nz) || 1;
-        for (const sd of [-1, 1]) {
-          const off = lerp(1.30, 1.52, i / 11) * sd;
-          contactShadow(p.x + (nx / l) * off, p.z + (nz / l) * off, 0.95, 0.85, true, 0.042);
-        }
-      }
+      /* the walk carries its own pale edge borders (laid above), so the old
+         raised kerb ribbons that used to run down the middle of it are gone:
+         they read as painted lane lines on the stone. */
     }
 
     /* The horizon is the meadow itself. Its own bend, plus the fog, gives the
@@ -3440,8 +3879,8 @@ scene.background = null;
       uTime: { value: 0 },
       uSunDir: { value: SUN_DIR.clone() },
       uSunCol: { value: new THREE.Color(1.7, 1.12, 0.72) },
-      uDeep: { value: new THREE.Color(0.006, 0.115, 0.140) },
-      uShallow: { value: new THREE.Color(0.030, 0.250, 0.270) },
+      uDeep: { value: new THREE.Color(0.010, 0.120, 0.130) },
+      uShallow: { value: new THREE.Color(0.055, 0.270, 0.255) },
       uSkyCol: { value: new THREE.Color(0.22, 0.40, 0.66) },
       uFogCol: { value: new THREE.Color(0.69, 0.63, 0.51) },
       uFogDensity: { value: 0.0027 },
@@ -3596,12 +4035,15 @@ scene.background = null;
              strongest looking down through the deepest section and gives way
              to the mirror as the eye flattens. */
           float lookDown = smoothstep(0.0, 0.85, cosi);
-          vec3 tinted = mix(col, uShallow * 0.92 + vec3(0.02, 0.09, 0.10), lookDown * 0.72);
+          /* the body of the water is absorption, so it has to stay thin enough
+             to show the pale travertine floor through it; the old 0.72 veil
+             was paint over a mirror nobody could see */
+          vec3 tinted = mix(col, uShallow * 0.80 + vec3(0.012, 0.055, 0.060), lookDown * 0.50);
           /* the surface colour is drawn at strength, not as a veil: what the
              pool loses in see-through depth it gains in reading as water at
              every angle the walkthrough looks at it from */
-          float alpha = mix(0.58, 0.93, clamp(fres * 1.15, 0.0, 1.0));
-          alpha = mix(alpha, 0.86, lookDown * 0.45);
+          float alpha = mix(0.42, 0.88, clamp(fres * 1.15, 0.0, 1.0));
+          alpha = mix(alpha, 0.74, lookDown * 0.35);
           alpha *= mix(0.80, 1.0, smoothstep(0.0, 0.45, edgeD));
           gl_FragColor = vec4(min(tinted, vec3(0.90, 0.94, 0.96)), alpha);
           #include <tonemapping_fragment>
@@ -3762,9 +4204,9 @@ scene.background = null;
       }
 
       const cityUniforms = {
-        uHaze: { value: new THREE.Color(0xd9d0bd) },
-        uHazeLow: { value: new THREE.Color(0xe4dbc8) },
-        uRim: { value: new THREE.Color(0.62, 0.46, 0.30) }
+        uHaze: { value: new THREE.Color(0xd2d6d7) },
+        uHazeLow: { value: new THREE.Color(0xdcdedb) },
+        uRim: { value: new THREE.Color(0.52, 0.50, 0.46) }
       };
 
       const cityMat = new THREE.MeshStandardMaterial({
@@ -3773,8 +4215,8 @@ scene.background = null;
         emissive: new THREE.Color(0xffc488),
         emissiveIntensity: 0.55,
         color: 0xffffff,
-        roughness: 0.38, metalness: 0.10,
-        envMapIntensity: 0.85,
+        roughness: 0.30, metalness: 0.22,
+        envMapIntensity: 1.15,
         side: THREE.DoubleSide,   /* the prisms are wound as plans, either way */
         fog: false                /* the atmosphere is its own below */
       });
@@ -3804,9 +4246,9 @@ scene.background = null;
             float cwH = clamp((vCYWorld.y + 4.0) / 190.0, 0.0, 1.0);
             float cwE = cwD * 0.0019;
             float cwF = 1.0 - exp(-cwE * cwE);
-            float cwA = mix(cwF, 0.72, smoothstep(700.0, 1900.0, cwD));
+            float cwA = mix(cwF, 0.62, smoothstep(700.0, 1900.0, cwD));
             cwA *= 1.0 - 0.42 * cwH;
-            cwA = clamp(cwA, 0.0, 0.94);
+            cwA = clamp(cwA, 0.0, 0.88);
             vec3 cwHaze = mix(uHazeLow, uHaze, smoothstep(0.0, 0.55, cwH));
             gl_FragColor.rgb = mix(gl_FragColor.rgb, cwHaze, cwA);
 
@@ -3889,7 +4331,7 @@ scene.background = null;
         parts[set].push({ x, y, z, w, h, d, col });
       };
 
-      const N = MOBILE ? 150 : 320;
+      const N = LOWRAM ? 64 : (MOBILE ? 150 : 320);
       for (let i = 0; i < N; i++) {
         /* Three rings, all the way round the house: the low waterfront
            neighbourhood close in, the downtown mass behind it, and the far
@@ -4239,8 +4681,8 @@ scene.background = null;
       addBox(2.66, 0.05, 0.2, 0, DOOR.top + 0.02, z, M.bronze, { uv: 0.5 });
       addBox(0.05, DOOR.top, 0.2, -1.31, DOOR.top / 2, z, M.bronze, { uv: 0.5 });
       addBox(0.05, DOOR.top, 0.2, 1.31, DOOR.top / 2, z, M.bronze, { uv: 0.5 });
-      // a bronze threshold, and the step up onto the plinth
-      addBox(2.7, 0.02, 0.3, 0, 0.005, z + 0.12, M.bronze, { uv: 0.5 });
+      // the threshold itself is laid with the entry apron, on the apron's own
+      // level: one bronze inlay, not a plate buried under the floor
       // the door itself, open inward against the wall
       addBox(0.06, 3.0, 1.18, -1.28, 1.5, z - 0.62, M.walnutVert, { uv: 0.6 });
       addBox(0.05, 0.05, 1.0, -1.24, 1.05, z - 0.6, M.bronze, { uv: 0.5 });
@@ -4250,7 +4692,7 @@ scene.background = null;
     {
       const z0 = PORCH.z0, z1 = PORCH.z1 - 0.05, zc = (z0 + z1) / 2, d = z1 - z0;
       for (let x = S.x0 + 0.15; x <= S.x1 - 0.1; x += 0.17) {
-        addBox(0.085, 0.13, d, x, 3.97, zc, M.oakVert, { uv: 0.7 });
+        addBox(0.085, 0.13, d, x, 3.97, zc, M.cedarVert, { uv: 0.7 });
       }
       addBox(S.x1 - S.x0, 0.08, 0.07, (S.x0 + S.x1) / 2, 3.9, z0 + 0.03, M.bronze, { uv: 0.5 });
       for (const x of [-8.6, 2.4]) {
@@ -4296,7 +4738,10 @@ scene.background = null;
       for (const [a, b, c, d] of [[x0 + 0.14, x1 - 0.14, z0 + 0.14, z0 + 0.14 + pw2], [x0 + 0.14, x1 - 0.14, z1 - 0.14 - pw2, z1 - 0.14],
         [x0 + 0.14, x0 + 0.14 + pw2, z0 + 0.14, z1 - 0.14], [x1 - 0.14 - pw2, x1 - 0.14, z0 + 0.14, z1 - 0.14]]) {
         addBox(b - a, ph, d - c, (a + b) / 2, ROOF + ph / 2, (c + d) / 2, M.stonePale, { uv: 0.4 });
-        addBox(b - a + 0.06, 0.055, d - c + 0.06, (a + b) / 2, ROOF + ph + 0.02, (c + d) / 2, M.bronze, { uv: 0.5, cast: false });
+        /* a crisp cut-stone coping, bevelled by its own overhang, instead of
+           the bronze cap that read as a painted line on the pale roof */
+        addBox(b - a + 0.10, 0.06, d - c + 0.10, (a + b) / 2, ROOF + ph + 0.03, (c + d) / 2, M.stonePale, { uv: 0.45, cast: false });
+        addBox(b - a + 0.02, 0.018, d - c + 0.02, (a + b) / 2, ROOF + ph - 0.009, (c + d) / 2, M.dark, { uv: 0.5, cast: false });
       }
     }
     // the skylight over the hall, raised out of the roof
@@ -4327,6 +4772,94 @@ scene.background = null;
       cover.position.set(cx, ROOF + LH, cz);
       cover.renderOrder = 3;
       world.add(cover);
+    }
+
+    /* ── the solar array ──────────────────────────────────────────────────
+       Twelve monocrystalline modules in three rows on the open east half of
+       the main roof, clear of the skylight lantern and the parapet planters.
+       12° south tilt on charcoal rails and concrete ballast, so it reads as
+       the plant room of a house that is meant to run itself. Instanced: four
+       draws for the whole array, no material the rest of the scene does not
+       already carry.                                                       */
+    {
+      const TILT = 12 * Math.PI / 180;
+      const PW = 1.68, PD = 1.02;                 // module, landscape
+      const ROWS = [5.05, 6.60, 8.15];            // row centres, front to back
+      const COLS = [-1.15, 0.62, 2.39, 4.16];     // module centres across
+      const y0 = ROOF + 0.26 + (PD / 2) * Math.sin(TILT);
+      const pvTex = makePvPanel();
+      const pvMat = MOBILE || LOWRAM
+        ? new THREE.MeshStandardMaterial({
+            map: tex(pvTex.map, { srgb: true }),
+            roughness: 0.17, metalness: 0.34, envMapIntensity: 1.1
+          })
+        : new THREE.MeshPhysicalMaterial({
+            map: tex(pvTex.map, { srgb: true }),
+            roughness: 0.18, metalness: 0.30, envMapIntensity: 1.15,
+            clearcoat: 0.55, clearcoatRoughness: 0.14
+          });
+      const railMat = new THREE.MeshStandardMaterial({
+        color: 0x25282c, roughness: 0.34, metalness: 0.88, envMapIntensity: 1.0
+      });
+
+      /* the glass laminate, one draw for all twelve */
+      const faceGeo = new THREE.PlaneGeometry(PW - 0.05, PD - 0.05);
+      faceGeo.rotateX(-Math.PI / 2 + TILT);
+      const faces = new THREE.InstancedMesh(faceGeo, pvMat, ROWS.length * COLS.length);
+      faces.name = 'solar:panels';
+      /* the anodised frame under each laminate */
+      const frameGeo = new THREE.BoxGeometry(PW + 0.02, 0.055, PD + 0.02);
+      frameGeo.rotateX(TILT);
+      const frames = new THREE.InstancedMesh(frameGeo, railMat, ROWS.length * COLS.length);
+      frames.name = 'solar:frames';
+      frames.castShadow = true;
+      const d = new THREE.Object3D();
+      let k = 0;
+      for (const z of ROWS) {
+        for (const x of COLS) {
+          d.position.set(x, y0 - 0.032, z); d.rotation.set(0, 0, 0); d.scale.set(1, 1, 1);
+          d.updateMatrix(); frames.setMatrixAt(k, d.matrix);
+          d.position.set(x, y0 + 0.012, z);
+          d.updateMatrix(); faces.setMatrixAt(k, d.matrix);
+          k++;
+        }
+      }
+      faces.instanceMatrix.needsUpdate = true;
+      frames.instanceMatrix.needsUpdate = true;
+      faces.castShadow = false; faces.receiveShadow = true;
+      faces.frustumCulled = false; frames.frustumCulled = false;
+      world.add(frames); world.add(faces);
+
+      /* rails under each row, and the ballast feet that hold them down */
+      const span = COLS[COLS.length - 1] - COLS[0] + PW;
+      const cx = (COLS[0] + COLS[COLS.length - 1]) / 2;
+      const railGeo = new THREE.BoxGeometry(span, 0.07, 0.08);
+      const rails = new THREE.InstancedMesh(railGeo, railMat, ROWS.length * 2);
+      rails.name = 'solar:rails'; rails.castShadow = true;
+      let r = 0;
+      for (const z of ROWS) for (const dz of [-0.30, 0.30]) {
+        d.position.set(cx, ROOF + 0.225, z + dz); d.updateMatrix(); rails.setMatrixAt(r++, d.matrix);
+      }
+      rails.instanceMatrix.needsUpdate = true; rails.frustumCulled = false;
+      world.add(rails);
+
+      const footGeo = new THREE.BoxGeometry(0.22, 0.15, 0.19);
+      const feet = new THREE.InstancedMesh(footGeo, M.concrete, ROWS.length * 2 * 5);
+      feet.name = 'solar:ballast'; feet.receiveShadow = true;
+      let f = 0;
+      for (const z of ROWS) for (const dz of [-0.30, 0.30]) {
+        for (let i = 0; i < 5; i++) {
+          d.position.set(COLS[0] + (span - 0.22) * (i / 4), ROOF + 0.095, z + dz);
+          d.updateMatrix(); feet.setMatrixAt(f++, d.matrix);
+        }
+      }
+      feet.instanceMatrix.needsUpdate = true; feet.frustumCulled = false;
+      world.add(feet);
+
+      /* the string inverter on the lantern's east wall, with its conduit */
+      addBox(0.16, 0.46, 0.36, -2.52, ROOF + 0.35, 2.30, railMat, { cast: false });
+      addBox(0.06, 0.06, 0.06, -2.52, ROOF + 0.06, 2.30, M.bronze, { cast: false });
+      addBox(0.05, 0.05, 2.4, -2.52, ROOF + 0.08, 3.55, M.bronze, { cast: false });
     }
 
     /* ── balconies and the roof deck ────────────────────────────────────── */
@@ -4371,10 +4904,10 @@ scene.background = null;
       for (const [x, z] of [[px0, pz0], [px1, pz0], [px0, pz1], [px1, pz1]]) {
         addBox(0.13, py - DECK, 0.13, x, (py + DECK) / 2, z, M.bronze, { uv: 0.5 });
       }
-      addBox(px1 - px0 + 0.5, 0.24, 0.16, (px0 + px1) / 2, py + 0.09, pz0, M.oakDark, { uv: 0.6 });
-      addBox(px1 - px0 + 0.5, 0.24, 0.16, (px0 + px1) / 2, py + 0.09, pz1, M.oakDark, { uv: 0.6 });
+      addBox(px1 - px0 + 0.5, 0.24, 0.16, (px0 + px1) / 2, py + 0.09, pz0, M.cedar, { uv: 0.6 });
+      addBox(px1 - px0 + 0.5, 0.24, 0.16, (px0 + px1) / 2, py + 0.09, pz1, M.cedar, { uv: 0.6 });
       for (let x = px0 + 0.24; x <= px1 - 0.18; x += 0.23) {
-        addBox(0.07, 0.14, pz1 - pz0 - 0.1, x, py + 0.22, (pz0 + pz1) / 2, M.oakVert, { uv: 0.7 });
+        addBox(0.07, 0.14, pz1 - pz0 - 0.1, x, py + 0.22, (pz0 + pz1) / 2, M.cedarVert, { uv: 0.7 });
       }
       // a daybed and two planters, so the deck reads as a room
       const daybed = (x, z) => {
@@ -4394,7 +4927,7 @@ scene.background = null;
     /* ── timber slat screen along the wing ──────────────────────────────── */
     {
       const slatGeo = new THREE.BoxGeometry(0.045, 1, 0.12);
-      const count = MOBILE ? 78 : 118;
+      const count = LOWRAM ? 32 : (MOBILE ? 78 : 118);
       const slatMat = new THREE.MeshStandardMaterial({
         map: texV(oakWood.map, [1, 0.4]),
         normalMap: texV(oakWood.normal, [1, 0.4]),
@@ -4466,11 +4999,42 @@ scene.background = null;
       }
     }
 
-    /* ── the way in: a stone apron under the porch, a step at its edge ──── */
+    /* ── the way in: a solid stone apron under the porch, a nosing at its
+       edge, and a bronze threshold that is the only thing crossing the door
+       line. It used to be a zero-thickness plane laid over the plinth and
+       through the step, which is what flickered as the camera crossed the
+       threshold: three surfaces inside 30 mm of each other. Now each level has
+       one slab and one height, and nothing is coplanar.                     */
     {
-      addPlane(9.2, PORCH.z1 - G.z1 + 1.6, 0, 0.028, (G.z1 + PORCH.z1 + 1.6) / 2 - 0.2, M.stonePale, { uv: 0.5 });
-      addBox(9.4, 0.16, 0.3, 0, -0.06, PORCH.z1 + 0.75, M.stonePale, { uv: 0.5 });
-      for (const x of [-4.2, 4.2]) addBox(0.14, 0.05, 0.14, x, 0.03, PORCH.z1 + 0.9, M.bronze, { cast: false });
+      const zA = G.z1 + 0.02, zB = PORCH.z1 + 0.62;      // 6.62 → 9.02
+      addBox(9.2, 0.06, zB - zA, 0, 0.03, (zA + zB) / 2, M.stonePale, { uv: 0.5 });
+      // the nosing: one riser, 15 mm below the apron, so the step reads
+      addBox(9.22, 0.045, 0.26, 0, 0.0225, zB + 0.13, M.stonePale, { uv: 0.5, cast: false });
+      // the threshold inlay: 18 mm proud of the apron, 30 mm deep
+      addBox(2.9, 0.018, 0.3, 0, 0.069, G.z1 + 0.05, M.bronze, { uv: 0.6, cast: false });
+      for (const x of [-4.2, 4.2]) addBox(0.14, 0.05, 0.14, x, 0.085, zB + 0.02, M.bronze, { cast: false });
+
+      /* the mat: charcoal coir, 1.45 × 0.78 m, 60 mm clear of the bronze
+         inlay and 6 mm proud of the apron, on its own baked soft shadow, so
+         it never floats and never fights the slab it sits on */
+      {
+        const dm = makeDoormat();
+        const matMat = new THREE.MeshStandardMaterial({
+          map: tex(dm.map, { srgb: true }),
+          normalMap: tex(dm.normal),
+          roughness: 0.96, metalness: 0.0,
+          normalScale: new THREE.Vector2(0.55, 0.55),
+          envMapIntensity: 0.22
+        });
+        const mw = 1.45, md = 0.78, mz = G.z1 + 0.24 + md / 2;
+        const matGeo = new THREE.BoxGeometry(mw, 0.016, md);
+        matGeo.translate(0, 0.066, mz);
+        const matMesh = new THREE.Mesh(matGeo, matMat);
+        matMesh.receiveShadow = true;
+        matMesh.castShadow = false;
+        world.add(matMesh);
+        contactShadow(0, mz, mw + 0.18, md + 0.18, true, 0.061);
+      }
     }
 
     /* ── teak loungers by the pool ──────────────────────────────────────── */
@@ -4505,6 +5069,20 @@ scene.background = null;
        materials, so the whole court costs no extra draw call.              */
     {
       const CX = 9.6, CZ = 14.5, CW = 6.6, CD = 5.6;
+      /* the arrival court in front of the house: one field of limestone from
+         the porch step to the gate line, so the walk, the carport link and the
+         door all stand in stone rather than in meadow grass */
+      addPlane(12.5, 16.2, 0.85, 0.036, 17.1, M.pave, { uv: 0.5 });
+      addPlane(13.1, 16.8, 0.85, 0.026, 17.1, M.gravel, { uv: 0.5 });
+
+      /* the way in to the court: a stone apron from the walk to the bay heads,
+         and a driveway spur that runs from the pad out through the gate, so the
+         parking court reads as connected to the street rather than dropped on
+         the lawn */
+      addPlane(4.5, 5.4, 4.55, 0.044, CZ, M.pave, { uv: 0.5 });          // walk → bay heads
+      addPlane(3.9, 8.3, 7.95, 0.046, 21.1, M.pave, { uv: 0.5 });        // pad → gate → street
+      addPlane(4.9, 5.8, 4.55, 0.037, CZ, M.gravel, { uv: 0.5 });        // its gravel shoulder
+      addPlane(4.3, 8.7, 7.95, 0.037, 21.1, M.gravel, { uv: 0.5 });
       // paved apron with a pale border, on the lawn between drive and wall
       addPlane(CW + 0.9, CD + 0.9, CX, 0.045, CZ, M.gravel, { uv: 0.5 });
       addPlane(CW, CD, CX, 0.075, CZ, M.pave, { uv: 0.5 });
@@ -4543,6 +5121,93 @@ scene.background = null;
       cg.translate(CX, 2.88, CZ);
       queue(cg, carGlow, false, false, 4);
       contactShadow(CX, CZ, CW + 1, CD + 1, true, 0.03);
+
+      /* ── the car: a dark luxury SUV, nose to the gate, in the west bay.
+         Same bevelled volumes as the interior furniture: a low body, a
+         shoulder, a shorter glasshouse with tilted screens and a bonnet that
+         steps down at the nose, four wheels with machined rims and a dark
+         arch ring at each corner, so the wheel openings read as cut rather
+         than as wheels sunk into a box. */
+      {
+        const BX = CX - CW / 4, BZ = CZ + 0.1, Y0 = 0.075;
+        const paint = new THREE.MeshPhysicalMaterial({
+          color: 0x14171b, metalness: 0.28, roughness: 0.44,
+          clearcoat: 0.6, clearcoatRoughness: 0.16, envMapIntensity: 0.45
+        });
+        const carGlass = new THREE.MeshStandardMaterial({
+          color: 0x0a1015, metalness: 0.12, roughness: 0.20, envMapIntensity: 0.5
+        });
+        const tyre = new THREE.MeshStandardMaterial({ color: 0x0c0d0e, roughness: 0.96, metalness: 0.0, envMapIntensity: 0.25 });
+        const rimM = new THREE.MeshStandardMaterial({ color: 0x8d949b, roughness: 0.30, metalness: 0.92, envMapIntensity: 1.15 });
+        const trimM = new THREE.MeshStandardMaterial({ color: 0x08090a, roughness: 0.62, metalness: 0.35, envMapIntensity: 0.7 });
+        const lampF = new THREE.MeshBasicMaterial({ color: new THREE.Color(2.4, 2.35, 2.1) });
+        const lampR = new THREE.MeshBasicMaterial({ color: new THREE.Color(1.9, 0.24, 0.16) });
+        const add = (geo, mat, cast = true, recv = true) => {
+          geo.translate(BX, Y0, BZ);
+          queue(geo, mat, cast, recv);
+        };
+
+        // the body: a low sill, the main volume, a shoulder above it
+        let g = roundedBoxGeo(1.86, 0.56, 4.52, 0.15); g.translate(0, 0.56, 0); add(g, paint);
+        g = roundedBoxGeo(1.96, 0.44, 4.74, 0.17); g.translate(0, 0.92, 0); add(g, paint);
+        g = roundedBoxGeo(1.90, 0.20, 4.48, 0.10); g.translate(0, 1.18, -0.04); add(g, paint);
+        // the bonnet steps down ahead of the screen
+        g = roundedBoxGeo(1.86, 0.22, 1.10, 0.10); g.translate(0, 1.08, 1.78); add(g, paint);
+        // the glasshouse, shorter than the body, and its roof
+        g = roundedBoxGeo(1.68, 0.42, 2.50, 0.11); g.translate(0, 1.44, -0.28); add(g, carGlass);
+        g = roundedBoxGeo(1.66, 0.10, 2.28, 0.05); g.translate(0, 1.66, -0.32); add(g, paint);
+        // the screens, tilted: the rounded corner alone reads as a van
+        g = new THREE.BoxGeometry(1.56, 0.54, 0.035); g.rotateX(-0.52); g.translate(0, 1.45, 1.05); add(g, carGlass, false);
+        g = new THREE.BoxGeometry(1.54, 0.48, 0.035); g.rotateX(0.44); g.translate(0, 1.47, -1.55); add(g, carGlass, false);
+        // side glass, a touch proud of the pillars so it reads as a window
+        for (const sx of [-1, 1]) {
+          g = roundedBoxGeo(0.03, 0.34, 2.18, 0.02); g.translate(sx * 0.845, 1.44, -0.28); add(g, carGlass, false);
+        }
+        // sills and the arch rings that make the wheel openings read
+        for (const sx of [-1, 1]) {
+          g = roundedBoxGeo(0.11, 0.15, 3.20, 0.04); g.translate(sx * 0.95, 0.31, 0); add(g, trimM);
+          for (const wz of [-1.52, 1.52]) {
+            g = new THREE.TorusGeometry(0.47, 0.06, 8, 22); g.rotateY(Math.PI / 2);
+            g.translate(sx * 0.955, 0.40, wz); add(g, trimM, false);
+          }
+        }
+        // wheels: tyre, a machined rim, a dark hub and five spokes
+        for (const sx of [-1, 1]) {
+          for (const wz of [-1.52, 1.52]) {
+            g = new THREE.CylinderGeometry(0.385, 0.385, 0.28, 26); g.rotateZ(Math.PI / 2);
+            g.translate(sx * 0.875, 0.385, wz); add(g, tyre);
+            g = new THREE.CylinderGeometry(0.25, 0.25, 0.29, 22); g.rotateZ(Math.PI / 2);
+            g.translate(sx * 0.878, 0.385, wz); add(g, rimM, false);
+            g = new THREE.CylinderGeometry(0.07, 0.07, 0.30, 12); g.rotateZ(Math.PI / 2);
+            g.translate(sx * 0.88, 0.385, wz); add(g, trimM, false);
+            for (let s2 = 0; s2 < 5; s2++) {
+              const a = s2 * Math.PI * 2 / 5;
+              g = new THREE.BoxGeometry(0.31, 0.34, 0.06); g.rotateX(a);
+              g.translate(sx * 0.885, 0.385 + Math.cos(a) * 0.10, wz + Math.sin(a) * 0.10); add(g, rimM, false);
+            }
+          }
+        }
+        // the front: a low bumper, the grille with thin blades, a lamp each side
+        g = roundedBoxGeo(1.92, 0.30, 0.20, 0.07); g.translate(0, 0.52, 2.34); add(g, trimM, false);
+        g = roundedBoxGeo(1.16, 0.22, 0.08, 0.03); g.translate(0, 0.88, 2.36); add(g, trimM, false);
+        for (let i = 0; i < 7; i++) {
+          g = new THREE.BoxGeometry(0.032, 0.18, 0.03); g.translate(-0.45 + i * 0.15, 0.88, 2.39); add(g, paint, false, false);
+        }
+        for (const sx of [-1, 1]) {
+          g = roundedBoxGeo(0.46, 0.085, 0.06, 0.025); g.translate(sx * 0.62, 1.06, 2.37); add(g, lampF, false, false);
+          g = roundedBoxGeo(0.54, 0.16, 0.05, 0.02); g.translate(sx * 0.62, 1.06, 2.33); add(g, trimM, false);
+          g = roundedBoxGeo(0.18, 0.13, 0.05, 0.02); g.translate(sx * 0.88, 0.62, 2.38); add(g, trimM, false);
+        }
+        // the rear: a full-width light bar and a diffuser
+        g = roundedBoxGeo(1.58, 0.075, 0.05, 0.02); g.translate(0, 1.10, -2.37); add(g, lampR, false, false);
+        g = roundedBoxGeo(1.88, 0.26, 0.20, 0.06); g.translate(0, 0.50, -2.32); add(g, trimM, false);
+        // mirrors on short arms, and roof rails
+        for (const sx of [-1, 1]) {
+          g = roundedBoxGeo(0.20, 0.10, 0.13, 0.035); g.translate(sx * 1.00, 1.34, 0.72); add(g, paint);
+          g = roundedBoxGeo(0.06, 0.05, 1.90, 0.02); g.translate(sx * 0.70, 1.72, -0.32); add(g, trimM, false);
+        }
+        contactShadow(BX, BZ + 0.05, 5.5, 2.5, true, 0.079);
+      }
     }
 
     /* ── the wellness pavilion west of the pool ──────────────────────────
@@ -4637,10 +5302,67 @@ scene.background = null;
        in the lawn, and a stepping-stone spur off the pavilion path. All of it
        under the orbit's low west pass, so nothing new is flown through.    */
     {
+      /*  A clipped hedge, built from the Quixel Japanese Privet leaf atlas: a
+          dark core so no light shows through the run, and instanced 0.5 m leaf
+          cards on both faces and the crown, each at its own angle. Three runs
+          are three draw calls and about 140 cards, which is cheaper than the
+          painted box it replaces and looks like a hedge instead of a slab. */
+      const hedgeMat = windify(new THREE.MeshStandardMaterial({
+        map: loadAtlas('hedge_privet.webp'), alphaTest: 0.42, side: THREE.DoubleSide,
+        roughness: 0.94, metalness: 0.0, envMapIntensity: 0.45, color: 0xe2e8d2
+      }), { amp: 0.018, freq: 1.3, height: 0.8, base: -0.2, soft: 0.55,
+        fill: [0.095, 0.125, 0.062], trans: 0.22 });
+      const hedgeCore = new THREE.MeshStandardMaterial({ color: 0x2b3720, roughness: 1.0, envMapIntensity: 0.12 });
+      const cardGeo = new THREE.PlaneGeometry(1, 1);
+      const hd = new THREE.Object3D();
+      const hcol = new THREE.Color();
+      function hedgeRun(x0, z0, x1, z1, h = 0.54, w = 0.46) {
+        const dx = x1 - x0, dz = z1 - z0;
+        const len = Math.hypot(dx, dz);
+        const ang = Math.atan2(dz, dx);
+        const core = new THREE.BoxGeometry(len, h * 0.88, w * 0.62);
+        core.rotateY(-ang);
+        core.translate((x0 + x1) / 2, h * 0.44, (z0 + z1) / 2);
+        const cm = new THREE.Mesh(core, hedgeCore);
+        cm.castShadow = cm.receiveShadow = true;
+        world.add(cm);
+        const nx = Math.sin(ang), nz = -Math.cos(ang);      // normal to the run
+        const mats = [], cols = [];
+        const card = (u, y, across, face) => {
+          const px = x0 + dx * u, pz = z0 + dz * u;
+          hd.position.set(px + nx * across, y, pz + nz * across);
+          if (face === 'side') hd.rotation.set(0, -ang + Math.PI / 2 + rr(-0.35, 0.35), rr(-0.22, 0.22));
+          else hd.rotation.set(-Math.PI / 2 + rr(-0.28, 0.28), rr(0, 6.283), 0);
+          const s = rr(0.44, 0.64) * (h / 0.54);
+          hd.scale.set(s, s, s);
+          hd.updateMatrix();
+          mats.push(hd.matrix.clone());
+          const v = rr(0.78, 1.0);
+          hcol.setRGB(v * 0.94, v, v * 0.78);
+          cols.push(hcol.clone());
+        };
+        const n = Math.max(5, Math.round(len / 0.19));
+        for (let i = 0; i <= n; i++) {
+          const u = i / n;
+          for (const sgn of [-1, 1]) {
+            card(u, rr(h * 0.18, h * 0.60), sgn * w * 0.46, 'side');
+            card(u, rr(h * 0.54, h * 0.92), sgn * w * 0.30, 'side');
+          }
+          card(u, h * rr(0.94, 1.03), rr(-w * 0.24, w * 0.24), 'top');
+        }
+        const mesh = new THREE.InstancedMesh(cardGeo, hedgeMat, mats.length);
+        mats.forEach((m, i) => { mesh.setMatrixAt(i, m); mesh.setColorAt(i, cols[i]); });
+        mesh.instanceMatrix.needsUpdate = true;
+        if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        mesh.frustumCulled = false;
+        world.add(mesh);
+      }
       // two hedge runs framing the west lawn
-      addBox(4.4, 0.52, 0.42, -15.2, 0.30, -4.6, M.meadow, { uv: 0.55 });
-      addBox(4.4, 0.52, 0.42, -15.2, 0.30, -2.6, M.meadow, { uv: 0.55 });
-      addBox(0.42, 0.52, 3.6, -17.2, 0.30, -5.4, M.meadow, { uv: 0.55 });
+      hedgeRun(-17.4, -4.6, -13.0, -4.6);
+      hedgeRun(-17.4, -2.6, -13.0, -2.6);
+      hedgeRun(-17.2, -7.2, -17.2, -3.6);
       // a bronze-trimmed gravel bed between them, with three stone orbs
       addPlane(3.9, 2.3, -15.2, 0.035, -3.6, M.gravel, { uv: 0.5 });
       addBox(4.0, 0.05, 0.07, -15.2, 0.075, -4.78, M.bronze, { cast: false });
@@ -4652,14 +5374,16 @@ scene.background = null;
       }
       // a second, smaller bed nearer the house's west corner
       addPlane(2.6, 1.8, -16.0, 0.035, -8.2, M.gravel, { uv: 0.5 });
-      addBox(0.42, 0.46, 2.2, -17.4, 0.26, -8.2, M.meadow, { uv: 0.55 });
+      hedgeRun(-17.4, -9.3, -17.4, -7.1, 0.48, 0.44);
       megaVessel('boulder', [[0.001, 0], [0.2, 0.02], [0.26, 0.2], [0.2, 0.34]], -15.4, 0.05, -8.2, M.stoneVessel, 16, { hScale: 1.5 });
     }
 
     /* ── the children's court in the east side yard ───────────────────────
-       Soft sand turf inside a pale kerf, a timber swing frame on bronze
-       pivots, and a low climbing frame with a slide. Oak and bronze only;
-       nothing bright, nothing plastic-looking.                            */
+       Soft sand inside a limestone curb, a cedar swing frame on bronze
+       pivots, and a low climbing frame with a slide. Every timber here is the
+       scanned Quixel cedar on the villa's soffits and the bronze is the gate's
+       own, so the court belongs to the house; scanned boulders, a Quixel
+       timber bench and ground cover finish its edges.                     */
     {
       const CX2 = 22.2, CZ2 = 1.2, CW2 = 7.0, CD2 = 8.4;
       addPlane(CW2 + 1.0, CD2 + 1.0, CX2, 0.032, CZ2, M.gravel, { uv: 0.5 });
@@ -4670,53 +5394,87 @@ scene.background = null;
         color: 0xe8ddc4, roughness: 1.0, metalness: 0.0, envMapIntensity: 0.5
       });
       addPlane(CW2, CD2, CX2, 0.058, CZ2, courtSand, { uv: 0.55 });
-      // pale kerf round the court
-      addBox(CW2 + 0.2, 0.10, 0.14, CX2, 0.08, CZ2 - CD2 / 2 - 0.05, M.stonePale, { uv: 0.5 });
-      addBox(CW2 + 0.2, 0.10, 0.14, CX2, 0.08, CZ2 + CD2 / 2 + 0.05, M.stonePale, { uv: 0.5 });
-      addBox(0.14, 0.10, CD2 + 0.2, CX2 - CW2 / 2 - 0.05, 0.08, CZ2, M.stonePale, { uv: 0.5 });
-      addBox(0.14, 0.10, CD2 + 0.2, CX2 + CW2 / 2 + 0.05, 0.08, CZ2, M.stonePale, { uv: 0.5 });
+      // the limestone curb: one block course all round, 180 wide, 120 high
+      addBox(CW2 + 0.36, 0.12, 0.18, CX2, 0.075, CZ2 - CD2 / 2 - 0.09, M.stonePale, { uv: 0.5 });
+      addBox(CW2 + 0.36, 0.12, 0.18, CX2, 0.075, CZ2 + CD2 / 2 + 0.09, M.stonePale, { uv: 0.5 });
+      addBox(0.18, 0.12, CD2 + 0.36, CX2 - CW2 / 2 - 0.09, 0.075, CZ2, M.stonePale, { uv: 0.5 });
+      addBox(0.18, 0.12, CD2 + 0.36, CX2 + CW2 / 2 + 0.09, 0.075, CZ2, M.stonePale, { uv: 0.5 });
 
-      // the swing frame: two oak A-frames, an oak beam, two swings on bronze
+      // the swing frame: two cedar A-frames, a cedar beam, two swings on bronze
       {
         const sx = CX2 - 1.4, sz = CZ2 - 1.6;
         for (const s2 of [-1, 1]) {
-          addSoft(0.12, 2.0, 0.12, 0.02, sx + s2 * 0.85, 1.0, sz - 0.5, M.oakVert, { uv: 0.6, rz: s2 * -0.24 });
-          addSoft(0.12, 2.0, 0.12, 0.02, sx + s2 * 0.85, 1.0, sz + 0.5, M.oakVert, { uv: 0.6, rz: s2 * -0.24 });
+          addSoft(0.12, 2.0, 0.12, 0.02, sx + s2 * 0.85, 1.0, sz - 0.5, M.cedarVert, { uv: 0.6, rz: s2 * -0.24 });
+          addSoft(0.12, 2.0, 0.12, 0.02, sx + s2 * 0.85, 1.0, sz + 0.5, M.cedarVert, { uv: 0.6, rz: s2 * -0.24 });
           contactShadow(sx + s2 * 0.85, sz, 1.6, 1.4, true, 0.045);
         }
-        addBox(2.5, 0.13, 0.13, sx, 2.02, sz, M.oakDark, { uv: 0.6 });
+        addBox(2.5, 0.13, 0.13, sx, 2.02, sz, M.cedar, { uv: 0.6 });
         for (const sw of [-0.55, 0.55]) {
           for (const dz of [-0.05, 0.05]) {
             addBox(0.02, 1.32, 0.02, sx + sw, 1.36, sz + dz, M.bronze, { cast: false });
           }
-          addSoft(0.42, 0.05, 0.18, 0.02, sx + sw, 0.70, sz, M.oak, { uv: 0.6 });
+          addSoft(0.42, 0.055, 0.19, 0.02, sx + sw, 0.70, sz, M.oak, { uv: 0.6 });
         }
       }
-      // the climbing frame with a slide
+      // the play fort: four cedar posts, a deck with guard rails, a hipped
+      // cedar roof and a slide landing on the sand. The rails and the roof are
+      // what make it read as a playhouse rather than a table.
       {
-        const cx2 = CX2 + 1.7, cz2 = CZ2 + 1.9;
-        for (const [dx, dz] of [[-0.65, -0.55], [0.65, -0.55], [-0.65, 0.55], [0.65, 0.55]]) {
-          addBox(0.10, 1.30, 0.10, cx2 + dx, 0.65, cz2 + dz, M.oakVert, { uv: 0.6 });
+        const cx2 = CX2 + 1.7, cz2 = CZ2 + 1.9, DY = 1.12;
+        for (const [dx, dz] of [[-0.68, -0.60], [0.68, -0.60], [-0.68, 0.60], [0.68, 0.60]]) {
+          addBox(0.11, DY, 0.11, cx2 + dx, DY / 2, cz2 + dz, M.cedarVert, { uv: 0.6 });
         }
-        addBox(1.5, 0.09, 1.3, cx2, 1.32, cz2, M.oakDark, { uv: 0.6 });
-        // bronze rungs up the south face
-        for (let ry = 0.28; ry <= 1.2; ry += 0.23) {
-          addBox(1.1, 0.04, 0.04, cx2, ry, cz2 + 0.62, M.bronze, { cast: false });
-        }
-        // the slide: an angled oak deck with bronze rails, landing on the sand
-        addSoft(0.62, 0.07, 2.1, 0.02, cx2 - 0.02, 0.82, cz2 + 1.75, M.oakDark, { uv: 0.6, rx: 0.52 });
+        addBox(1.56, 0.10, 1.40, cx2, DY + 0.05, cz2, M.cedar, { uv: 0.6 });
+        // guard rails on three sides, a gap on the slide side
         for (const s2 of [-1, 1]) {
-          addSoft(0.04, 0.05, 2.0, 0.015, cx2 - 0.02 + s2 * 0.31, 1.02, cz2 + 1.75, M.bronze, { cast: false, rx: 0.52 });
+          addBox(0.05, 0.05, 1.30, cx2 + s2 * 0.72, DY + 0.62, cz2, M.cedar, { cast: false });
+          addBox(0.05, 0.05, 1.30, cx2 + s2 * 0.72, DY + 0.34, cz2, M.cedar, { cast: false });
+          for (const dz of [-0.58, 0, 0.58]) addBox(0.05, 0.62, 0.05, cx2 + s2 * 0.72, DY + 0.45, cz2 + dz, M.cedar, { cast: false });
         }
-        contactShadow(cx2, cz2, 2.6, 3.4, true, 0.045);
+        addBox(1.40, 0.05, 0.05, cx2, DY + 0.62, cz2 - 0.66, M.cedar, { cast: false });
+        addBox(1.40, 0.05, 0.05, cx2, DY + 0.34, cz2 - 0.66, M.cedar, { cast: false });
+        // the hipped roof: four cedar planes over the deck, a bronze finial
+        const apex = DY + 1.62, ey = DY + 1.02, rw = 1.02, rd = 0.94;
+        for (let q = 0; q < 4; q++) {
+          const a0 = q * Math.PI / 2 + Math.PI / 4, a1 = a0 + Math.PI / 2;
+          const p0 = [cx2 + Math.cos(a0) * rw, ey, cz2 + Math.sin(a0) * rd];
+          const p1 = [cx2 + Math.cos(a1) * rw, ey, cz2 + Math.sin(a1) * rd];
+          const g = new THREE.BufferGeometry();
+          g.setAttribute('position', new THREE.Float32BufferAttribute([
+            p0[0], ey, p0[2], p1[0], ey, p1[2], cx2, apex - 0.02, cz2,
+            cx2, apex - 0.02, cz2, p1[0], ey, p1[2], p0[0], ey, p0[2]
+          ], 3));
+          g.computeVertexNormals();
+          queue(g, M.cedar, false, true);
+        }
+        // bronze rungs up the south face, under the deck
+        for (let ry = 0.26; ry <= DY - 0.14; ry += 0.22) {
+          addBox(1.05, 0.04, 0.04, cx2, ry, cz2 + 0.66, M.bronze, { cast: false });
+        }
+        // the slide: an angled cedar deck with bronze rails, landing on the sand
+        addSoft(0.60, 0.07, 2.05, 0.02, cx2 - 0.02, 0.72, cz2 + 1.80, M.cedar, { uv: 0.6, rx: 0.54 });
+        for (const s2 of [-1, 1]) {
+          addSoft(0.04, 0.05, 1.95, 0.015, cx2 - 0.02 + s2 * 0.30, 0.90, cz2 + 1.80, M.bronze, { cast: false, rx: 0.54 });
+        }
+        contactShadow(cx2, cz2, 2.9, 3.6, true, 0.045);
       }
-      // a low bronze hoop on the court's east edge, standing on an oak post
+      // a low bronze hoop on the court's east edge, standing on a cedar post
       {
-        addBox(0.09, 1.55, 0.09, CX2 + CW2 / 2 - 0.6, 0.78, CZ2 - 2.4, M.oakVert, { uv: 0.6 });
+        addBox(0.09, 1.55, 0.09, CX2 + CW2 / 2 - 0.6, 0.78, CZ2 - 2.4, M.cedarVert, { uv: 0.6 });
         const hoop = new THREE.TorusGeometry(0.36, 0.028, 8, 20);
         hoop.rotateY(Math.PI / 2);
         hoop.translate(CX2 + CW2 / 2 - 0.6 + 0.38, 1.58, CZ2 - 2.4);
         queue(hoop, M.bronze, true, false);
+      }
+      // a cedar balance log on two bronze saddles, along the north kerb
+      {
+        const lx = CX2 - 0.4, lz = CZ2 + CD2 / 2 - 0.55;
+        const log = new THREE.CylinderGeometry(0.13, 0.14, 2.6, 14);
+        log.rotateZ(Math.PI / 2);
+        log.translate(lx, 0.26, lz);
+        queue(log, M.cedar, true, true);
+        for (const dx of [-0.9, 0.9]) addBox(0.16, 0.14, 0.30, lx + dx, 0.07, lz, M.bronze, { cast: false });
+        contactShadow(lx, lz, 2.9, 0.6, true, 0.052);
       }
     }
 
@@ -4793,7 +5551,7 @@ scene.background = null;
         roughnessMap: tex(stoneA.rough),
         color: 0xeadfca,
         roughness: 1.0, metalness: 0.0,
-        normalScale: new THREE.Vector2(1.55, 1.55),
+        normalScale: new THREE.Vector2(1.02, 1.02),
         envMapIntensity: 0.44
       }), { grime: 0.10, streak: 0.18, base: 0.26, scale: 0.34 });
 
@@ -4803,18 +5561,14 @@ scene.background = null;
         else addBox(ld, ly, lu, at, y, u, mat, opt);
       };
 
-      /* the louver ribbon: one recessed band of bronze fins under the coping,
-         running the whole wall between the piers. A continuous slot reads as
-         architecture; individual bays read as windows.                     */
+      /* the shadow gap under the coping: one continuous recess, 90 mm deep
+         and 220 mm tall. It used to be filled with 46 mm bronze fins at a
+         128 mm pitch, which at any distance moiréd into a dark striped band;
+         a smooth recess reads as a crisp architectural shadow line and costs
+         one box instead of a hundred.                                      */
       const ribbon = (axis, at, a, b, y0, y1) => {
         const w = b - a, c = (a + b) / 2;
-        put(axis, at, c, (y0 + y1) / 2, w - 0.02, y1 - y0, T - 0.24, M.dark, { cast: false });
-        const n = Math.max(3, Math.floor(w / 0.128));
-        const span = (n - 1) * 0.128;
-        for (let i = 0; i < n; i++) {
-          put(axis, at, c - span / 2 + i * 0.128, (y0 + y1) / 2,
-            0.046, y1 - y0 - 0.03, T - 0.10, M.bronze, { uv: 0.5 });
-        }
+        put(axis, at, c, (y0 + y1) / 2, w - 0.02, y1 - y0, T - 0.18, M.dark, { cast: false });
       };
 
       /* a pier: a stepped vertical, its pale cap proud of the coping */
@@ -5314,7 +6068,15 @@ scene.background = null;
     const addPoint = (x, y, z, intensity, dist, color = warm, castShadow = false) => {
       const l = new THREE.PointLight(color, intensity, dist, 2);
       l.position.set(x, y, z);
-      if (castShadow) {
+      /*  A shadow-casting point light is a cube map: six faces of the whole
+          estate, baked into the first frame, per light. Four of them were
+          costing more than the sun's 768² map and everything else in the
+          first frame put together (measured: first frame 13.3 s -> 7.1 s
+          under software GL). A phone keeps the light and loses the cube map;
+          the lamp still lights the room, the wall behind it just does not
+          draw a second shadow of the sofa. A laptop or desktop keeps both,
+          whatever its core count. */
+      if (castShadow && !MOBILE) {
         l.castShadow = true;
         const sm = 512;
         l.shadow.mapSize.set(sm, sm);
@@ -5326,21 +6088,21 @@ scene.background = null;
       scene.add(l);
       return l;
     };
-    addPoint(0.0, 4.2, 3.4, MOBILE ? 14 : 22, 18, warm, true);
-    addPoint(-3.6, 3.4, -2.4, MOBILE ? 16 : 26, 22, warm, true);
-    addPoint(0.6, 2.5, -0.6, MOBILE ? 7 : 10, 9, warm, true);
-    addPoint(9.0, 2.6, -1.6, MOBILE ? 8 : 12, 14, warm, true);
+    addPoint(0.0, 4.2, 3.4, MOBILE ? 17 : 26, 18, warm, true);
+    addPoint(-3.6, 3.4, -2.4, MOBILE ? 19 : 31, 22, warm, true);
+    addPoint(0.6, 2.5, -0.6, MOBILE ? 8.5 : 12, 9, warm, true);
+    addPoint(9.0, 2.6, -1.6, MOBILE ? 9.5 : 14, 14, warm, true);
     addPoint(2.0, -0.7, -14.0, MOBILE ? 5 : 8, 13, 0xbfe2d8);
     // the light well: cool daylight falling into the hall
     addPoint(-5.6, 7.7, -2.1, MOBILE ? 10 : 18, 14, 0xdce6f2);
     // the upper floor, seen through the glass
-    addPoint(-4.2, 6.6, 6.0, MOBILE ? 9 : 14, 12, 0xffc290);
-    addPoint(1.0, 3.4, 4.8, MOBILE ? 6 : 10, 11, 0xffc79a);
+    addPoint(-4.2, 6.6, 6.0, MOBILE ? 10.5 : 16.5, 12, 0xffc290);
+    addPoint(1.0, 3.4, 4.8, MOBILE ? 7 : 12, 11, 0xffc79a);
     addPoint(-6.4, 6.4, -3.4, MOBILE ? 7 : 11, 12, 0xffc290);
 
     // a recessed spot washing the framed work on the rear wall
     {
-      const spot = new THREE.SpotLight(0xffc89c, MOBILE ? 10 : 20, 11, 0.5, 0.78, 2);
+      const spot = new THREE.SpotLight(0xffc89c, MOBILE ? 12 : 24, 11, 0.5, 0.78, 2);
       spot.position.set(-9.35, 6.9, -4.6);
       spot.target.position.set(-9.35, 1.9, -5.9);
       scene.add(spot, spot.target);
@@ -5488,6 +6250,14 @@ scene.background = null;
       }), { amp: 0.09, freq: 1.45, height: 3.4 });
 
       const bMats = [], bCols = [], lMats = [], lCols = [];
+      /* the scanned Paper Flower sprigs: one card in five of the procedural
+         bracts is replaced by a whole scanned cluster (SUBSTITUTES.md §0), so
+         the mass reads as real bougainvillea and the drawn card survives as
+         the fine detail between them. Four atlases now: magenta, magenta +
+         white, white + magenta and a yellow flowering, so a run of troughs is
+         not one colour repeated.                                          */
+      const pfMats = [[], [], [], []], pfCols = [[], [], [], []];
+      let pfBias = -1;
       const bGeo = new THREE.PlaneGeometry(1, 1);
       const vd = new THREE.Object3D();
       const vc = new THREE.Color();
@@ -5507,6 +6277,17 @@ scene.background = null;
         const p = PALETTE[pick % PALETTE.length];
         vc.setRGB(p[0] * rr(0.9, 1.1), p[1] * rr(0.88, 1.12), p[2] * rr(0.9, 1.1));
         bCols.push(vc.clone());
+        if (bMats.length % 5 === 0) {
+          const w = pfBias >= 0 ? pfBias : ((bMats.length >> 2) & 1);
+          vd.rotation.set(rr(-1.1, 1.1), rr(0, 6.3), rr(-1.6, 1.6));
+          const sc = rr(0.34, 0.60) * (MOBILE ? 0.86 : 1);
+          vd.scale.set(sc, sc, sc);
+          vd.updateMatrix();
+          pfMats[w].push(vd.matrix.clone());
+          const v = rr(0.80, 0.98);
+          vc.setRGB(v, v * rr(0.94, 1.0), v * rr(0.92, 1.0));
+          pfCols[w].push(vc.clone());
+        }
       }
 
       function vleaf(x, y, z, s) {
@@ -5550,21 +6331,11 @@ scene.background = null;
         }
       }
 
-      // 1 · the porch edge: a sheet of flower along the fascia and the curtain
-      //     that hangs off it, so the last three metres to the door are in shade
-      runner([[-4.0, 4.02, 8.3], [-2.0, 4.06, 8.36], [0.4, 4.04, 8.34], [2.4, 4.02, 8.3], [4.0, 3.98, 8.26]],
-        { r: 0.05, density: 1.6, droop: 1.1, spread: 0.52, pick: 0 });
-      for (let x = -3.9; x < 3.95; x += 0.5) {
-        runner([[x, 4.0, 8.3], [x + rr(-0.12, 0.12), 3.8, 8.4], [x + rr(-0.2, 0.2), 3.5, 8.36],
-                [x + rr(-0.26, 0.26), 3.14, 8.28], [x + rr(-0.3, 0.3), 2.92, 8.2]],
-          { r: 0.024, density: 1.3, droop: 0.6, spread: 0.3, pick: 2 });
-      }
-      // canes up both porch columns
-      for (const [px2, pz2] of [[-8.6, 8.24], [2.4, 8.24]]) {
-        runner([[px2 + 0.1, 0.05, pz2 + 0.06], [px2 + 0.14, 1.3, pz2 + 0.1], [px2 + 0.06, 2.6, pz2 + 0.08],
-                [px2 + 0.12, 3.6, pz2 + 0.06], [px2 + 0.1, 4.0, pz2 + 0.05]],
-          { r: 0.038, density: 1.2, droop: 0.45, spread: 0.3, pick: 1 });
-      }
+      // 1 · one clean run over the terrace pergola. This is the only place on
+      //     the building the bougainvillea is allowed to climb: the entry
+      //     canopy, the porch columns, the pier beside the door, the upper
+      //     windows and the rear wall are bare stone now, which is what the
+      //     villa wanted all along.
 
       // 2 · over the terrace pergola, both beams and the hanging edge
       runner([[4.4, 3.4, -9.5], [6.2, 3.44, -9.56], [8.0, 3.4, -9.5], [9.9, 3.36, -9.46]],
@@ -5580,27 +6351,9 @@ scene.background = null;
                 [px2 + 0.1, 3.1, pz2 + 0.12]], { r: 0.036, density: 1.1, droop: 0.4, spread: 0.3, pick: 0 });
       }
 
-      // 3 · the roof deck over the wing: over its glass edge, and up the pergola
-      runner([[5.0, 5.28, 3.62], [7.4, 5.34, 3.66], [9.8, 5.3, 3.62], [12.4, 5.32, 3.64], [15.4, 5.26, 3.6]],
-        { r: 0.045, density: 1.4, droop: 1.5, spread: 0.44, pick: 3 });
-      for (let x = 5.2; x < 15.2; x += 0.78) {
-        runner([[x, 5.28, 3.62], [x + rr(-0.15, 0.15), 4.9, 3.78], [x + rr(-0.2, 0.2), 4.5, 3.7]],
-          { r: 0.02, density: 1.05, droop: 0.7, spread: 0.26, pick: 5 });
-      }
+      // 3 · up the roof-deck pergola only, far from the facade
       runner([[10.6, 6.72, -4.4], [12.4, 6.76, -2.0], [14.4, 6.7, 0.6], [15.6, 6.66, 2.2]],
-        { r: 0.04, density: 1.3, droop: 1.2, spread: 0.4, pick: 1 });
-
-      // 4 · the narrow pier beside the door, ground to lintel
-      runner([[1.72, 0.05, 6.7], [1.78, 1.2, 6.68], [1.68, 2.4, 6.7], [1.74, 3.4, 6.69], [1.7, 4.0, 6.68]],
-        { r: 0.042, density: 1.4, droop: 0.45, spread: 0.34, pick: 2 });
-      runner([[3.82, 0.05, 6.72], [3.88, 1.5, 6.7], [3.78, 2.8, 6.72], [3.84, 3.9, 6.71]],
-        { r: 0.03, density: 1.1, droop: 0.55, spread: 0.28, pick: 4 });
-
-      // 5 · the rear wall beside the sliding opening, seen as you step out
-      runner([[2.3, 0.05, -6.3], [2.4, 1.3, -6.32], [2.26, 2.5, -6.3], [2.36, 3.6, -6.31]],
-        { r: 0.042, density: 1.3, droop: 0.5, spread: 0.34, pick: 1 });
-      runner([[-7.0, 0.05, -6.3], [-6.9, 1.4, -6.32], [-7.04, 2.6, -6.3], [-6.94, 3.7, -6.31]],
-        { r: 0.038, density: 1.2, droop: 0.6, spread: 0.32, pick: 5 });
+        { r: 0.04, density: 1.1, droop: 1.2, spread: 0.4, pick: 1 });
 
       function mass(x0, x1, y0, y1, z0, z1, count, pick) {
         for (let i = 0; i < count; i++) {
@@ -5609,16 +6362,8 @@ scene.background = null;
           if (i % 3 === 0) vleaf(x + rr(-0.1, 0.1), y - rr(0.02, 0.12), z + rr(-0.1, 0.1), rr(0.07, 0.15));
         }
       }
-      mass(-4.0, 4.0, 3.45, 4.1, 8.16, 8.44, MOBILE ? 260 : 620, 0);     // porch edge
-      mass(-4.0, 4.0, 2.74, 3.4, 8.14, 8.4, MOBILE ? 140 : 340, 2);       // its hanging curtain
-      mass(-8.8, -8.35, 0.4, 3.95, 8.1, 8.42, MOBILE ? 90 : 220, 1);      // porch column, west
-      mass(2.18, 2.62, 0.4, 3.95, 8.1, 8.42, MOBILE ? 90 : 220, 4);       // porch column, east
-      mass(4.2, 9.85, 2.62, 3.55, -9.72, -9.3, MOBILE ? 240 : 620, 4);    // terrace pergola
-      mass(4.9, 15.6, 4.55, 5.4, 3.55, 3.8, MOBILE ? 220 : 520, 3);       // deck glass edge
-      mass(10.5, 15.7, 6.3, 6.85, -4.5, 2.3, MOBILE ? 160 : 380, 1);      // deck pergola
-      mass(1.55, 1.98, 0.4, 4.0, 6.6, 6.86, MOBILE ? 100 : 260, 2);       // pier by the door
-      mass(2.12, 2.5, 0.4, 3.7, -6.42, -6.2, MOBILE ? 80 : 200, 1);       // rear wall
-      mass(-7.2, -6.7, 0.4, 3.7, -6.42, -6.2, MOBILE ? 70 : 180, 5);      // rear wall, west
+      mass(4.2, 9.85, 2.70, 3.55, -9.72, -9.3, MOBILE ? 170 : 430, 4);    // terrace pergola
+      mass(10.5, 15.7, 6.35, 6.85, -4.4, 2.2, MOBILE ? 90 : 210, 1);      // roof-deck pergola
 
       /* ── the terrace and roof-deck planters, planted ──────────────────────
          A green body of leaves fills each trough, and the flowers arrive as
@@ -5632,24 +6377,35 @@ scene.background = null;
         const rx = (P.kind === 'round' ? P.r * 1.55 : P.w) * 0.5;
         const rz = (P.kind === 'round' ? P.r * 1.55 : P.d) * 0.5;
         const k = MOBILE ? 0.5 : 1;
+        /* the troughs on the roof deck and the main roof are planted with
+           scanned species first (fountain grass, ribbon plant, snake plant,
+           laurel, cane palm, ground cover) and only a light flowering over
+           them, so no two roof troughs carry the same plant */
+        const roofTop = P.y > 1.0;
+        pfBias = P.pick % 4;
         /* the dome of the planting: high at the centre, low at the stone */
-        const dome = (q) => rim + (0.10 + 0.90 * (1 - q * q)) * P.spread;
+        const dome = (q) => roofTop
+          ? rim + (0.05 + 0.50 * (1 - q * q)) * P.spread
+          : rim + (0.10 + 0.90 * (1 - q * q)) * P.spread;
 
         /* the green body */
         const nl = Math.round(P.count * 0.9 * k);
         for (let i = 0; i < nl; i++) {
           const a = rnd() * 6.283, q = Math.pow(rnd(), 0.62);
-          vleaf(P.x + Math.cos(a) * q * rx, dome(q) * pf(0.32, 1),
-                P.z + Math.sin(a) * q * rz, pf(0.075, 0.155));
+          vleaf(P.x + Math.cos(a) * q * rx,
+                roofTop ? rim + (dome(q) - rim) * pf(0.35, 1) : dome(q) * pf(0.32, 1),
+                P.z + Math.sin(a) * q * rz, roofTop ? pf(0.055, 0.105) : pf(0.075, 0.155));
         }
 
         /* racemes: tight balls of bracts, denser on the sunny shoulder */
-        const nc = Math.max(5, Math.round((P.w || P.r * 2) * 3.6));
+        const nc = roofTop
+          ? Math.max(3, Math.round((P.w || P.r * 2) * 1.0))
+          : Math.max(5, Math.round((P.w || P.r * 2) * 3.6));
         for (let c = 0; c < nc; c++) {
           const a = rnd() * 6.283, q = Math.pow(rnd(), 0.45);
           const cx = P.x + Math.cos(a) * q * rx * 0.94;
           const cz = P.z + Math.sin(a) * q * rz * 0.94;
-          const cy = dome(q) * pf(0.66, 1.0);
+          const cy = roofTop ? rim + (dome(q) - rim) * pf(0.45, 1.0) : dome(q) * pf(0.66, 1.0);
           const n = Math.round(pf(17, 30) * k) + 6;
           for (let i = 0; i < n; i++) {
             const th = rnd() * 6.283, ph = Math.acos(pf(-0.7, 1));
@@ -5662,8 +6418,10 @@ scene.background = null;
           if (c % 2 === 0) vleaf(cx, cy - 0.05, cz, pf(0.08, 0.15));
         }
 
-        /* two canes arching out of the soil and spilling over the rim */
-        for (let k2 = 0; k2 < 2; k2++) {
+        /* two canes arching out of the soil and spilling over the rim, on the
+           terrace troughs only: a roof planter is read from below, so there
+           is nothing to spill over */
+        for (let k2 = 0; k2 < (roofTop ? 0 : 2); k2++) {
           const a = rnd() * 6.283, sx = Math.cos(a), sz = Math.sin(a);
           const r0 = pf(0.06, 0.22);
           runner([
@@ -5672,6 +6430,72 @@ scene.background = null;
             [P.x + sx * rx * 1.22, rim + P.spread * 0.48, P.z + sz * rz * 1.22],
             [P.x + sx * rx * 1.66, rim - 0.08, P.z + sz * rz * 1.66]
           ], { r: 0.016, density: 0.9, droop: 0.28, spread: 0.14, pick: P.pick + 3, mat: M.oakDark });
+        }
+      }
+
+      /* ── the front wall: one clipped bougainvillea, on purpose ────────────
+         Rooted in a travertine trough on the porch apron, against the stone
+         pier between the living-room glass and the entry. Three canes climb
+         the pier, the crown spills under the cedar soffit and two runners
+         drop over the porch edge. It never reaches the glass, the door head
+         or the upper windows: this is the one place on the house the paper
+         flower is allowed to grow.                                        */
+      {
+        const PX0 = -3.02, PX1 = -1.50, PZ0 = 6.74, PZ1 = 7.28;
+        const w = PX1 - PX0, dd = PZ1 - PZ0, cx = (PX0 + PX1) / 2, cz = (PZ0 + PZ1) / 2;
+        const H = 0.50, th = 0.065;
+        /* the trough: a travertine box, one course of stone, 60 mm proud of
+           the apron so it casts its own shadow line */
+        addBox(w, 0.06, dd, cx, 0.09, cz, M.stonePale, { uv: 0.5 });
+        for (const s of [-1, 1]) {
+          addBox(w, H, th, cx, 0.06 + H / 2, cz + s * (dd / 2 - th / 2), M.stonePale, { uv: 0.5 });
+          addBox(th, H, dd - th * 2, cx + s * (w / 2 - th / 2), 0.06 + H / 2, cz, M.stonePale, { uv: 0.5 });
+        }
+        addPlane(w - th * 2 - 0.02, dd - th * 2 - 0.02, cx, 0.06 + H - 0.09, cz, M.dark, { receive: true });
+        contactShadow(cx, cz, w + 0.34, dd + 0.34, true, 0.065);
+
+        const RY = 0.06 + H - 0.10;          // soil
+        const RX = cx - 0.06;
+        /* the canes: three woody stems, thickening at the base */
+        runner([[RX + 0.02, RY, 6.98], [RX + 0.06, 1.30, 6.97], [RX - 0.02, 2.30, 6.95],
+                [RX + 0.04, 3.30, 6.95], [RX, 3.84, 6.96]],
+          { r: 0.042, density: 1.5, droop: 0.22, spread: 0.20, pick: 0 });
+        runner([[RX - 0.30, RY - 0.02, 7.04], [RX - 0.36, 1.45, 6.98], [RX - 0.30, 2.55, 6.96],
+                [RX - 0.22, 3.55, 6.97], [RX - 0.18, 3.86, 7.02]],
+          { r: 0.034, density: 1.3, droop: 0.22, spread: 0.18, pick: 1 });
+        runner([[RX + 0.34, RY - 0.02, 6.98], [RX + 0.40, 1.5, 6.96], [RX + 0.34, 2.6, 6.95],
+                [RX + 0.26, 3.6, 6.96], [RX + 0.22, 3.86, 7.00]],
+          { r: 0.032, density: 1.3, droop: 0.2, spread: 0.18, pick: 3 });
+
+        /* the climb: four loose strands up the pier, never a slab of colour,
+           each with its own green so the wall reads as a vine, not a ribbon */
+        const nS = LEAN ? 44 : 120;
+        for (let s = 0; s < 4; s++) {
+          const bx = PX0 + 0.22 + s * 0.34;
+          mass(bx - 0.19, bx + 0.19, 0.62, 3.62, 6.90, 7.10, nS, s + 1);
+          for (let k = 0; k < (LEAN ? 26 : 64); k++) {
+            vleaf(bx + rr(-0.30, 0.30), rr(0.55, 3.65), 6.90 + rr(-0.03, 0.16), rr(0.08, 0.16));
+          }
+        }
+        /* the crown: it lifts off the pier and runs the soffit, twice as deep in
+           z as the climb and thinning at both ends, the way a clipped vine
+           flowers where the sun catches it */
+        mass(PX0 - 0.10, PX1 + 0.26, 3.56, 4.02, 6.90, 7.84, LEAN ? 210 : 520, 2);
+        mass(PX0 - 0.05, PX0 + 1.05, 3.66, 4.03, 7.62, 8.02, LEAN ? 55 : 140, 4);
+        mass(PX1 - 0.55, PX1 + 0.34, 3.62, 4.02, 7.30, 7.86, LEAN ? 45 : 120, 0);
+        for (let k = 0; k < (LEAN ? 30 : 78); k++) {
+          vleaf(rr(PX0 - 0.12, PX1 + 0.26), rr(3.56, 4.0), rr(6.9, 7.9), rr(0.08, 0.15));
+        }
+
+        /* two runners spilling over the porch edge, so the crown has weight */
+        for (const [tx, tz] of [[RX - 0.55, 7.75], [RX + 0.42, 7.7]]) {
+          runner([[tx, 3.92, 7.35], [tx + rr(-0.08, 0.08), 3.62, 7.72],
+                  [tx + rr(-0.12, 0.12), 3.20, 7.94], [tx + rr(-0.12, 0.12), 2.86, 8.02]],
+            { r: 0.018, density: 1.5, droop: 0.5, spread: 0.26, pick: 5, mat: M.bark });
+        }
+        /* a little green at the soil line, so the canes are planted */
+        for (let i = 0; i < (LEAN ? 10 : 22); i++) {
+          vleaf(cx + rr(-0.62, 0.62), RY + rr(0.02, 0.16), cz + rr(-0.2, 0.2), rr(0.09, 0.16));
         }
       }
 
@@ -5690,6 +6514,26 @@ scene.background = null;
       vLeaves.castShadow = false;
       vLeaves.frustumCulled = false;
       world.add(vLeaves);
+
+      /* the four scanned Paper Flower atlases, over the same masses */
+      const pfTex = [loadAtlas('paperflower_pf09.webp'), loadAtlas('paperflower_pf02.webp'),
+                     loadAtlas('paperflower_pf01.webp'), loadAtlas('paperflower_pf00.webp')];
+      for (let w = 0; w < 4; w++) {
+        if (!pfMats[w].length) continue;
+        const mat = windify(new THREE.MeshStandardMaterial({
+          map: pfTex[w], alphaTest: 0.40, side: THREE.DoubleSide,
+          roughness: 0.80, metalness: 0.0, envMapIntensity: 0.55,
+          emissive: new THREE.Color(0x1c0710), emissiveIntensity: 0.10
+        }), { amp: 0.075, freq: 1.45, height: 3.4, soft: 0.22, fill: [0.16, 0.10, 0.12], trans: 0.18 });
+        const mesh = new THREE.InstancedMesh(bGeo, mat, pfMats[w].length);
+        pfMats[w].forEach((m, i) => { mesh.setMatrixAt(i, m); mesh.setColorAt(i, pfCols[w][i]); });
+        mesh.instanceMatrix.needsUpdate = true;
+        if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+        mesh.castShadow = false;
+        mesh.receiveShadow = true;
+        mesh.frustumCulled = false;
+        world.add(mesh);
+      }
     }
 
     /* ─────────────────────────────────────────────────────────────────────
@@ -5710,7 +6554,9 @@ scene.background = null;
        · the paving is kept clear and the height shortens at its edge
        ───────────────────────────────────────────────────────────────────── */
     {
-      const driveHalf = (t) => lerp(1.65, 1.25, t);
+      const driveHalf = (t) => t > tWALL
+        ? lerp(1.62, 1.52, clamp((t - tWALL) / (1 - tWALL)))
+        : lerp(1.65, 1.44, t);
 
       // the drive as a lookup table, for cheap "is this paving?" tests
       const DT = [];
@@ -5732,8 +6578,10 @@ scene.background = null;
       };
 
       const paved = (x, z) => {
-        if (onStreet(x, z, 0.7)) return true;                              // the city streets
-        if (driveDist(x, z) < 0.22) return true;
+        if (onStreet(x, z, 2.6)) return true;                              // the city streets and their pavements
+        if (driveDist(x, z) < 1.05) return true;                            // the walk, shoulders included
+        if (x > -5.2 && x < 5.2 && z > G.z1 - 0.2 && z < 9.6) return true;  // the entry apron
+        if (x > -5.4 && x < 7.1 && z > 8.8 && z < 25.4) return true;        // the arrival court
         if (estateBand(x, z)) return true;                                   // the wall's footprint
         if (x > G.x0 - 1.2 && x < WING.x1 + 1.2 && z > G.z0 - 1.2 && z < S.z1 + 1.3) return true;
         if (x > -4.4 && x < 4.2 && z > S.z1 && z < 12.2) return true;   // the entrance walk
@@ -5742,6 +6590,8 @@ scene.background = null;
         // the carport court, the wellness pavilion, the play court and the
         // garden beds keep their own surfaces; no lawn tufts on them
         if (x > 5.6 && x < 13.6 && z > 11.2 && z < 17.8) return true;
+        if (x > 2.1 && x < 7.0 && z > 11.6 && z < 17.4) return true;   // its link apron
+        if (x > 5.8 && x < 10.2 && z > 16.8 && z < 25.4) return true;  // its driveway spur
         if (x > -15.0 && x < -7.9 && z > -14.7 && z < -9.1) return true;
         if (x > 17.9 && x < 26.5 && z > -3.8 && z < 6.2) return true;
         if (x > -17.4 && x < -13.0 && z > -5.0 && z < -2.2) return true;
@@ -5828,7 +6678,11 @@ scene.background = null;
         return g;
       })();
 
-      const N = Math.round((MOBILE ? 17000 : (TABLET ? 26000 : 34000)) * clamp(opts.grassDensity, 0.15, 1));
+      /* the lawn: a lean phone carries 9–12k tufts instead of 19k. The blades
+         are drawn wider (see uBladeW) so the same ground still reads as turf,
+         which is a tenth of the vertex work for no visible hole */
+      const N = Math.round((LEAN ? (LOWRAM ? 4200 : 12000) : (TABLET ? 30000 : 40000)) * clamp(opts.grassDensity, 0.15, 1));
+      ctxStats.grassTufts = N;
       const aRoot = new Float32Array(N * 3);
       const aParam = new Float32Array(N * 4);
       const aTint = new Float32Array(N);
@@ -5838,7 +6692,7 @@ scene.background = null;
         guard++;
         let x, z;
         const roll = rnd();
-        if (roll < 0.58) {
+        if (roll < 0.50) {
           // along the drive — this is where the camera actually is
           const t = 0.20 + 0.80 * Math.pow(rnd(), 0.5);
           const p = drive.getPoint(t);
@@ -5847,6 +6701,12 @@ scene.background = null;
           const side = rnd() > 0.5 ? 1 : -1;
           const off = side * (1.45 + Math.pow(rnd(), 1.25) * 22);
           x = p.x + nx * off; z = p.z + nz * off;
+        } else if (roll < 0.69) {
+          /* the rear garden behind the villa: the lawn the pool sits in. It is
+             sampled on its own so the back of the house is a lawn, not a
+             thinning-out of the front field. */
+          x = -19.5 + Math.pow(rnd(), 0.82) * 36;
+          z = -6.2 - Math.pow(rnd(), 0.82) * 23.5;
         } else if (roll < 0.96) {
           // the apron round the house, terrace and pool
           x = rr(-34, 38); z = rr(-46, 40);
@@ -5867,7 +6727,9 @@ scene.background = null;
 
         const baseH = (0.30 + Math.pow(rnd(), 1.35) * 0.34) * (0.62 + 0.38 * near);
         const h = baseH * (0.45 + 0.55 * edge) * rr(0.68, 1.32);
-        const w = h * rr(1.15, 1.75);
+        /* on a lean phone the lawn carries two thirds of the tufts, so each
+           card is drawn a fifth wider: same coverage, fewer vertices */
+        const w = h * rr(1.15, 1.75) * (LEAN ? 1.22 : 1);
 
         // a little jitter, so the sampling never shows as rows
         x += rr(-0.35, 0.35); z += rr(-0.35, 0.35);
@@ -5961,12 +6823,13 @@ scene.background = null;
             float fieldN = sin(wxz.x * 0.061 + wxz.y * 0.043 + 1.7)
                         + 0.5 * sin(wxz.x * 0.017 - wxz.y * 0.023 + 3.1);
             float dry = clamp(0.5 + 0.26 * fieldN + (aTint - 0.9) * 0.55, 0.0, 1.0);
-            vec3 lush = vec3(0.150, 0.235, 0.085);
-            vec3 straw = vec3(0.330, 0.290, 0.140);
+            vec3 lush = vec3(0.175, 0.215, 0.098);
+            vec3 straw = vec3(0.315, 0.282, 0.158);
             vec3 base = mix(lush, straw, dry);
 
-            // per-tuft light, and a root that sits in its own shadow
-            base *= 0.46 + 0.62 * smoothstep(-0.02, 0.85, position.y);
+            // per-tuft light, and a root that sits in its own shadow — but a
+            // mown lawn has no black root, only a deeper green
+            base *= 0.58 + 0.50 * smoothstep(-0.02, 0.85, position.y);
             base *= 0.82 + aTint * 0.30;
             vCol = base;
             vUp = position.y;
@@ -5991,14 +6854,17 @@ scene.background = null;
 
           void main() {
             vec4 texel = texture2D(uTuft, vUv);
-            if (texel.a < 0.42) discard;
+            if (texel.a < 0.36) discard;
 
-            vec3 albedo = vCol * texel.rgb * 3.5;
+            vec3 albedo = vCol * texel.rgb * 2.62;
 
             // a card's face is mostly up-facing, so the light comes from the sky
             vec3 N = normalize(vec3(0.0, 1.0, 0.0));
             float ndl = max(dot(N, uSunDir), 0.0);
-            vec3 col = albedo * (uSkyCol * 1.18 + uSunCol * ndl * 1.28);
+            /* a card's normal is the sky, but the sun still rakes across a mown
+               lawn at 17° and lights most of each blade: at 1.16 the field sat
+               in permanent half-shade and read as scrub */
+            vec3 col = albedo * (uSkyCol * 1.62 + uSunCol * ndl * 2.05);
             // backlit rim, where the sun comes through the thin tips
             col += albedo * uSunCol * 0.55 * smoothstep(0.35, 1.0, vUp) * ndl;
 
@@ -6290,7 +7156,7 @@ scene.background = null;
       // the core: cards through the middle of the mass, turned every way, so
       // the crown is a volume with shade in it rather than a shell round a hole
       {
-        const n = MOBILE ? 150 : 320;
+        const n = LOWRAM ? 56 : (MOBILE ? 150 : 320);
         for (let i = 0; i < n; i++) {
           const a = rnd() * Math.PI * 2, b = Math.acos(rr(-1, 1));
           const k = Math.pow(rnd(), 0.7) * 0.72;
@@ -6548,6 +7414,40 @@ function frondGeo(ox, oy, oz, az, pitch, len, droop, twist = 0, dense = 1) {
         queue(f.geo, M.palmLeaf, true, false);
       }
 
+      /*  Coconuts: the bunch a date palm carries under its crown. Six to ten
+          husks hung just below the fronds where the light catches them. Bigger
+          than a real nut on purpose: at 390 px a true 15 cm coconut is a single
+          pixel, and the point of him asking for them is that you can see them.
+          Queued into one merged mesh per material, so the quartet of palms adds
+          no draw call. */
+      {
+        const nB = 2;
+        for (let b = 0; b < nB; b++) {
+          const az = (b / nB) * Math.PI * 2 + rr(-0.55, 0.55);
+          const rad = 0.46 * scale;
+          const cx = top.x + Math.cos(az) * rad;
+          const cz = top.z + Math.sin(az) * rad;
+          const cy = top.y - 0.86 * scale;
+          const n = LOWRAM ? 6 : 6 + Math.round(rnd() * 4);
+          for (let k = 0; k < n; k++) {
+            const r = (0.15 + rr(-0.012, 0.02)) * scale;
+            const g = new THREE.SphereGeometry(r, 6, 5);
+            const ang = (k / n) * Math.PI * 2 + rr(-0.35, 0.35);
+            const out = rr(0.04, 0.17) * scale;
+            const drop = rr(0, 0.34) * scale;
+            g.translate(cx + Math.cos(ang) * out, cy - drop, cz + Math.sin(ang) * out);
+            const t = drop / (0.34 * scale);           // green at the crown, husk lower
+            const col = new THREE.Color().setHSL(0.17 - 0.095 * t, 0.46 + 0.10 * t, 0.28 - 0.09 * t).convertSRGBToLinear();
+            const ca = new Float32Array(g.attributes.position.count * 3);
+            for (let v = 0; v < g.attributes.position.count; v++) {
+              ca[v * 3] = col.r; ca[v * 3 + 1] = col.g; ca[v * 3 + 2] = col.b;
+            }
+            g.setAttribute('color', new THREE.BufferAttribute(ca, 3));
+            queue(g, M.coconut, true, false);
+          }
+        }
+      }
+
       // dates: three small clusters tucked under the crownshaft
       for (let c = 0; c < 3; c++) {
         const az = rr(0, 6.3), rad = 0.26 * scale;
@@ -6566,11 +7466,11 @@ function frondGeo(ox, oy, oz, az, pitch, len, droop, twist = 0, dense = 1) {
        left one is the tree the camera passes closest to, the right one gives
        the approach its parallax. Everything else in the field is the meadow,
        the four palms, and the light. */
-    const treeSpots = [
-      [-9.4, 18.8, 1.16],
-      [13.6, 34.0, 1.0]
-    ];
-    treeSpots.forEach(([x, z, s]) => addOlive(x, z, s));
+    /*  The two olive balls that used to stand here were the last cartoon
+        silhouettes in the approach: a crown of cards on a smooth trunk. They
+        are now two Quixel planting groups — a fan palm, a spineless yucca and
+        a clump of spotted laurel each — laid out through the mega-spot table
+        at the end of the build, so every leaf in the foreground is a scan. */
 
     /* date palms: four Gulf date palms standing on the four corners of the
        house + terrace + pool plinth, the way four minarets frame the Taj. One
@@ -6587,7 +7487,7 @@ function frondGeo(ox, oy, oz, az, pitch, len, droop, twist = 0, dense = 1) {
 
     // the palms are their own materials, so the quartet switches as one group
     setPalms = (on) => {
-      for (const m of [M.palmBark, M.palmCrown, M.palmLeaf, M.palmRachis, M.palmDry, M.dates]) {
+      for (const m of [M.palmBark, M.palmCrown, M.palmLeaf, M.palmRachis, M.palmDry, M.dates, M.coconut]) {
         const mesh = BUCKET_MESH.get(m);
         if (mesh) mesh.visible = !!on;
       }
@@ -6777,17 +7677,15 @@ function frondGeo(ox, oy, oz, az, pitch, len, droop, twist = 0, dense = 1) {
          neighbourhood the way it always ran out of sight. The camera comes in
          along it, so this is the surface the whole first act plays over.      */
       {
-        let tGate = 1;
-        for (let i = 0; i <= 400; i++) {
-          const t = i / 400;
-          if (drive.getPoint(t).z >= ESTATE.z1 + 2) { tGate = t; break; }
-        }
+        /* the boulevard runs from the far end of the approach up to the wall,
+           never past it: inside the wall the surface is the stone walk */
+        const tGate = tWALL;
         const yOf = (p) => terrainH(p.x, p.z);
         const strip = (w, y, lift, mat, segs = 120) => {
           const pos = [], uv = [], idx = [];
           const runLen = drive.getLength();
           for (let i = 0; i <= segs; i++) {
-            const t = lerp(tGate, 1, i / segs), p = drive.getPoint(t), tan = drive.getTangent(t);
+            const t = lerp(0, tGate, i / segs), p = drive.getPoint(t), tan = drive.getTangent(t);
             const nx = -tan.z, nz = tan.x, l = Math.hypot(nx, nz) || 1;
             const yy = yOf(p) + lift;
             for (const s of [-1, 1]) {
@@ -6810,7 +7708,7 @@ function frondGeo(ox, oy, oz, az, pitch, len, droop, twist = 0, dense = 1) {
           const pos = [], uv = [], idx = [];
           const N = 120;
           for (let i = 0; i <= N; i++) {
-            const t = lerp(tGate, 1, i / N), p = drive.getPoint(t), tan = drive.getTangent(t);
+            const t = lerp(0, tGate, i / N), p = drive.getPoint(t), tan = drive.getTangent(t);
             const nx = -tan.z, nz = tan.x, l = Math.hypot(nx, nz) || 1;
             const o0 = sd * 3.62, o1 = sd * 5.78;
             for (const [o, yy] of [[o0, 0.15], [o1, 0.15]]) {
@@ -6829,7 +7727,7 @@ function frondGeo(ox, oy, oz, az, pitch, len, droop, twist = 0, dense = 1) {
         // the centre line, dashed, so the boulevard reads as a street from the
         // very first frame and the eye has a scale to walk down
         for (let i = 0; i < 24; i++) {
-          const t = lerp(tGate, 1, (i + 0.5) / 24);
+          const t = lerp(0, tGate, (i + 0.5) / 24);
           const p = drive.getPoint(t), tan = drive.getTangent(t);
           const g = new THREE.PlaneGeometry(0.16, 2.9);
           g.rotateX(-Math.PI / 2);
@@ -6841,7 +7739,7 @@ function frondGeo(ox, oy, oz, az, pitch, len, droop, twist = 0, dense = 1) {
         // lamps down each side every twenty metres, and a palm or two on the
         // outer half only: the approach itself stays a clear view of the house
         for (let i = 0; i < 6; i++) {
-          const t = lerp(tGate, 1, (i + 0.5) / 6);
+          const t = lerp(0, tGate, (i + 0.5) / 6);
           const p = drive.getPoint(t), tan = drive.getTangent(t);
           const nx = -tan.z, nz = tan.x, l = Math.hypot(nx, nz) || 1;
           for (const sd of [-1, 1]) {
@@ -6980,6 +7878,10 @@ function frondGeo(ox, oy, oz, az, pitch, len, droop, twist = 0, dense = 1) {
               }
               if (wMax < 9 || dMax < 8) continue;
               const dHome = Math.hypot(cx - HOME.x, cz - HOME.z);
+              /* a lean device keeps the two streets the camera can read and
+                 leaves the rest of the grid to the mid-ground ring: at 150 m
+                 through a 0.002 fog nobody counts the villas */
+              if (dHome > (LOWRAM ? 110 : 150) && LEAN) continue;
               // close in, the street is villas; the blocks start a street back
               const towerChance = dHome < 150 ? 0.12 : (dHome < 220 ? 0.34 : 0.44);
               if (rnd() < towerChance && wMax > 11 && dMax > 11) {
@@ -7006,7 +7908,7 @@ function frondGeo(ox, oy, oz, az, pitch, len, droop, twist = 0, dense = 1) {
          hundred-odd low blocks in rows, with no street detail: at 200 m only
          the massing, the height and the colour read anyway.                 */
       {
-        const bands = MOBILE ? 3 : 5;
+        const bands = LEAN ? (LOWRAM ? 1 : 2) : (TABLET ? 4 : 5);
         for (let b = 0; b < bands; b++) {
           const r = 190 + (b + 0.5) * 28;
           const n = Math.round((2 * Math.PI * r) / 32);
@@ -7155,7 +8057,7 @@ function frondGeo(ox, oy, oz, az, pitch, len, droop, twist = 0, dense = 1) {
         const brightMat = new THREE.ShaderMaterial({
           uniforms: {
             tDiffuse: { value: null },
-            uThreshold: { value: 1.18 },
+            uThreshold: { value: 1.30 },
             uKnee: { value: 0.86 }
           },
           vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }`,
@@ -7199,16 +8101,16 @@ function frondGeo(ox, oy, oz, az, pitch, len, droop, twist = 0, dense = 1) {
             tScene: { value: null },
             tBloom: { value: null },
             uBTexel: { value: new THREE.Vector2(1 / 256, 1 / 256) },
-            uBloom: { value: 0.17 },
-            uVeil: { value: 0.055 },
+            uBloom: { value: 0.11 },
+            uVeil: { value: 0.028 },
             uExposure: { value: 0.84 },
-            uSaturation: { value: 0.125 },
-            uContrast: { value: 0.095 },
+            uSaturation: { value: 0.06 },
+            uContrast: { value: 0.075 },
             uBrightness: { value: 0.004 },
             uVignetteFrom: { value: 0.62 },
             uVignetteTo: { value: 1.28 },
-            uVignetteColor: { value: new THREE.Color(0x14110d) },
-            uVignette: { value: 0.55 },
+            uVignetteColor: { value: new THREE.Color(0x0f1113) },
+            uVignette: { value: 0.30 },
             uVigAspect: { value: new THREE.Vector2(1, 1) },
             uSeed: { value: 0 },
             uFade: { value: 1 }
@@ -7280,7 +8182,7 @@ function frondGeo(ox, oy, oz, az, pitch, len, droop, twist = 0, dense = 1) {
               /* split tone: the shadows cool a hair, the highlights warm, which
                  is what makes a golden-hour frame read as film rather than
                  as a render */
-              c *= mix(vec3(0.982, 0.995, 1.022), vec3(1.034, 1.010, 0.972),
+              c *= mix(vec3(0.985, 0.996, 1.016), vec3(1.030, 1.008, 0.976),
                        smoothstep(0.10, 0.88, luma));
               c = mix(vec3(luma), c, 1.0 + uSaturation);
               c = 0.5 + (1.0 + uContrast) * (c - 0.5);
@@ -7420,73 +8322,234 @@ function frondGeo(ox, oy, oz, az, pitch, len, droop, twist = 0, dense = 1) {
         h: sp[6] == null ? undefined : sp[6], mobile: sp[7] !== false });
     }
 
+    /* ── the scanned planting, the props, and the street furniture ────────
+       SUBSTITUTES.md §1–§4, placed where the camera actually goes. Each of
+       these replaces a drawn stand-in: the two olive balls in the forecourt,
+       the flat hedge boxes, the empty deck pots, the plain gate posts. The
+       whole set is 3.9 MB of GLB and about 23k triangles, instanced per key. */
+    {
+      const P = (key, x, z, h, yaw = null, mobile = true) =>
+        megaSpot(key, x, 0.02, z, { h, yaw: yaw == null ? undefined : yaw, mobile });
+
+      /* the forecourt group left of the drive: the tree the approach passes */
+      P('tropical_palm', -9.8, 18.9, 3.1, 0.9);
+      P('yucca_a', -8.1, 18.2, 2.0, 2.1);
+      P('laurel', -10.9, 19.9, 1.55, 0.4);
+      P('laurel', -8.35, 20.15, 1.30, 2.8);
+      P('laurel', -10.2, 17.7, 1.15, 4.2);
+      P('ground_cover', -9.5, 19.3, 0.26, 1.0);
+      P('ground_cover', -8.8, 18.8, 0.22, 3.1);
+      P('ground_cover', -10.3, 18.6, 0.24, 5.0);
+
+      /* the right-hand group, giving the approach its parallax */
+      P('fan_palm', 13.9, 34.1, 2.7, 1.4);
+      P('yucca_a', 12.5, 33.45, 1.85, 3.3);
+      P('laurel', 14.95, 35.2, 1.45, 0.9);
+      P('cane_palm', 12.15, 35.25, 1.35, 2.2);
+      P('ground_cover', 13.3, 34.4, 0.24, 0.2);
+      P('ground_cover', 14.2, 33.7, 0.21, 2.4);
+
+      /* the gate court: planting at both piers, inside the wall line */
+      P('laurel', -4.7, 22.5, 1.45, 1.1);
+      P('cane_palm', -6.5, 21.6, 1.30, 3.4);
+      P('laurel', 13.5, 22.4, 1.50, 2.0);
+      P('yucca_a', 14.9, 21.6, 1.85, 0.6);
+      P('ground_cover', -5.6, 22.0, 0.24, 4.0);
+      P('ground_cover', 14.2, 22.1, 0.22, 1.7);
+
+      /* the pool terrace: the two ends of the deck, off the swim line */
+      P('yucca_a', 12.15, -6.1, 1.75, 1.2);
+      P('fan_palm', -7.5, -18.6, 2.15, 2.6);
+      P('cane_palm', -6.8, -19.6, 1.25, 0.3);
+      P('ground_cover', -7.0, -18.2, 0.24, 2.2);
+      P('ground_cover', 11.8, -6.7, 0.22, 3.6);
+
+      /* the concrete pots, the bollards at the gate, the bench at the water */
+      megaSpot('pot_bowl', 11.95, 0.02, -12.3, { s: 1.0, yaw: 0.3 });
+      megaSpot('pot_taper', -6.95, 0.02, -11.15, { s: 1.0, yaw: 1.9 });
+      megaSpot('pot_bowl', 5.85, 0.02, 9.4, { s: 0.9, yaw: 2.4 });
+      megaSpot('pot_taper', -5.95, 0.02, 9.6, { s: 0.85, yaw: 0.7 });
+      megaSpot('bollard', 1.55, 0.02, 26.8, { s: 1.0, yaw: 0 });
+      megaSpot('bollard', 7.45, 0.02, 26.8, { s: 1.0, yaw: 0 });
+      megaSpot('bench', 12.9, 0.02, -19.9, { s: 1.0, yaw: 1.5708 });
+
+      /* the children's court: the scanned timber bench at its west edge, a run
+         of beach boulders as stepping stones in from the lawn, and ground
+         cover in the joints of the limestone curb */
+      megaSpot('bench', 18.25, 0.035, 1.55, { s: 1.0, yaw: Math.PI / 2 });
+      megaSpot('boulder', 14.2, 0.02, 2.55, { s: 0.40, yaw: 0.7 });
+      megaSpot('boulder', 15.5, 0.02, 1.95, { s: 0.36, yaw: 2.1 });
+      megaSpot('boulder', 16.7, 0.02, 1.55, { s: 0.38, yaw: 4.0 });
+      megaSpot('boulder', 17.75, 0.02, 1.35, { s: 0.34, yaw: 1.3 });
+      megaSpot('ground_cover', 18.55, 0.02, 5.75, { h: 0.26, yaw: 0.9 });
+      megaSpot('ground_cover', 25.95, 0.02, -3.25, { h: 0.24, yaw: 2.6 });
+      megaSpot('ground_cover', 18.55, 0.02, -3.25, { h: 0.25, yaw: 4.2 });
+      megaSpot('laurel', 18.15, 0.02, 6.6, { h: 1.15, yaw: 1.7 });
+      megaSpot('laurel', 26.3, 0.02, 6.35, { h: 1.05, yaw: 3.3 });
+
+      /* the roof-deck and main-roof troughs, planted species by species so no
+         two troughs carry the same thing: Quixel fountain grass, ribbon plant,
+         snake plant, spotted laurel, cane palm and ground cover, standing in
+         the soil of each trough where the flowering cards are now sparse */
+      const rfD = 4.05 + 0.45, rfR = 8.53 + 0.40;
+      const RP = (key, x, z, y, h, yaw = 0) => megaSpot(key, x, y, z, { h, yaw });
+      /* the roof deck over the wing */
+      RP('fountain_grass', 6.9, 3.0, rfD, 0.70, 0.4);
+      RP('ribbon_plant', 7.9, 3.0, rfD, 0.72, 2.2);
+      RP('laurel', 11.9, -5.45, rfD, 0.82, 1.1);
+      RP('cane_palm', 12.85, -5.45, rfD, 0.78, 3.0);
+      RP('ground_cover', 5.2, 2.6, rfD, 0.30, 0.8);
+      RP('snake_plant', 5.2, -5.2, rfD, 0.58, 2.4);
+      /* the main roof, south edge over the terrace */
+      RP('fountain_grass', -13.8, -6.95, rfR, 0.78, 0.6);
+      RP('snake_plant', -13.2, -6.95, rfR, 0.54, 2.0);
+      RP('ribbon_plant', -8.9, -6.95, rfR, 0.72, 1.2);
+      RP('laurel', -8.3, -6.95, rfR, 0.74, 3.4);
+      RP('cane_palm', -1.3, -6.95, rfR, 0.80, 0.2);
+      RP('ground_cover', -0.7, -6.95, rfR, 0.30, 1.9);
+      RP('fountain_grass', 3.1, -6.95, rfR, 0.74, 4.1);
+      RP('ribbon_plant', 3.7, -6.95, rfR, 0.68, 2.6);
+      /* the main roof, north edge */
+      RP('laurel', -13.1, 9.45, rfR, 0.78, 0.9);
+      RP('fountain_grass', -12.5, 9.45, rfR, 0.70, 2.5);
+      RP('ribbon_plant', -7.7, 9.45, rfR, 0.72, 1.6);
+      RP('snake_plant', -7.1, 9.45, rfR, 0.54, 3.3);
+      RP('cane_palm', -1.9, 9.45, rfR, 0.84, 0.4);
+      RP('ground_cover', -1.3, 9.45, rfR, 0.28, 2.1);
+      RP('laurel', 3.3, 9.45, rfR, 0.74, 3.8);
+      RP('fountain_grass', 3.9, 9.45, rfR, 0.68, 1.0);
+      /* the main roof, west edge */
+      RP('fountain_grass', -15.03, -4.9, rfR, 0.74, 1.4);
+      RP('ribbon_plant', -15.03, -4.3, rfR, 0.68, 2.7);
+      RP('laurel', -15.03, 0.1, rfR, 0.78, 0.3);
+      RP('cane_palm', -15.03, 0.7, rfR, 0.82, 3.1);
+      RP('snake_plant', -15.03, 5.1, rfR, 0.54, 1.8);
+      RP('ground_cover', -15.03, 5.7, rfR, 0.28, 0.6);
+      /* the main roof, east edge */
+      RP('ribbon_plant', 5.67, -4.9, rfR, 0.72, 0.8);
+      RP('fountain_grass', 5.67, -4.3, rfR, 0.68, 2.3);
+      RP('cane_palm', 5.67, 0.1, rfR, 0.80, 1.5);
+      RP('laurel', 5.67, 0.7, rfR, 0.74, 3.6);
+      RP('ground_cover', 5.67, 5.1, rfR, 0.28, 1.2);
+      RP('fountain_grass', 5.67, 5.7, rfR, 0.64, 4.4);
+    }
+
     const megaStats = { loaded: 0, failed: 0, assets: [] };
     let shadowDirty = false;
-    function megaPlaceModels() {
+    /* ── the scanned props, in two waves ──────────────────────────────────
+       Wave one is what stands in the first four stops: the pots and bollards
+       of the entry, the forecourt planting, the pool ends. Wave two — the
+       rear boulders, the roof troughs, the play-court pieces, none of which
+       the camera sees before the amenities stop — follows once the first wave
+       has landed, or when the scroll reaches that part of the take. A 4 GB
+       phone takes wave one only: seven draws of scanned planting is the most
+       its WebGL budget should carry, and the procedural stand-ins stay in
+       place for everything else.                                          */
+    const MEGA_WAVE1 = ['pot_bowl', 'pot_taper', 'bollard', 'bench', 'laurel', 'yucca_a',
+                        'cane_palm', 'fan_palm', 'ground_cover', 'tropical_palm'];
+    let megaTotal = 0, megaDone = 0, megaWave2 = false;
+    function megaPlaceModels(only) {
       if (opts.models === false || !megaSpots.length || !THREE) return;
       let base = opts.modelBase;
       if (!base) {
         try { base = new URL('./models/', import.meta.url).href; }
         catch (_) { base = './models/'; }
       }
-      const keys = [...new Set(megaSpots.map((sp) => sp.key))];
-      for (const key of keys) {
-        const spots = megaSpots.filter((sp) => sp.key === key && (sp.mobile || !MOBILE));
-        if (!spots.length) continue;
-        loadMegaModel(THREE, base + key + '.glb', MOBILE ? 12000 : 9000).then((model) => {
-          const info = MEGA_ASSETS[key] || {};
-          const mat = model.material;
-          mat.envMapIntensity = (key === 'clay_vase' || key === 'wood_vase') ? 1.0 : 0.85;
-          if (info.wind) {
-            windify(mat, {
-              amp: info.wind, freq: 1.35, height: 2.2, base: -1.2,
-              soft: info.soft || 0, fill: [0.10, 0.125, 0.075], trans: 0.22
+      const all = [...new Set(megaSpots.map((sp) => sp.key))];
+      if (!megaTotal) megaTotal = all.length;
+      const keys = only || all;
+      let next = 0, live = 0;
+      const maxLive = LEAN ? 3 : 8;
+      const pump = () => {
+        while (live < maxLive && next < keys.length) {
+          const key = keys[next++];
+          const spots = megaSpots.filter((sp) => sp.key === key && (sp.mobile || !MOBILE));
+          if (!spots.length) { megaDone++; continue; }
+          live++;
+          loadMegaModel(THREE, base + key + '.glb', MOBILE ? 12000 : 9000).then((model) => {
+            const info = MEGA_ASSETS[key] || {};
+            const mat = model.material;
+            mat.envMapIntensity = (key === 'clay_vase' || key === 'wood_vase') ? 1.0 : 0.85;
+            if (info.wind) {
+              windify(mat, {
+                amp: info.wind, freq: 1.35, height: 2.2, base: -1.2,
+                soft: info.soft || 0, fill: [0.10, 0.125, 0.075], trans: 0.22
+              });
+            }
+            model.geometry.computeBoundingBox();
+            const bb = model.geometry.boundingBox;
+            const bh = Math.max(0.02, bb.max.y - bb.min.y);
+            const mesh = new THREE.InstancedMesh(model.geometry, mat, spots.length);
+            mesh.name = 'megascans:' + key;
+            const d = new THREE.Object3D(), col = new THREE.Color();
+            spots.forEach((sp, i) => {
+              const s = sp.h ? sp.h / bh : (sp.s || 1);
+              d.position.set(sp.x, sp.y, sp.z);
+              d.rotation.set(0, sp.yaw, 0);
+              d.scale.set(s, (sp.sy || s), s);
+              d.updateMatrix();
+              mesh.setMatrixAt(i, d.matrix);
+              const v = 0.90 + ((i * 0.618) % 1) * 0.12;
+              col.setRGB(v, v * (0.985 + (i % 3) * 0.008), v * 0.97);
+              mesh.setColorAt(i, col);
             });
-          }
-          model.geometry.computeBoundingBox();
-          const bb = model.geometry.boundingBox;
-          const bh = Math.max(0.02, bb.max.y - bb.min.y);
-          const mesh = new THREE.InstancedMesh(model.geometry, mat, spots.length);
-          mesh.name = 'megascans:' + key;
-          const d = new THREE.Object3D(), col = new THREE.Color();
-          spots.forEach((sp, i) => {
-            const s = sp.h ? sp.h / bh : (sp.s || 1);
-            d.position.set(sp.x, sp.y, sp.z);
-            d.rotation.set(0, sp.yaw, 0);
-            d.scale.set(s, (sp.sy || s), s);
-            d.updateMatrix();
-            mesh.setMatrixAt(i, d.matrix);
-            const v = 0.90 + ((i * 0.618) % 1) * 0.12;
-            col.setRGB(v, v * (0.985 + (i % 3) * 0.008), v * 0.97);
-            mesh.setColorAt(i, col);
-          });
-          mesh.instanceMatrix.needsUpdate = true;
-          if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
-          mesh.castShadow = !!info.shadow;
-          mesh.receiveShadow = true;
-          mesh.frustumCulled = false;
-          world.add(mesh);
-          for (const fb of megaFallbacks.get(key) || []) fb.visible = false;
-          megaStats.loaded++;
-          megaStats.assets.push(key + '×' + spots.length);
-          if (shadowDirty && (megaStats.loaded + megaStats.failed) >= keys.length) {
-            renderer.shadowMap.needsUpdate = true;
-            shadowDirty = false;
-            drawFrame();
-          }
-          /* the shadow map was baked on the first frame; one refresh folds
-             every late prop into it, and only when the last one has landed */
-          if (info.shadow) shadowDirty = true;
-        }).catch((err) => {
-          megaStats.failed++;
-          if (megaStats.failed === 1) console.warn('[megascans] ' + key + ' not loaded:', (err && err.message) || err);
-        });
-      }
+            mesh.instanceMatrix.needsUpdate = true;
+            if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+            mesh.castShadow = !!info.shadow;
+            mesh.receiveShadow = true;
+            mesh.frustumCulled = false;
+            world.add(mesh);
+            for (const fb of megaFallbacks.get(key) || []) fb.visible = false;
+            megaStats.loaded++;
+            megaStats.assets.push(key + '×' + spots.length);
+            if (info.shadow) shadowDirty = true;
+            settle();
+          }).catch((err) => {
+            megaStats.failed++;
+            if (megaStats.failed === 1) console.warn('[megascans] ' + key + ' not loaded:', (err && err.message) || err);
+            settle();
+          }).finally(() => { live--; pump(); });
+        }
+      };
+      /* one shadow refresh once everything that was asked for has landed */
+      const settle = () => {
+        megaDone++;
+        if (shadowDirty && megaDone >= megaTotal) {
+          renderer.shadowMap.needsUpdate = true;
+          shadowDirty = false;
+          drawFrame();
+        }
+      };
+      pump();
     }
     if (opts.models !== false) {
-      const kick = () => { if (!destroyed) megaPlaceModels(); };
-      if (typeof requestIdleCallback === 'function') requestIdleCallback(kick, { timeout: 2600 });
-      else setTimeout(kick, 900);
+      const wave1 = () => {
+        if (destroyed) return;
+        /*  A phone gets no scanned props at all: the 10 first-wave GLBs
+            are ~1.7 MB to fetch and parse and ~20 MB of textures to hold,
+            right when the phone is already paying for the first frame. The
+            procedural stand-ins are already standing in every one of those
+            spots, so the scene is complete without them. A laptop, even a
+            small one, keeps wave one and skips only wave two below. */
+        if (MOBILE) { megaStats.deferred = 'phone'; return; }
+        megaPlaceModels(MEGA_WAVE1);
+        if (LOWRAM) { megaStats.deferred = 'low-ram'; return; }
+        /* wave two waits for the wave-one requests to have had the link to
+           themselves, then rides in behind them */
+        const rest = [...new Set(megaSpots.map((sp) => sp.key))].filter((k) => !MEGA_WAVE1.includes(k));
+        const second = () => { if (!destroyed && !megaWave2) { megaWave2 = true; megaPlaceModels(rest); } };
+        if (typeof requestIdleCallback === 'function') requestIdleCallback(second, { timeout: 6000 });
+        else setTimeout(second, 3200);
+        setTimeout(second, 4200);
+      };
+      const kick = () => {
+        if (destroyed) return;
+        if (typeof requestIdleCallback === 'function') requestIdleCallback(wave1, { timeout: 2600 });
+        else setTimeout(wave1, 900);
+      };
+      /* after the first frame, not before it */
+      if (typeof requestAnimationFrame === 'function') requestAnimationFrame(() => requestAnimationFrame(kick));
+      else kick();
     }
 
     /* ─────────────────────────────────────────────────────────────────────
@@ -7594,6 +8657,8 @@ if (opts.height != null) section.style.height = (typeof opts.height === 'number'
 const rect0 = scrollHost.getBoundingClientRect();
 const visible0 = rect0.top < window.innerHeight + 240 && rect0.bottom > -240;
 let pTarget = STOPS[opts.startStop] ?? 0, pSmooth = pTarget, lastApplied = -1, visible = visible0, started = false;
+/* when the page last moved, for the deferred work that must not run mid-flick */
+let lastScrollAt = 0;
 let autoP = pSmooth, autoDir = 1;
 let lookYaw = 0, lookPitch = 0, lookYawTarget = 0, lookPitchTarget = 0;
 let dragging = false, lastX = 0, lastY = 0, pointerX = 0, pointerY = 0;
@@ -7640,7 +8705,8 @@ function scrollY() {
 
 function readProgress() {
   if (!opts.scrollDriven) return;
-  pTarget = clamp((scrollY() - trackTop) / trackSpan);
+  const p = clamp((scrollY() - trackTop) / trackSpan);
+  if (p !== pTarget) { pTarget = p; lastScrollAt = performance.now(); }
 }
 
 function paintOverlays(p) {
@@ -7664,13 +8730,20 @@ function paintOverlays(p) {
   const warmUp = smoothstep(0.53, 0.60, p) * (1 - smoothstep(0.70, 0.76, p));
   if (veil) veil.style.opacity = (0.09 + dark * 0.30).toFixed(3);
   if (grade) grade.style.opacity = (0.82 + dark * 0.18 - warmUp * 0.16).toFixed(3);
-  if (bloomEl) bloomEl.style.opacity = (warmUp * 0.42 + smoothstep(0.86, 0.98, p) * 0.14).toFixed(3);
+  if (bloomEl) bloomEl.style.opacity = (warmUp * 0.30 + smoothstep(0.86, 0.98, p) * 0.10).toFixed(3);
 
   if (dust) dust.uniforms.uOpacity.value = smoothstep(0.54, 0.63, p) * (1 - smoothstep(0.80, 0.86, p)) * (MOBILE ? 0.40 : 0.48);
   if (opts.onProgress) { try { opts.onProgress(p, stage); } catch (_) { /* host's problem */ } }
 }
 
-let exposure = 0.82;
+let exposure = 0.83;
+
+/*  The frame governor. A phone that cannot hold the budget loses resolution
+    before it loses frames: the section is a scroll-driven film, and a soft frame
+    that keeps up reads far better than a sharp one that stutters. One step every
+    twenty frames, never back up (stepping up again oscillates), and only on the
+    lean tier, so a desktop keeps the pixels it paid for. */
+let govFrames = 0, govSpan = 0, govStep = 0;
 
 function applyCamera(t, dt) {
   const fov = cameraAt(t);
@@ -7680,7 +8753,12 @@ function applyCamera(t, dt) {
   if (!REDUCED && opts.interactive) { camera.rotateY(lookYaw); camera.rotateX(lookPitch); }
 
   const aspect = camera.aspect;
-  const portrait = aspect < 1.1 ? lerp(1, 1.46, clamp((1.1 - aspect) / 0.7)) : 1;
+  /*  A portrait frame multiplies the vertical field of view so a 18.7 m facade
+      still fits the width. 1.46 fitted it with room to spare and left a third
+      of a phone screen as empty road under the house; 1.30 crops the frame to
+      the building, which is how the approach reads in a portrait editorial
+      shot, and still holds the whole porch, the vine and the garage bay. */
+  const portrait = aspect < 1.1 ? lerp(1, 1.30, clamp((1.1 - aspect) / 0.7)) : 1;
   const f = fov * portrait;
   if (Math.abs(camera.fov - f) > 0.01) { camera.fov = f; camera.updateProjectionMatrix(); }
 
@@ -7688,14 +8766,14 @@ function applyCamera(t, dt) {
      view ray on the exterior half of the take, so a 30 m facade still fits the
      frame at the approach and the door is centred by the time we reach it */
   if (portrait > 1.02 && t < 0.48) {
-    const k = 1 + 0.06 * portrait * (1 - smoothstep(0.26, 0.47, t));
+    const k = 1 + 0.035 * portrait * (1 - smoothstep(0.26, 0.47, t));
     tmpPos.sub(tmpTgt).multiplyScalar(k).add(tmpTgt);
     camera.position.copy(tmpPos);
   }
 
   const dark = smoothstep(0.508, 0.538, t) * (1 - smoothstep(0.556, 0.61, t));
   const inside = smoothstep(0.56, 0.64, t) * (1 - smoothstep(0.74, 0.78, t));
-  const target = 0.82 - dark * 0.22 + inside * 0.30;
+  const target = 0.83 - dark * 0.22 + inside * 0.30;
   exposure += (target - exposure) * Math.min(1, dt * 6);
   renderer.toneMappingExposure = exposure;
   if (post) post.compMat.uniforms.uExposure.value = exposure;
@@ -7718,13 +8796,24 @@ function resize() {
 
 /* A lost context (a phone under memory pressure, a GPU reset) must not leave a
    black rectangle: three re-initialises itself on restore, and the next frame
-   redraws the frozen product. */
+   redraws the frozen product. On the way down the depth map is handed back,
+   because on a 4 GB phone that 768² buffer is often the last straw. */
 let contextLost = false;
-canvas.addEventListener('webglcontextlost', (e) => { e.preventDefault(); contextLost = true; }, { signal });
+canvas.addEventListener('webglcontextlost', (e) => {
+  e.preventDefault();
+  contextLost = true;
+  canvas.classList.remove('is-ready');
+  container.classList.remove('is-ready');
+  container.classList.add('webgl-paused');
+  try { if (sun.shadow.map) { sun.shadow.map.dispose(); sun.shadow.map = null; } } catch (_) {}
+}, { signal });
 canvas.addEventListener('webglcontextrestored', () => {
   contextLost = false;
+  container.classList.remove('webgl-paused');
+  try { renderer.shadowMap.needsUpdate = true; } catch (_) {}
   resize();
   drawFrame();
+  canvas.classList.add('is-ready');
   schedule();
 }, { signal });
 
@@ -7831,12 +8920,34 @@ function tick() {
 
   drawFrame();
 
+  if (LEAN) {
+    govFrames++;
+    govSpan += dt * 1000;
+    if (govFrames >= (govStep ? 10 : 20)) {
+      const avg = govSpan / govFrames;
+      govFrames = 0; govSpan = 0;
+      if (avg > 26 && govStep < 3) {
+        govStep++;
+        const next = Math.max(0.7, Math.round((renderer.getPixelRatio() - 0.15) * 100) / 100);
+        renderer.setPixelRatio(next);
+        ctxStats.dpr = next;
+        resize();
+      }
+    }
+  }
+
   if (!started) {
     started = true;
     // the world never moves: bake the shadow map once, then stop updating
     renderer.shadowMap.autoUpdate = false;
     canvas.classList.add('is-ready');
+    container.classList.add('is-ready');
     canvas.classList.remove('is-loading');
+    /* a lean phone: the deferred scans, then the scratch canvases handed back */
+    if (LEAN) {
+      schedulePhotoUpgrade();
+      setTimeout(releaseScratchCanvases, 9000);
+    }
   }
 
   schedule();
@@ -7848,8 +8959,50 @@ readProgress();
 pSmooth = pTarget;
 applyCamera(pSmooth, 1);
 paintOverlays(pSmooth);
+
+/*  A phone's first frame is mostly shader compilation, and on a driver that
+    supports KHR_parallel_shader_compile (Chrome on Android, Safari 16+) those
+    programs link off the main thread. Kick them off here, keep the main thread
+    free for the poster fade and the first scroll, and never wait longer than
+    this: a driver without the extension resolves at once, and a slow one gets
+    a synchronous compile in drawFrame() anyway. */
+if (LEAN && typeof renderer.compileAsync === 'function') {
+  let compiled = false;
+  try {
+    await Promise.race([
+      renderer.compileAsync(scene, camera).then(() => { compiled = true; }),
+      new Promise((r) => setTimeout(r, 2200))
+    ]);
+  } catch (_) { compiled = false; }
+  ctxStats.asyncCompile = compiled;
+}
+
 clock.start();
 schedule();
+
+/* ── scratch canvases ──────────────────────────────────────────────────────
+   Half the canvases this file bakes are intermediates: a height field a normal
+   map was derived from, a drawing composited into a larger sheet, an atlas
+   composited from pieces. They are never uploaded. Once the frame has been
+   drawn, zero the ones no live texture points at and give the backing store
+   back: a 4 GB phone needs that memory more than we do.                   */
+let scratchReleased = false;
+function releaseScratchCanvases() {
+  if (scratchReleased || destroyed) return;
+  scratchReleased = true;
+  let freed = 0, bytes = 0;
+  for (const c of CANVAS_KEEP) {
+    /* a canvas a texture still points at stays: three re-uploads from it on
+       a context restore, and a zeroed one would come back blank */
+    if (c.__asTex) continue;
+    if (!c.width || !c.height) continue;
+    bytes += c.width * c.height * 4;
+    c.width = 0; c.height = 0;
+    freed++;
+  }
+  ctxStats.scratchCanvasesFreed = freed;
+  ctxStats.scratchMbFreed = Math.round(bytes / 1048576 * 10) / 10;
+}
 
 /* ── the handle: everything a host needs and nothing it has to know ───── */
 const handle = {
@@ -7889,7 +9042,13 @@ const handle = {
       triangles: renderer.info.render.triangles,
       geometries: renderer.info.memory.geometries,
       textures: renderer.info.memory.textures,
-      tier: MOBILE ? 'lite' : (TABLET ? 'tablet' : 'high')
+      tier: MOBILE ? (LOWRAM ? 'lite+lowram' : 'lite') : (TABLET ? 'tablet' : 'high'),
+      lean: LEAN, lowram: LOWRAM, dpr: renderer.getPixelRatio(),
+      shadowMap: sun.shadow.mapSize.x,
+      grassTufts: ctxStats.grassTufts,
+      photoPhase2: photoPhase2,
+      scratchCanvasesFreed: ctxStats.scratchCanvasesFreed,
+      scratchMbFreed: ctxStats.scratchMbFreed
     };
   },
   destroy,
@@ -7935,8 +9094,12 @@ function destroy() {
 /* the debug/screenshot hook the page harness and the render scripts use */
 window.__shade = handle;
 
-window.addEventListener('error', (e) => fail(e.error || e.message), { signal });
-window.addEventListener('unhandledrejection', (e) => fail(e.reason), { signal });
+/*  Only a fault during the build is ours: once the first frame has painted, an
+    unrelated script on the page (a font CDN, an analytics tag, a Framer
+    override) must not be able to blank a working scene. */
+const failIfBooting = (err) => { if (!started) fail(err); };
+window.addEventListener('error', (e) => failIfBooting(e.error || e.message), { signal });
+window.addEventListener('unhandledrejection', (e) => failIfBooting(e.reason), { signal });
 
 return handle;
     } catch (err) {
@@ -7951,21 +9114,10 @@ return handle;
 
 type Props = {
     locationHeadline: string
-    locationSubtitle: string
-    locationSpec: string
     exteriorHeadline: string
-    exteriorSubtitle: string
-    exteriorSpec: string
     interiorHeadline: string
-    interiorSubtitle: string
-    interiorSpec: string
     amenitiesHeadline: string
-    amenitiesSubtitle: string
-    amenitiesSpec: string
     pricingHeadline: string
-    pricingSubtitle: string
-    pricingSpec: string
-    showSpecs: boolean
     showCopy: boolean
     scrollDriven: boolean
     scrollLength: number
@@ -8049,13 +9201,18 @@ export default function ShadestateWalkthrough(props: Props) {
             whenIdle(() => { if (!killed) setArmed(true) }, 1500)
         }
         if (typeof IntersectionObserver === "function") {
+            /*  A phone scrolls a screen at a time and the build is long: two
+                screens of runway instead of one, so the still is already the
+                scene by the time the section is in front of the thumb. */
+            const narrow = typeof window !== "undefined" && window.matchMedia
+                && window.matchMedia("(max-width: 820px)").matches
             io = new IntersectionObserver(
                 (entries) => {
                     for (const e of entries) {
                         if (e.isIntersecting) { io && io.disconnect(); arm(); break }
                     }
                 },
-                { rootMargin: "700px 0px" }
+                { rootMargin: narrow ? "1600px 0px" : "700px 0px" }
             )
             io.observe(track)
         } else {
@@ -8134,15 +9291,15 @@ export default function ShadestateWalkthrough(props: Props) {
         props.cloudCover, props.grassDensity, props.waterRipples, props.palms, props.city,
     ])
 
-    /* the copy block: one per stop, stacked in the same corner as the template.
-       Each stop is a real-estate act — location, exterior, interior, amenities,
-       pricing — with the fact line in a glass spec pill under the headline. */
-    const blocks: { key: string; eyebrow: string; head: string; sub: string; spec: string; center?: boolean }[] = [
-        { key: "location", eyebrow: "01 · Location", head: props.locationHeadline, sub: props.locationSubtitle, spec: props.locationSpec },
-        { key: "exterior", eyebrow: "02 · Exterior", head: props.exteriorHeadline, sub: props.exteriorSubtitle, spec: props.exteriorSpec, center: true },
-        { key: "interior", eyebrow: "03 · Interior", head: props.interiorHeadline, sub: props.interiorSubtitle, spec: props.interiorSpec },
-        { key: "amenities", eyebrow: "04 · Amenities", head: props.amenitiesHeadline, sub: props.amenitiesSubtitle, spec: props.amenitiesSpec },
-        { key: "pricing", eyebrow: "05 · Developments", head: props.pricingHeadline, sub: props.pricingSubtitle, spec: props.pricingSpec },
+    /* the copy block: one line per stop, stacked in the same corner as the
+       template. Each stop is a real-estate act — location, exterior, interior,
+       amenities, developments — and the line is all that rides over the frame. */
+    const blocks: { key: string; head: string; center?: boolean }[] = [
+        { key: "location", head: props.locationHeadline },
+        { key: "exterior", head: props.exteriorHeadline, center: true },
+        { key: "interior", head: props.interiorHeadline },
+        { key: "amenities", head: props.amenitiesHeadline },
+        { key: "pricing", head: props.pricingHeadline },
     ]
 
     return (
@@ -8194,25 +9351,6 @@ export default function ShadestateWalkthrough(props: Props) {
                         >
                             <div
                                 style={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: b.center ? "center" : "flex-start",
-                                    gap: 12,
-                                    fontSize: 10,
-                                    letterSpacing: "0.28em",
-                                    textTransform: "uppercase",
-                                    color: "#C2A57C",
-                                    marginBottom: 14,
-                                    textShadow: "0 1px 14px rgba(0,0,0,.6)",
-                                }}
-                            >
-                                {!b.center && (
-                                    <span style={{ display: "block", width: 26, height: 1, background: "currentColor", opacity: 0.6 }} />
-                                )}
-                                {b.eyebrow}
-                            </div>
-                            <div
-                                style={{
                                     fontFamily: `${JSON.stringify(props.fontFamily)}, "Timeless Sans", -apple-system, BlinkMacSystemFont, "Inter", system-ui, sans-serif`,
                                     fontWeight: 600,
                                     fontSize: b.center ? "clamp(52px, 10vw, 140px)" : "clamp(32px, 5vw, 72px)",
@@ -8225,83 +9363,61 @@ export default function ShadestateWalkthrough(props: Props) {
                             >
                                 {b.head}
                             </div>
-                            {b.sub && (
-                                <div
-                                    style={{
-                                        marginTop: 16,
-                                        maxWidth: "38ch",
-                                        marginLeft: b.center ? "auto" : 0,
-                                        marginRight: b.center ? "auto" : 0,
-                                        fontFamily: `${JSON.stringify(props.fontFamily)}, -apple-system, BlinkMacSystemFont, "Inter", system-ui, sans-serif`,
-                                        fontWeight: 300,
-                                        fontSize: "clamp(12px, 1.1vw, 14px)",
-                                        lineHeight: 1.7,
-                                        color: "rgba(247,244,239,.74)",
-                                        textShadow: "0 1px 18px rgba(0,0,0,.55)",
-                                    }}
-                                >
-                                    {b.sub}
-                                </div>
-                            )}
-                            {b.spec && props.showSpecs && (
-                                <div
-                                    style={{
-                                        display: "inline-flex",
-                                        alignItems: "center",
-                                        gap: 9,
-                                        marginTop: 18,
-                                        padding: "10px 17px",
-                                        border: "1px solid rgba(255,255,255,.22)",
-                                        borderRadius: 980,
-                                        background: "rgba(16,16,18,.38)",
-                                        backdropFilter: "blur(18px) saturate(160%)",
-                                        WebkitBackdropFilter: "blur(18px) saturate(160%)",
-                                        boxShadow: "inset 0 1px 0 rgba(255,255,255,.26), 0 12px 30px rgba(0,0,0,.22)",
-                                        fontFamily: `${JSON.stringify(props.fontFamily)}, "Timeless Sans", -apple-system, BlinkMacSystemFont, "Inter", system-ui, sans-serif`,
-                                        fontSize: 11,
-                                        fontWeight: 500,
-                                        letterSpacing: "0.1em",
-                                        lineHeight: 1.25,
-                                        color: "rgba(255,255,255,.95)",
-                                        whiteSpace: "nowrap",
-                                        textAlign: "left",
-                                        textShadow: "0 1px 10px rgba(0,0,0,.45)",
-                                    }}
-                                >
-                                    <span
-                                        style={{
-                                            display: "block",
-                                            flex: "none",
-                                            width: 5,
-                                            height: 5,
-                                            borderRadius: "50%",
-                                            background: "#C2A57C",
-                                            boxShadow: "0 0 0 3px rgba(194,165,124,.18)",
-                                        }}
-                                    />
-                                    {b.spec}
-                                </div>
-                            )}
                         </div>
                     ))}
                 </div>
             )}
+            <style>{`@keyframes shadestateWalkSweep{from{transform:translateX(-100%)}to{transform:translateX(100%)}}`}</style>
+            <img
+                src={POSTER_SRC}
+                alt=""
+                aria-hidden="true"
+                draggable={false}
+                style={{
+                    position: "absolute", inset: 0, width: "100%", height: "100%",
+                    objectFit: "cover", objectPosition: "50% 50%",
+                    display: "block", pointerEvents: "none",
+                    transition: "opacity .9s cubic-bezier(.22,.61,.24,1)",
+                    opacity: status === "ready" ? 0 : 1,
+                }}
+            />
             {status !== "ready" && (
                 <div
                     style={{
                         position: "absolute",
-                        inset: 0,
+                        left: "clamp(20px,6vw,84px)",
+                        bottom: "clamp(14px,2.6vh,24px)",
                         display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        color: "rgba(247,244,239,0.62)",
-                        font: "500 12px/1.4 ui-sans-serif, system-ui, sans-serif",
-                        letterSpacing: "0.14em",
+                        flexDirection: "column",
+                        alignItems: "flex-start",
+                        gap: 10,
+                        color: "rgba(247,244,239,0.78)",
+                        font: "500 9px/1.4 ui-sans-serif, system-ui, sans-serif",
+                        letterSpacing: "0.26em",
                         textTransform: "uppercase",
+                        textShadow: "0 1px 14px rgba(0,0,0,.55)",
                         pointerEvents: "none",
                     }}
                 >
-                    {status === "failed" ? "This device cannot display the walkthrough" : "Casa da Luz"}
+                    <span>
+                        {status === "failed" ? "This device cannot display the walkthrough" : "Preparing the walkthrough"}
+                    </span>
+                    {status === "loading" && (
+                        <span
+                            style={{
+                                display: "block", width: 92, height: 1, overflow: "hidden",
+                                background: "rgba(255,255,255,.18)",
+                            }}
+                        >
+                            <span
+                                style={{
+                                    display: "block", width: "100%", height: "100%",
+                                    background: "linear-gradient(90deg,rgba(227,198,143,0),#E3C68F,rgba(227,198,143,0))",
+                                    animation: "shadestateWalkSweep 1.2s linear infinite",
+                                }}
+                            />
+                        </span>
+                    )}
                 </div>
             )}
         </div>
@@ -8310,22 +9426,11 @@ export default function ShadestateWalkthrough(props: Props) {
 }
 
 ShadestateWalkthrough.defaultProps = {
-    locationHeadline: "Architecture with permanence.",
-    locationSubtitle: "Set within a quiet residential enclave, framed by skyline views and direct city access.",
-    locationSpec: "Prime District · 12 min to Center",
-    exteriorHeadline: "Honest materials.",
-    exteriorSubtitle: "Natural stone, weathered oak, and architectural bronze proportioned to outlast trends.",
-    exteriorSpec: "Custom Estate · Stone, Bronze & Oak",
+    locationHeadline: "Where you want to be.",
+    exteriorHeadline: "Built to sit still.",
     interiorHeadline: "Room to breathe.",
-    interiorSubtitle: "Double-height living volumes, gallery sightlines, and floor-to-ceiling glass at both ends.",
-    interiorSpec: "Double-Height Hall · Indoor–Outdoor Flow",
-    amenitiesHeadline: "Built for stillness.",
-    amenitiesSubtitle: "A sunlit infinity pool, shaded pergola terrace, and private garden courtyard.",
-    amenitiesSpec: "Infinity Pool · Gym & Sauna · Garden",
-    pricingHeadline: "Delivered to order.",
-    pricingSubtitle: "Tailored handover schedules, transparent milestones, and private studio viewings.",
-    pricingSpec: "Private Viewings · Tailored Handover",
-    showSpecs: true,
+    amenitiesHeadline: "Everything within reach.",
+    pricingHeadline: "The rest of the plan.",
     showCopy: true,
     scrollDriven: true,
     scrollLength: 820,
@@ -8364,106 +9469,36 @@ addPropertyControls(ShadestateWalkthrough, {
     },
     locationHeadline: {
         type: ControlType.String,
-        title: "01 Location · headline",
+        title: "02 Location · headline",
         group: "Copy",
         defaultValue: "Architecture with permanence.",
         description: "The line over the long approach. Two lines fit best; add a line break in the text.",
     },
-    locationSubtitle: {
-        type: ControlType.String,
-        title: "01 Location · subtitle",
-        group: "Copy",
-        defaultValue: "Set within a quiet residential enclave, framed by skyline views and direct city access.",
-        description: "One or two sentences under the location headline.",
-    },
-    locationSpec: {
-        type: ControlType.String,
-        title: "01 Location · spec pill",
-        group: "Copy",
-        defaultValue: "Prime District · 12 min to Center",
-        description: "The glass pill under the headline. Keep it to one short line of facts.",
-    },
     exteriorHeadline: {
         type: ControlType.String,
-        title: "02 Exterior · headline",
+        title: "03 Exterior · headline",
         group: "Copy",
         defaultValue: "Honest materials.",
         description: "The large centred line on the exterior stop.",
     },
-    exteriorSubtitle: {
-        type: ControlType.String,
-        title: "02 Exterior · subtitle",
-        group: "Copy",
-        defaultValue: "Natural stone, weathered oak, and architectural bronze proportioned to outlast trends.",
-    },
-    exteriorSpec: {
-        type: ControlType.String,
-        title: "02 Exterior · spec pill",
-        group: "Copy",
-        defaultValue: "Custom Estate · Stone, Bronze & Oak",
-    },
     interiorHeadline: {
         type: ControlType.String,
-        title: "03 Interior · headline",
+        title: "04 Interior · headline",
         group: "Copy",
         defaultValue: "Room to breathe.",
     },
-    interiorSubtitle: {
-        type: ControlType.String,
-        title: "03 Interior · subtitle",
-        group: "Copy",
-        defaultValue: "Double-height living volumes, gallery sightlines, and floor-to-ceiling glass at both ends.",
-    },
-    interiorSpec: {
-        type: ControlType.String,
-        title: "03 Interior · spec pill",
-        group: "Copy",
-        defaultValue: "Double-Height Hall · Indoor–Outdoor Flow",
-    },
     amenitiesHeadline: {
         type: ControlType.String,
-        title: "04 Amenities · headline",
+        title: "05 Amenities · headline",
         group: "Copy",
         defaultValue: "Built for stillness.",
     },
-    amenitiesSubtitle: {
-        type: ControlType.String,
-        title: "04 Amenities · subtitle",
-        group: "Copy",
-        defaultValue: "A sunlit infinity pool, shaded pergola terrace, and private garden courtyard.",
-    },
-    amenitiesSpec: {
-        type: ControlType.String,
-        title: "04 Amenities · spec pill",
-        group: "Copy",
-        defaultValue: "Infinity Pool · Gym & Sauna · Garden",
-    },
     pricingHeadline: {
         type: ControlType.String,
-        title: "05 Developments · headline",
+        title: "06 Developments · headline",
         group: "Copy",
         defaultValue: "Delivered to order.",
         description: "The closing stop, over the full orbit of the house.",
-    },
-    pricingSubtitle: {
-        type: ControlType.String,
-        title: "05 Developments · subtitle",
-        group: "Copy",
-        defaultValue: "Tailored handover schedules, transparent milestones, and private studio viewings.",
-    },
-    pricingSpec: {
-        type: ControlType.String,
-        title: "05 Developments · spec pill",
-        group: "Copy",
-        defaultValue: "Private Viewings · Tailored Handover",
-        description: "Price, payment plan and handover, in one line.",
-    },
-    showSpecs: {
-        type: ControlType.Boolean,
-        title: "Show spec pills",
-        group: "Copy",
-        defaultValue: true,
-        description: "The glass fact pill under each stop's headline. Off: headlines and copy only.",
     },
 
     /* ── Camera ─────────────────────────────────────────────────────── */
@@ -8529,9 +9564,9 @@ addPropertyControls(ShadestateWalkthrough, {
         title: "Light",
         group: "Look",
         options: ["morning", "noon", "golden", "dusk"],
-        optionTitles: ["Morning", "Noon", "Golden hour", "Dusk"],
+        optionTitles: ["Daylight", "Noon", "Golden hour", "Dusk"],
         defaultValue: "morning",
-        description: "Sky, sun height and colour, and the light on the house.",
+        description: "Sky, sun height and colour, and the light on the house. Daylight is the committed look: a low sun from the west, blue sky, neutral highlights.",
     },
     cloudCover: {
         type: ControlType.Number,
